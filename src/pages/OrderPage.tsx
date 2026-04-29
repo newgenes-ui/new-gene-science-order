@@ -145,7 +145,9 @@ export default function OrderPage() {
       : (order.orderType === 'quote' && otherRequest ? `[견적 요청 내역]\n${otherRequest}` : '(선택 제품 없음)');
 
     const emailParams = {
-      order_title:    `[${order.orderType === 'order' ? '신규 주문 접수' : '신규 견적 문의'}] ${clientName} - ${ordererName}님`,
+      order_title:    `[새로운 ${order.orderType === 'order' ? '주문' : '견적'} 접수]`,
+      order_type_text: order.orderType === 'order' ? '주문' : '견적',
+      detail_label:   `${order.orderType === 'order' ? '주문' : '견적'} 상세 내역`,
       order_id:       order.id,
       order_date:     order.orderDate,
       client_name:    clientName,
