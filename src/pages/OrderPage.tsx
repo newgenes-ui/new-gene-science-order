@@ -159,6 +159,10 @@ export default function OrderPage() {
       orderer_name:   ordererName,
       orderer_phone:  order.ordererPhone,
       orderer_email:  order.ordererEmail || '(미입력)',
+      // 사용자의 EmailJS 템플릿 변수명에 맞춤
+      from_name:      ordererName,
+      contact_number: order.ordererPhone,
+      reply_to:       order.ordererEmail || '(미입력)',
       items_text:     finalItemsText,
       subtotal_amount: `₩${subtotalAmount.toLocaleString()}`,
       vat_amount:      `₩${vatAmount.toLocaleString()}`,
