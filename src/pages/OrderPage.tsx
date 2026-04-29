@@ -138,11 +138,16 @@ export default function OrderPage() {
     };
 
     // 주문 내용 텍스트 구성
-    const itemsText = orderItems.length > 0
+    let itemsText = orderItems.length > 0
       ? orderItems.map(i =>
           `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()}`
         ).join('\n')
-      : (otherRequest ? `[견적 요청 내역]\n${otherRequest}` : '(선택 제품 없음)');
+      : '(선택 제품 없음)';
+
+    // 견적 문의의 경우 상세 요청 사항이 있으면 상단에 추가
+    if (activeTab === 'quote' && otherRequest) {
+      itemsText = `[상세 요청 내역]\n${otherRequest}\n\n${itemsText === '(선택 제품 없음)' ? '' : '[선택 제품 목록]\n' + itemsText}`;
+    }
 
     const emailParams = {
       order_title:    `[새로운 ${order.orderType === 'order' ? '주문' : '견적'} 접수]`,
