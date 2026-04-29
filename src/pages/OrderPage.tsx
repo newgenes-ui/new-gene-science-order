@@ -313,7 +313,7 @@ export default function OrderPage() {
                       <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                   )}
-                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                  <div className={`grid gap-6 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -377,7 +377,7 @@ export default function OrderPage() {
                     <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
                       <Building2 className="w-4 h-4" /> 공급사 정보 (뉴진사이언스)
                     </h2>
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex flex-wrap items-center gap-x-12 gap-y-3">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">담당자</span>
                         <span className="text-sm font-bold text-slate-800">나혜원</span>
@@ -405,7 +405,7 @@ export default function OrderPage() {
                         <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
-                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                  <div className={`grid gap-6 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
