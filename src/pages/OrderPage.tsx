@@ -7,8 +7,13 @@ import {
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL } from '../data/products';
 import { Order, OrderItem, generateOrderId, saveOrder } from '../store/orderStore';
+import emailjs from '@emailjs/browser';
 
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJULS6NUUGQIjlwXxhzld9LfwMo_22evJbjwrDtE697Oze5iV1rog/exec";
+// ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
+const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || '';
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
+const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
+// ─────────────────────────────────────────────────────────────────
 
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
@@ -84,20 +89,53 @@ export default function OrderPage() {
       paymentMethod: 'bank_transfer',
     };
 
-    try {
-      await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({
-          ...order,
-          type: 'new_order',
-          ngsEmail: 'newgenesci@newgenesci.com',
-          clientEmail: clientData.email,
-        }),
-      });
-    } catch (e) {
-      console.log('Email send attempted (no-cors)');
+    // 주문 내용 텍스트 구성
+    const itemsText = orderItems.length > 0
+      ? orderItems.map(i =>
+          `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()}`
+        ).join('\n')
+      : '(선택 제품 없음)';
+
+    const emailParams = {
+      order_id:       order.id,
+      order_date:     order.orderDate,
+      client_name:    clientName,
+      orderer_name:   ordererName,
+      orderer_phone:  ordererPhone,
+      orderer_email:  ordererEmail || '(미입력)',
+      items_text:     itemsText,
+      total_amount:   `₩${totalAmount.toLocaleString()}`,
+      other_request:  otherRequest || '없음',
+      // 수신자 이메일 — 템플릿에서 {{to_email}} 변수로 사용
+      to_email:       `${NGS_EMAIL}, ${clientData.email}`,
+      ngs_email:      NGS_EMAIL,
+      client_email:   clientData.email,
+    };
+
+    if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+      try {
+        // 뉴진사이언스로 발송
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          ...emailParams,
+          to_email: NGS_EMAIL,
+          reply_to: ordererEmail || clientData.email,
+        }, EMAILJS_PUBLIC_KEY);
+
+        // 베르티스(주문자)로 발송
+        if (clientData.email) {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            ...emailParams,
+            to_email: clientData.email,
+            reply_to: NGS_EMAIL,
+          }, EMAILJS_PUBLIC_KEY);
+        }
+        console.log('✅ 이메일 발송 완료');
+      } catch (e) {
+        console.error('EmailJS 발송 오류:', e);
+        // 이메일 실패해도 주문은 계속 진행
+      }
+    } else {
+      console.warn('⚠️ EmailJS 설정이 없습니다. Vercel 환경변수를 확인하세요.');
     }
 
     saveOrder(order);
