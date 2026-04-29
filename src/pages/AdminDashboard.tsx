@@ -82,17 +82,37 @@ export default function AdminDashboard() {
   }, [filteredOrders]);
 
   const downloadCSV = () => {
-    const headers = ['주문번호', '주문일', '업체명', '주문자', '연락처', '품목수', '합계금액', '상태'];
-    const rows = filteredOrders.map(o => [
-      o.id, o.orderDate, o.clientName, o.ordererName, o.ordererPhone,
-      o.items.reduce((s, i) => s + i.quantity, 0), o.totalAmount, STATUS_LABELS[o.status]
-    ]);
+    // 엑셀에서 바로 보기 편하도록 상세 내역(품목별)으로 출력
+    const headers = ['주문일', '업체명', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'];
+    const rows: any[] = [];
+    
+    filteredOrders.forEach(o => {
+      o.items.forEach(item => {
+        rows.push([
+          o.orderDate,
+          o.clientName,
+          o.id,
+          o.ordererName,
+          item.productCode,
+          item.productName,
+          item.quantity,
+          item.unitPrice,
+          item.subtotal,
+          STATUS_LABELS[o.status]
+        ]);
+      });
+      // 기타 요청사항이 있는 경우 별도 행 추가 (옵션)
+      if (o.otherRequest) {
+        rows.push([o.orderDate, o.clientName, o.id, o.ordererName, '-', '기타 요청사항', '-', '-', '-', o.otherRequest]);
+      }
+    });
+
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `NGS_주문내역_${fromDate}_${toDate}.csv`;
+    a.download = `NGS_상세발주내역_${fromDate}_${toDate}.csv`;
     a.click();
   };
 
