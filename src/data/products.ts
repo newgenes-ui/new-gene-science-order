@@ -41,7 +41,7 @@ export interface Client {
 }
 
 export const CLIENTS: Client[] = [
-  { id: 'bertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '나혜원', phone: '010-9915-5974' },
+  { id: 'bertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '양유지', phone: '010-9915-5974' },
   { id: 'samyang', name: '삼양사', email: '', contactPerson: '담당자', phone: '' },
   { id: 'samsung', name: '삼성바이오로직스', email: '', contactPerson: '담당자', phone: '' },
   { id: 'lgchem', name: 'LG화학', email: '', contactPerson: '담당자', phone: '' },
