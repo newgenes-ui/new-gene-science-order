@@ -26,6 +26,8 @@ export default function OrderPage() {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
   }, [clientId]);
 
+  const isBertis = clientId === 'bertis';
+
   // 초기 상태를 clientData에서 직접 가져옴
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
@@ -62,7 +64,9 @@ export default function OrderPage() {
 
   const cartItems = PRODUCTS.filter(p => (quantities[p.id] || 0) > 0);
   const cartCount = Object.values(quantities).reduce((s, v) => s + v, 0);
-  const totalAmount = cartItems.reduce((s, p) => s + p.price * (quantities[p.id] || 0), 0);
+  const subtotalAmount = cartItems.reduce((s, p) => s + p.price * (quantities[p.id] || 0), 0);
+  const vatAmount = Math.floor(subtotalAmount * 0.1);
+  const totalAmount = subtotalAmount + vatAmount;
 
   const updateQty = (id: string, delta: number) => {
     setQuantities(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) + delta) }));
@@ -98,10 +102,12 @@ export default function OrderPage() {
       clientName,
       clientEmail: clientData.email,
       ordererName,
-      ordererPhone,
-      ordererEmail,
+      ordererPhone: ordererPhone || clientData.phone || '',
+      ordererEmail: ordererEmail || clientData.email || '',
       items: orderItems,
       otherRequest,
+      subtotalAmount,
+      vatAmount,
       totalAmount,
       status: 'payment_waiting',
       paymentMethod: 'bank_transfer',
@@ -121,9 +127,11 @@ export default function OrderPage() {
       order_date:     order.orderDate,
       client_name:    clientName,
       orderer_name:   ordererName,
-      orderer_phone:  ordererPhone,
-      orderer_email:  ordererEmail || '(미입력)',
+      orderer_phone:  order.ordererPhone,
+      orderer_email:  order.ordererEmail || '(미입력)',
       items_text:     itemsText,
+      subtotal_amount: `₩${subtotalAmount.toLocaleString()}`,
+      vat_amount:      `₩${vatAmount.toLocaleString()}`,
       total_amount:   `₩${totalAmount.toLocaleString()}`,
       other_request:  otherRequest || '없음',
       // 수신자 이메일 — 템플릿에서 {{to_email}} 변수로 사용
@@ -299,22 +307,28 @@ export default function OrderPage() {
                   <User className="w-4 h-4" /> 문의자 정보
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
-                    <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                  </div>
+                  {!isBertis && (
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
+                      <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
+                  )}
                   <div>
                     <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                     <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                   </div>
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                    <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                    <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                  </div>
+                  {!isBertis && (
+                    <>
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                        <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                        <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -350,26 +364,56 @@ export default function OrderPage() {
               className="space-y-6"
             >
               {/* Orderer Info */}
-              <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
-                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                  <User className="w-4 h-4" /> 주문자 정보
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
-                    <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+              <section className="space-y-6">
+                {isBertis && (
+                  <div className="bg-primary/5 rounded-3xl p-6 border border-primary/20">
+                    <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                      <Building2 className="w-4 h-4" /> 공급사 정보 (뉴진사이언스)
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">영업담당자</p>
+                        <p className="text-sm font-bold text-slate-800">양유지</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">연락처</p>
+                        <p className="text-sm font-bold text-slate-800">010-9915-5974</p>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">이메일</p>
+                        <p className="text-sm font-bold text-slate-800">newgenes@newgenesci.com</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
-                    <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                    <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                    <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                )}
+
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
+                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                    <User className="w-4 h-4" /> 주문자 정보
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {!isBertis && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
+                        <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
+                    <div className={isBertis ? 'sm:col-span-2' : ''}>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
+                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
+                    {!isBertis && (
+                      <>
+                        <div>
+                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                          <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                          <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </section>
@@ -557,9 +601,19 @@ export default function OrderPage() {
                 ))}
               </div>
               <div className="p-5 border-t border-slate-100 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold text-slate-500">합계</span>
-                  <span className="text-xl font-black text-primary">₩{totalAmount.toLocaleString()}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                    <span>공급가액</span>
+                    <span>₩{subtotalAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                    <span>부가세 (10%)</span>
+                    <span>₩{vatAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                    <span className="text-sm font-black text-slate-800">합계 (VAT 포함)</span>
+                    <span className="text-xl font-black text-primary">₩{totalAmount.toLocaleString()}</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => { setShowCart(false); handleSubmit(new Event('submit') as any); }}

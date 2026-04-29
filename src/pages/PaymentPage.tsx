@@ -135,9 +135,19 @@ export default function PaymentPage() {
               </div>
             )}
           </div>
-          <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
-            <span className="font-bold text-slate-500">합계</span>
-            <span className="text-xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+          <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+              <span>공급가액</span>
+              <span>₩{order.subtotalAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+              <span>부가세 (10%)</span>
+              <span>₩{order.vatAmount.toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+              <span className="font-bold text-slate-800">합계 (VAT 포함)</span>
+              <span className="text-xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+            </div>
           </div>
         </motion.div>
 

@@ -22,6 +22,8 @@ export interface Order {
   ordererEmail: string;
   items: OrderItem[];
   otherRequest: string;
+  subtotalAmount: number;
+  vatAmount: number;
   totalAmount: number;
   status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped' | 'cancelled';
   paymentMethod: 'bank_transfer';
@@ -122,6 +124,8 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
       orderer_email: order.ordererEmail,
       items: order.items,
       other_request: order.otherRequest,
+      subtotal_amount: order.subtotalAmount,
+      vat_amount: order.vatAmount,
       total_amount: order.totalAmount,
       status: order.status,
       payment_method: order.paymentMethod,
@@ -190,6 +194,8 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       ordererEmail: row.orderer_email,
       items: row.items || [],
       otherRequest: row.other_request || '',
+      subtotalAmount: row.subtotal_amount || row.total_amount,
+      vatAmount: row.vat_amount || 0,
       totalAmount: row.total_amount,
       status: row.status,
       paymentMethod: row.payment_method,

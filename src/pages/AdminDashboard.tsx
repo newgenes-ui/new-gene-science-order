@@ -94,7 +94,7 @@ export default function AdminDashboard() {
   const downloadCSV = () => {
     // 모든 필드를 따옴표로 감싸서 쉼표(,) 충돌 방지
     const escape = (val: any) => `"${String(val).replace(/"/g, '""')}"`;
-    const headers = ['주문일', '업체명', '구분', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'].map(escape);
+    const headers = ['주문일', '업체명', '구분', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '단가합계', '주문공급가액', '주문부가세', '주문총액', '상태'].map(escape);
     const rows: string[] = [];
     
     filteredOrders.forEach(o => {
@@ -110,6 +110,9 @@ export default function AdminDashboard() {
           item.quantity,
           item.unitPrice,
           item.subtotal,
+          o.subtotalAmount,
+          o.vatAmount,
+          o.totalAmount,
           STATUS_LABELS[o.status]
         ].map(escape);
         rows.push(row.join(','));
@@ -330,6 +333,20 @@ export default function AdminDashboard() {
                                 <span className="font-bold text-slate-500 shrink-0">×{item.quantity} = ₩{item.subtotal.toLocaleString()}</span>
                               </div>
                             ))}
+                            <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
+                              <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                                <span>공급가액</span>
+                                <span>₩{order.subtotalAmount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                                <span>부가세</span>
+                                <span>₩{order.vatAmount.toLocaleString()}</span>
+                              </div>
+                              <div className="flex justify-between text-sm font-black text-primary pt-1">
+                                <span>합계</span>
+                                <span>₩{order.totalAmount.toLocaleString()}</span>
+                              </div>
+                            </div>
                             {order.otherRequest && (
                               <p className="text-xs text-slate-400 italic mt-1">기타: {order.otherRequest}</p>
                             )}
