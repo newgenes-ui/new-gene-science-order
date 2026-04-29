@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X } from 'lucide-react';
@@ -98,8 +98,6 @@ export default function QRManager() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-
-        {/* QR URL Info Panel */}
         {showUrlEdit && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="bg-blue-50 border border-blue-200 rounded-3xl p-5 space-y-3">
@@ -120,7 +118,6 @@ export default function QRManager() {
           </motion.div>
         )}
 
-        {/* Upload Guide */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           className="bg-gradient-to-r from-primary to-[#1E3D30] rounded-3xl p-5 text-white">
           <div className="flex items-start gap-3">
@@ -130,161 +127,94 @@ export default function QRManager() {
             <div>
               <p className="font-extrabold text-sm">캔바 QR 이미지 업로드</p>
               <p className="text-xs opacity-70 mt-0.5 leading-relaxed">
-                캔바에서 만든 QR 이미지를 각 업체 카드의 업로드 버튼으로 추가하세요.<br />
-                업로드한 이미지는 카드에 표시되며 브라우저에 저장됩니다.
+                시스템 생성 QR로 테스트 후, 캔바에서 만든 최종 이미지를 업로드하세요.
               </p>
             </div>
           </div>
         </motion.div>
 
-        {/* Add New Client */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-3xl p-6 border border-[#E2E8E4] shadow-sm">
-          <h2 className="font-extrabold text-slate-800 mb-4 flex items-center gap-2">
-            <Plus className="w-4 h-4 text-primary" /> 새 업체 추가
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">업체 ID (영문)*</label>
-              <input value={newId} onChange={e => setNewId(e.target.value.toLowerCase().replace(/\s/g, ''))} placeholder="예: bertis"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-mono font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">업체명 *</label>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="예: (주)베르티스"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">업체 이메일</label>
-              <input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="order@company.com" type="email"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-            </div>
-          </div>
-          <button onClick={addClient} className="mt-4 px-6 py-2.5 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-dark transition-all active:scale-95">추가</button>
-        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {clients.map(client => (
+            <motion.div key={client.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl p-5 border border-[#E2E8E4] shadow-sm relative overflow-hidden group">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="font-extrabold text-slate-800">{client.name}</p>
+                  <p className="text-xs font-mono text-slate-400 mt-0.5">?client={client.id}</p>
+                </div>
+                <button onClick={() => removeClient(client.id)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-200 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-        {/* QR Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {clients.map((client, idx) => {
-            const uploadedImg = uploadedImages[client.id];
-            return (
-              <motion.div key={client.id}
-                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className={`bg-white rounded-3xl p-5 border shadow-sm hover:shadow-md transition-all ${client.id === 'bertis' ? 'border-primary/40 ring-2 ring-primary/10' : 'border-[#E2E8E4]'}`}>
-
-                {client.id === 'bertis' && (
-                  <span className="inline-block mb-2 px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-extrabold uppercase tracking-wider rounded-lg">시연용</span>
-                )}
-
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="font-extrabold text-slate-800">{client.name}</p>
-                    <p className="text-xs font-mono text-slate-400 mt-0.5">?client={client.id}</p>
-                    {client.email && <p className="text-[10px] text-slate-400 mt-0.5">{client.email}</p>}
+              <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => setSelectedQR(getQRUrl(client.id))}>
+                    <QRCodeSVG value={getQRUrl(client.id)} size={90} level="H" />
                   </div>
-                  <button onClick={() => removeClient(client.id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
                 </div>
 
-                {/* QR Display Area */}
-                <div
-                  className="relative flex justify-center items-center py-4 bg-slate-50 rounded-2xl overflow-hidden cursor-pointer hover:bg-slate-100 transition-colors min-h-[160px]"
-                  onClick={() => setSelectedQR(client.id)}
-                >
-                  {uploadedImg ? (
-                    <>
-                      <img src={uploadedImg} alt={`${client.name} QR`} className="w-36 h-36 object-contain rounded-xl" />
-                      <button
-                        onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
-                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
-                      >
-                        <X className="w-3 h-3" />
+                <div className="flex flex-col items-center gap-2">
+                  {uploadedImages[client.id] ? (
+                    <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages[client.id])}>
+                      <img src={uploadedImages[client.id]} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
+                      <button onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="w-3.5 h-3.5" />
                       </button>
-                      <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-primary/80 text-white text-[9px] font-bold rounded-full">
-                        이미지 업로드됨
-                      </div>
-                    </>
+                    </div>
                   ) : (
-                    <QRCodeSVG
-                      id={`qr-svg-${client.id}`}
-                      value={getQRUrl(client.id)}
-                      size={140}
-                      bgColor="#FFFFFF"
-                      fgColor="#2D5A47"
-                      level="M"
-                    />
+                    <button onClick={() => fileInputRefs.current[client.id]?.click()}
+                      className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
+                      <ImageIcon className="w-6 h-6" />
+                      <span className="text-[10px] font-bold">이미지 업로드</span>
+                    </button>
                   )}
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
                 </div>
+              </div>
 
-                {/* Hidden file input */}
-                <input
-                  ref={el => { fileInputRefs.current[client.id] = el; }}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={e => {
-                    const file = e.target.files?.[0];
-                    if (file) handleImageUpload(client.id, file);
-                    e.target.value = '';
-                  }}
-                />
+              <input ref={el => { fileInputRefs.current[client.id] = el; }} type="file" accept="image/*" className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(client.id, file);
+                  e.target.value = '';
+                }} />
 
-                <div className="mt-3 flex gap-2">
-                  <button onClick={() => copyUrl(client.id)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all">
-                    <Copy className="w-3 h-3" />
-                    {copiedId === client.id ? 'URL 복사됨!' : 'URL 복사'}
-                  </button>
-                  <button
-                    onClick={() => fileInputRefs.current[client.id]?.click()}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      uploadedImg
-                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                        : 'bg-primary text-white hover:bg-primary-dark'
-                    }`}
-                  >
-                    {uploadedImg
-                      ? <><ImageIcon className="w-3 h-3" />이미지 교체</>
-                      : <><Upload className="w-3 h-3" />이미지 업로드</>
-                    }
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })}
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => copyUrl(client.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all active:scale-95">
+                  <Copy className="w-3 h-3" /> URL 복사
+                </button>
+                <button onClick={() => fileInputRefs.current[client.id]?.click()}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all active:scale-95">
+                  {uploadedImages[client.id] ? <ImageIcon className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
+                  {uploadedImages[client.id] ? '이미지 교체' : 'QR 업로드'}
+                </button>
+              </div>
+            </motion.div>
+          ))}
         </div>
       </main>
 
-      {/* Fullscreen QR/Image Modal */}
+      {/* Fullscreen QR Modal */}
       {selectedQR && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          onClick={() => setSelectedQR(null)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-            onClick={e => e.stopPropagation()}
-            className="bg-white rounded-3xl p-8 text-center space-y-4 max-w-xs w-full shadow-2xl">
-            <p className="font-extrabold text-slate-800 text-lg">{clients.find(c => c.id === selectedQR)?.name}</p>
-            <div className="flex justify-center p-4 bg-slate-50 rounded-2xl">
-              {uploadedImages[selectedQR] ? (
-                <img src={uploadedImages[selectedQR]} alt="QR" className="w-52 h-52 object-contain" />
-              ) : (
-                <QRCodeSVG value={getQRUrl(selectedQR)} size={220} bgColor="#FFFFFF" fgColor="#2D5A47" level="M" />
-              )}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setSelectedQR(null)}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-white p-8 rounded-[40px] shadow-2xl flex flex-col items-center gap-6 max-w-xs w-full">
+            <div className="w-full flex justify-end -mt-4 -mr-4">
+               <button className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-[10px] text-slate-400 font-mono break-all">{getQRUrl(selectedQR)}</p>
-            <div className="flex gap-2">
-              <button onClick={() => copyUrl(selectedQR)}
-                className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-all">
-                <Copy className="w-4 h-4 inline mr-1" />URL 복사
-              </button>
-              <button
-                onClick={() => { fileInputRefs.current[selectedQR]?.click(); setSelectedQR(null); }}
-                className="flex-1 py-3 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary-dark transition-all">
-                <Upload className="w-4 h-4 inline mr-1" />업로드
-              </button>
-            </div>
+            {selectedQR.startsWith('http') && !selectedQR.startsWith('data') ? (
+              <QRCodeSVG value={selectedQR} size={240} level="H" />
+            ) : (
+              <img src={selectedQR} alt="QR" className="w-60 h-60 object-contain" />
+            )}
+            <p className="text-center text-sm font-bold text-slate-800">휴대폰 카메라로 스캔하세요</p>
           </motion.div>
         </motion.div>
       )}

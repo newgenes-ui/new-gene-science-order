@@ -20,7 +20,11 @@ export default function OrderPage() {
   const navigate = useNavigate();
 
   const clientId = searchParams.get('client') || 'demo';
-  const clientData = CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
+  
+  // clientData를 찾되, 없을 경우 마지막(데모) 데이터 사용
+  const clientData = useMemo(() => {
+    return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
+  }, [clientId]);
 
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
@@ -29,12 +33,10 @@ export default function OrderPage() {
 
   // clientData가 바뀌면 입력 필드 자동 채우기
   useEffect(() => {
-    if (clientData) {
-      setClientName(clientData.name);
-      setOrdererName(clientData.contactPerson || '');
-      setOrdererPhone(clientData.phone || '');
-      setOrdererEmail(clientData.email || '');
-    }
+    setClientName(clientData.name);
+    setOrdererName(clientData.contactPerson || '');
+    setOrdererPhone(clientData.phone || '');
+    setOrdererEmail(clientData.email || '');
   }, [clientData]);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
