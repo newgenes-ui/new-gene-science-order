@@ -116,18 +116,18 @@ export default function AdminDashboard() {
     });
 
     const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
+    const encodedUri = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csvContent);
     
     const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `NGS_OrderData_${fromDate.replace(/-/g, '')}.csv`);
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `NGS_Data_${fromDate.replace(/-/g, '')}.csv`);
     document.body.appendChild(link);
+    
+    alert('데이터 생성이 완료되었습니다. 다운로드를 시작합니다.');
     link.click();
     
     setTimeout(() => {
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     }, 200);
   };
 
