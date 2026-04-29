@@ -80,10 +80,17 @@ export default function AdminDashboard() {
   const clientNames = ['전체', ...Array.from(new Set(allOrders.map(o => o.clientName)))];
 
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('정말로 이 내역을 삭제하시겠습니까?')) {
+  const handleDelete = async (id: string) => {
+    // 모바일에서 confirm이 차단될 수 있으므로 로그 및 알림 추가
+    console.log('🗑️ 삭제 시도 ID:', id);
+    if (!window.confirm('정말로 이 내역을 삭제하시겠습니까?')) return;
+    
+    try {
       deleteOrder(id);
       setAllOrders(prev => prev.filter(o => o.id !== id));
+      alert('정상적으로 삭제되었습니다.');
+    } catch (err: any) {
+      alert('삭제 중 오류가 발생했습니다: ' + err.message);
     }
   };
 
