@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Search, Plus, Minus, ShoppingCart, FileText,
-  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock
+  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
 import { Order, OrderItem, generateOrderId, saveOrder } from '../store/orderStore';
@@ -47,6 +47,7 @@ export default function OrderPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isQuoteSuccess, setIsQuoteSuccess] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'AG Tip': true, '파이펫': true, '튜브': true, '랙': true });
   const [activeTab, setActiveTab] = useState<'quote' | 'order' | 'payment'>('order');
@@ -166,11 +167,51 @@ export default function OrderPage() {
 
     saveOrder(order);
     setIsSubmitting(false);
-    navigate(`/payment?orderId=${order.id}`);
+
+    if (order.orderType === 'quote') {
+      setIsQuoteSuccess(true);
+      // 폼 초기화
+      setOtherRequest('');
+      setQuantities({});
+    } else {
+      navigate(`/payment?orderId=${order.id}`);
+    }
   };
 
   const productsByCategory = (cat: string) =>
     filteredProducts.filter(p => p.category === cat);
+
+  if (isQuoteSuccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA] flex items-center justify-center p-4">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
+        >
+          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-800">문의 접수 완료!</h2>
+            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
+              견적 문의가 담당자에게 전달되었습니다.<br />
+              확인 후 빠르게 연락드리겠습니다.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              setIsQuoteSuccess(false);
+              setActiveTab('order');
+            }}
+            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg hover:bg-primary-dark transition-all"
+          >
+            메인으로 돌아가기
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA]">

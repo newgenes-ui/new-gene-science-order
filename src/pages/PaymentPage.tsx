@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { CheckCircle2, Copy, MessageSquare, CreditCard, Clock } from 'lucide-react';
+import { CheckCircle2, Copy, MessageSquare, CreditCard, Clock, XCircle } from 'lucide-react';
 import { getOrders, updateOrderStatus } from '../store/orderStore';
 import { NGS_BANK } from '../data/products';
 
@@ -38,6 +38,14 @@ export default function PaymentPage() {
     }
     updateOrderStatus(orderId, 'paid');
     setConfirmed(true);
+  };
+
+  const handleCancelOrder = () => {
+    if (window.confirm('주문을 취소하시겠습니까?')) {
+      updateOrderStatus(orderId, 'cancelled');
+      alert('주문이 취소되었습니다.');
+      navigate('/');
+    }
   };
 
   if (confirmed) {
@@ -209,6 +217,22 @@ export default function PaymentPage() {
               입금 후 이 버튼을 눌러주세요. 확인 후 빠르게 처리됩니다.
             </p>
           </div>
+        </motion.div>
+
+        {/* Cancel Order Button */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center pb-10"
+        >
+          <button
+            onClick={handleCancelOrder}
+            className="text-xs font-bold text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1 mx-auto"
+          >
+            <XCircle className="w-3 h-3" />
+            주문 취소하기
+          </button>
         </motion.div>
       </div>
     </div>

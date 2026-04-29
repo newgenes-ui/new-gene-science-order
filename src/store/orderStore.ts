@@ -23,7 +23,7 @@ export interface Order {
   items: OrderItem[];
   otherRequest: string;
   totalAmount: number;
-  status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped';
+  status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped' | 'cancelled';
   paymentMethod: 'bank_transfer';
   depositName?: string;
   orderType: 'order' | 'quote';
@@ -80,6 +80,7 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
   paid: '입금확인',
   processing: '처리중',
   shipped: '출고완료',
+  cancelled: '주문취소',
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
@@ -88,6 +89,7 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
   paid: '#10b981',
   processing: '#8b5cf6',
   shipped: '#2D5A47',
+  cancelled: '#ef4444',
 };
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────
