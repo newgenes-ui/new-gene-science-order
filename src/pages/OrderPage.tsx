@@ -114,28 +114,34 @@ export default function OrderPage() {
 
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
       try {
-        // 뉴진사이언스로 발송
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        console.log('📧 이메일 발송 시작...');
+        
+        // 1. 뉴진사이언스 본사로 발송
+        const resNGS = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
           ...emailParams,
-          to_email: NGS_EMAIL,
-          reply_to: ordererEmail || clientData.email,
+          to_email: NGS_EMAIL, // << 중요: 템플릿의 To Email 필드가 {{to_email}} 이어야 함
+          reply_to: ordererEmail || clientData.email || NGS_EMAIL,
         }, EMAILJS_PUBLIC_KEY);
+        console.log('✅ 뉴진사이언스 발송 완료:', resNGS.status);
 
-        // 베르티스(주문자)로 발송
-        if (clientData.email) {
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        // 2. 고객(베르티스 등)에게 발송
+        const targetClientEmail = ordererEmail || clientData.email;
+        if (targetClientEmail && targetClientEmail.includes('@')) {
+          const resClient = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            to_email: clientData.email,
+            to_email: targetClientEmail,
             reply_to: NGS_EMAIL,
           }, EMAILJS_PUBLIC_KEY);
+          console.log('✅ 고객사 발송 완료:', resClient.status);
+        } else {
+          console.log('ℹ️ 고객 이메일이 없어 본사에만 발송했습니다.');
         }
-        console.log('✅ 이메일 발송 완료');
       } catch (e) {
-        console.error('EmailJS 발송 오류:', e);
-        // 이메일 실패해도 주문은 계속 진행
+        console.error('❌ EmailJS 발송 오류:', e);
+        alert('이메일 발송 중 오류가 발생했습니다. 하지만 주문은 시스템에 등록되었습니다.');
       }
     } else {
-      console.warn('⚠️ EmailJS 설정이 없습니다. Vercel 환경변수를 확인하세요.');
+      console.warn('⚠️ EmailJS 설정값이 누락되었습니다. Vercel 환경변수를 확인하세요.');
     }
 
     saveOrder(order);
