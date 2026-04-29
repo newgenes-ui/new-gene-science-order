@@ -27,11 +27,17 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
 
 export default function AdminDashboard() {
   const [fromDate, setFromDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 30);
-    return d.toISOString().slice(0, 10);
+    const now = new Date();
+    // KST (UTC+9) 반영
+    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    kstDate.setDate(kstDate.getDate() - 30);
+    return kstDate.toISOString().slice(0, 10);
   });
-  const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [toDate, setToDate] = useState(() => {
+    const now = new Date();
+    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    return kstDate.toISOString().slice(0, 10);
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState('전체');
