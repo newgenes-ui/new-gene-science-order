@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
-  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw
+  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare
 } from 'lucide-react';
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order } from '../store/orderStore';
 
