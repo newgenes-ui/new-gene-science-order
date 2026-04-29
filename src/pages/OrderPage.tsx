@@ -369,7 +369,7 @@ export default function OrderPage() {
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">담당자</span>
-                        <span className="text-sm font-bold text-slate-800">양유지</span>
+                        <span className="text-sm font-bold text-slate-800">나혜원</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">연락처</span>
