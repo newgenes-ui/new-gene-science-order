@@ -94,10 +94,15 @@ export default function OrderPage() {
       subtotal: p.price * (quantities[p.id] || 0),
     }));
 
+    const now = new Date();
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstDate = new Date(now.getTime() + kstOffset);
+    const kstIsoString = kstDate.toISOString();
+
     const order: Order = {
       id: generateOrderId(),
-      orderDate: new Date().toISOString().slice(0, 10),
-      orderDateTime: new Date().toISOString(),
+      orderDate: kstIsoString.slice(0, 10),
+      orderDateTime: kstIsoString,
       clientId,
       clientName,
       clientEmail: clientData.email,
