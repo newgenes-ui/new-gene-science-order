@@ -151,9 +151,16 @@ async function updateOrderStatusInSupabase(orderId: string, status: string): Pro
 async function deleteOrderFromSupabase(orderId: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    await supabase.from('orders').delete().eq('id', orderId);
-  } catch (e) {
+    const { error } = await supabase.from('orders').delete().eq('id', orderId);
+    if (error) {
+      console.error('Supabase 삭제 오류:', error.message);
+      alert(`DB 삭제 실패: ${error.message}\nSupabase RLS 설정에서 DELETE 권한을 확인해주세요.`);
+    } else {
+      console.log('✅ Supabase 삭제 완료:', orderId);
+    }
+  } catch (e: any) {
     console.error('Supabase 삭제 실패:', e);
+    alert(`DB 연결 실패: ${e.message || '알 수 없는 오류'}`);
   }
 }
 
