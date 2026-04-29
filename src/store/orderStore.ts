@@ -92,7 +92,10 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
 // ─── Supabase 연동 함수 ─────────────────────────────────────────
 
 async function saveOrderToSupabase(order: Order): Promise<void> {
-  if (!isSupabaseConfigured || !supabase) return;
+  if (!isSupabaseConfigured || !supabase) {
+    console.warn('⚠️ Supabase가 설정되지 않았습니다. 로컬에만 저장됩니다.');
+    return;
+  }
   try {
     const { error } = await supabase.from('orders').insert({
       id: order.id,
@@ -110,10 +113,15 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
       status: order.status,
       payment_method: order.paymentMethod,
     });
-    if (error) console.error('Supabase 저장 오류:', error.message);
-    else console.log('✅ Supabase 저장 완료:', order.id);
-  } catch (e) {
+    if (error) {
+      console.error('Supabase 저장 오류:', error.message);
+      alert(`DB 저장 실패: ${error.message}\n관리자에게 문의해 주세요.`);
+    } else {
+      console.log('✅ Supabase 저장 완료:', order.id);
+    }
+  } catch (e: any) {
     console.error('Supabase 연결 실패:', e);
+    alert(`DB 연결 실패: ${e.message || '알 수 없는 오류'}`);
   }
 }
 
