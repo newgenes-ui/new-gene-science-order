@@ -134,7 +134,7 @@ export default function OrderPage() {
       totalAmount,
       status: 'payment_waiting',
       paymentMethod: 'bank_transfer',
-      orderType: orderItems.length > 0 ? 'order' : 'quote',
+      orderType: activeTab === 'quote' ? 'quote' : 'order',
     };
 
     // 주문 내용 텍스트 구성
@@ -142,7 +142,7 @@ export default function OrderPage() {
       ? orderItems.map(i =>
           `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()}`
         ).join('\n')
-      : (order.orderType === 'quote' && otherRequest ? `[견적 요청 내역]\n${otherRequest}` : '(선택 제품 없음)');
+      : (otherRequest ? `[견적 요청 내역]\n${otherRequest}` : '(선택 제품 없음)');
 
     const emailParams = {
       order_title:    `[새로운 ${order.orderType === 'order' ? '주문' : '견적'} 접수]`,
