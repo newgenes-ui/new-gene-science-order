@@ -246,8 +246,8 @@ export default function AdminDashboard() {
                     </div>
                     <div className="hidden md:flex justify-end">
                       <span
-                        className="px-2.5 py-1 rounded-full text-[10px] font-black text-white"
-                        style={{ backgroundColor: STATUS_COLORS[order.status] }}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black ${order.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'text-white'}`}
+                        style={order.status !== 'cancelled' ? { backgroundColor: STATUS_COLORS[order.status] } : {}}
                       >
                         {STATUS_LABELS[order.status]}
                       </span>
