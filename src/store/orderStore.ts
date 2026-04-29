@@ -62,6 +62,16 @@ export function updateOrderStatus(orderId: string, status: Order['status']): voi
   }
 }
 
+export function deleteOrder(orderId: string): void {
+  // 1) localStorage에서 제거
+  const orders = getOrders();
+  const filtered = orders.filter(o => o.id !== orderId);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+
+  // 2) Supabase에서 제거
+  deleteOrderFromSupabase(orderId);
+}
+
 export function getOrdersByDateRange(from: string, to: string): Order[] {
   const orders = getOrders();
   return orders.filter(o => o.orderDate >= from && o.orderDate <= to);
@@ -135,6 +145,15 @@ async function updateOrderStatusInSupabase(orderId: string, status: string): Pro
     await supabase.from('orders').update({ status }).eq('id', orderId);
   } catch (e) {
     console.error('Supabase 상태 업데이트 실패:', e);
+  }
+}
+
+async function deleteOrderFromSupabase(orderId: string): Promise<void> {
+  if (!isSupabaseConfigured || !supabase) return;
+  try {
+    await supabase.from('orders').delete().eq('id', orderId);
+  } catch (e) {
+    console.error('Supabase 삭제 실패:', e);
   }
 }
 

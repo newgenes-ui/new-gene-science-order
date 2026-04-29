@@ -2,9 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
-  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare
+  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder } from '../store/orderStore';
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
@@ -79,6 +79,13 @@ export default function AdminDashboard() {
 
   const clientNames = ['전체', ...Array.from(new Set(allOrders.map(o => o.clientName)))];
 
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('정말로 이 내역을 삭제하시겠습니까?')) {
+      deleteOrder(id);
+      setAllOrders(prev => prev.filter(o => o.id !== id));
+    }
+  };
 
   const downloadCSV = () => {
     // 모든 필드를 따옴표로 감싸서 쉼표(,) 충돌 방지
@@ -263,7 +270,17 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="ml-2">
+                  <div className="flex items-center gap-2 ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(order.id);
+                      }}
+                      className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                      title="삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                     {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
                   </div>
                 </div>
@@ -349,7 +366,17 @@ export default function AdminDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="ml-2">
+                  <div className="flex items-center gap-2 ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(order.id);
+                      }}
+                      className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                      title="삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                     {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
                   </div>
                 </div>
