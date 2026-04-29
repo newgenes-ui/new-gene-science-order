@@ -28,11 +28,46 @@ export default function OrderPage() {
 
   const isBertis = clientId === 'bertis';
 
-  // 초기 상태를 clientData에서 직접 가져옴
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
   const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
   const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
+
+  const handleTaxInvoiceRequest = async () => {
+    if (!taxEmail) {
+      alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+
+    setIsTaxSubmitting(true);
+    try {
+      const emailParams = {
+        order_title: `[세금계산서 발행 요청] ${clientName}`,
+        order_type_text: '세금계산서 발행 요청',
+        detail_label: '요청 상세 내역',
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}`,
+        from_name: ordererName,
+        contact_number: ordererPhone,
+        reply_to: taxEmail,
+        to_email: NGS_EMAIL,
+        ngs_email: NGS_EMAIL,
+      };
+
+      await emailjs.send(
+        'service_h8f3lfs',
+        'template_67u1m86',
+        emailParams,
+        'Y4Bf666YxL-LOnR4h'
+      );
+
+      alert('세금계산서 발행 요청이 완료되었습니다.');
+    } catch (error) {
+      console.error('Tax invoice request error:', error);
+      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsTaxSubmitting(false);
+    }
+  };
 
   // clientData가 바뀌면 입력 필드 자동 채우기 (모바일 인식 지연 방지)
   useEffect(() => {
@@ -53,6 +88,15 @@ export default function OrderPage() {
   const [showCart, setShowCart] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'AG Tip': true, '파이펫': true, '튜브': true, '랙': true });
   const [activeTab, setActiveTab] = useState<'quote' | 'order' | 'payment'>('order');
+  const [taxEmail, setTaxEmail] = useState('');
+  const [isTaxSubmitting, setIsTaxSubmitting] = useState(false);
+
+  // 초기 이메일 설정
+  useEffect(() => {
+    if (ordererEmail && !taxEmail) {
+      setTaxEmail(ordererEmail);
+    }
+  }, [ordererEmail]);
 
   const categories = ['전체', ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
 
@@ -591,6 +635,46 @@ export default function OrderPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Tax Invoice Request Section */}
+              {isBertis && (
+                <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#E2E8E4] space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-800">전자세금계산서 발행 요청</h3>
+                      <p className="text-[10px] text-slate-400 font-bold">계산서를 받으실 이메일 주소를 확인해주세요.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">발행 이메일 주소</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          value={taxEmail}
+                          onChange={(e) => setTaxEmail(e.target.value)}
+                          placeholder="invoice@company.com"
+                          className="flex-1 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                        />
+                        <button
+                          onClick={handleTaxInvoiceRequest}
+                          disabled={isTaxSubmitting}
+                          className="px-6 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50"
+                        >
+                          {isTaxSubmitting ? '요청 중...' : '발행 요청'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      ※ 요청하신 내용은 <strong>{NGS_EMAIL}</strong>으로 즉시 전달되며, 입금 확인 후 순차적으로 발행됩니다.
+                    </p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
