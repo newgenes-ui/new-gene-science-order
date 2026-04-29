@@ -313,19 +313,19 @@ export default function OrderPage() {
                       <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-x-8 gap-y-4">
-                    <div className="w-full sm:w-auto sm:min-w-[120px]">
+                  <div className="flex flex-col gap-6">
+                    <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                     {(!isBertis || isBertis) && (
-                      <div className="flex-1 min-w-[220px]">
+                      <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
                         <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
                     {isBertis && (
-                      <div className="w-full sm:w-auto sm:min-w-[160px]">
+                      <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
                         <input 
                           value={ordererPhone} 
@@ -405,19 +405,19 @@ export default function OrderPage() {
                         <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
-                  <div className="flex flex-wrap gap-x-8 gap-y-4">
-                    <div className="w-full sm:w-auto sm:min-w-[120px]">
+                  <div className="flex flex-col gap-6">
+                    <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                     {(!isBertis || isBertis) && (
-                      <div className="flex-1 min-w-[220px]">
+                      <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
                         <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
                     {isBertis && (
-                      <div className="w-full sm:w-auto sm:min-w-[160px]">
+                      <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
                         <input 
                           value={ordererPhone} 
