@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
-  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye
+  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw
 } from 'lucide-react';
-import { getOrders, STATUS_LABELS, STATUS_COLORS, Order } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order } from '../store/orderStore';
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
@@ -35,8 +35,29 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState('전체');
+  const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const allOrders = getOrders();
+  // Supabase에서 주문 데이터 로드 (없으면 localStorage fallback)
+  const loadOrders = async () => {
+    setIsLoading(true);
+    try {
+      const supabaseOrders = await getOrdersFromSupabase();
+      if (supabaseOrders.length > 0) {
+        setAllOrders(supabaseOrders);
+      } else {
+        // Supabase에 데이터가 없으면 localStorage에서 로드
+        setAllOrders(getOrders());
+      }
+    } catch {
+      setAllOrders(getOrders());
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadOrders();
+  }, []);
 
   const filteredOrders = useMemo(() => {
     return allOrders.filter(o => {
@@ -132,13 +153,23 @@ export default function AdminDashboard() {
               <p className="text-[10px] text-slate-400">New Gene Science Admin</p>
             </div>
           </div>
-          <button
-            onClick={downloadCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-dark transition-all active:scale-95"
-          >
-            <Download className="w-3.5 h-3.5" />
-            CSV 다운로드
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={loadOrders}
+              disabled={isLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              새로고침
+            </button>
+            <button
+              onClick={downloadCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-dark transition-all active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              CSV 다운로드
+            </button>
+          </div>
         </div>
       </header>
 
