@@ -36,6 +36,7 @@ export default function AdminDashboard() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [clientFilter, setClientFilter] = useState('전체');
   const [allOrders, setAllOrders] = useState<Order[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Supabase에서 주문 데이터 로드 (없으면 localStorage fallback)
@@ -81,14 +82,10 @@ export default function AdminDashboard() {
 
 
   const handleDelete = async (id: string) => {
-    // 모바일에서 confirm이 차단될 수 있으므로 로그 및 알림 추가
-    console.log('🗑️ 삭제 시도 ID:', id);
-    if (!window.confirm('정말로 이 내역을 삭제하시겠습니까?')) return;
-    
     try {
       deleteOrder(id);
       setAllOrders(prev => prev.filter(o => o.id !== id));
-      alert('정상적으로 삭제되었습니다.');
+      setDeletingId(null);
     } catch (err: any) {
       alert('삭제 중 오류가 발생했습니다: ' + err.message);
     }
@@ -278,16 +275,33 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(order.id);
-                      }}
-                      className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
-                      title="삭제"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {deletingId === order.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                          className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
+                        >
+                          진짜 삭제
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                          className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingId(order.id);
+                        }}
+                        className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                        title="삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                     {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
                   </div>
                 </div>
@@ -374,16 +388,33 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(order.id);
-                      }}
-                      className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
-                      title="삭제"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {deletingId === order.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                          className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
+                        >
+                          진짜 삭제
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                          className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingId(order.id);
+                        }}
+                        className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                        title="삭제"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                     {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
                   </div>
                 </div>
