@@ -3,9 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Search, Plus, Minus, ShoppingCart, FileText,
-  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X
+  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock
 } from 'lucide-react';
-import { PRODUCTS, CLIENTS, NGS_EMAIL } from '../data/products';
+import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
 import { Order, OrderItem, generateOrderId, saveOrder } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 
@@ -49,6 +49,7 @@ export default function OrderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'AG Tip': true, '파이펫': true, '튜브': true, '랙': true });
+  const [activeTab, setActiveTab] = useState<'quote' | 'order' | 'payment'>('order');
 
   const categories = ['전체', ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
 
@@ -103,6 +104,7 @@ export default function OrderPage() {
       totalAmount,
       status: 'payment_waiting',
       paymentMethod: 'bank_transfer',
+      orderType: orderItems.length > 0 ? 'order' : 'quote',
     };
 
     // 주문 내용 텍스트 구성
@@ -113,7 +115,7 @@ export default function OrderPage() {
       : '(선택 제품 없음)';
 
     const emailParams = {
-      order_title:    `[발주서] ${clientName} - ${ordererName}님`,
+      order_title:    `[${order.orderType === 'order' ? '발주진행' : '견적문의'}] ${clientName} - ${ordererName}님`,
       order_id:       order.id,
       order_date:     order.orderDate,
       client_name:    clientName,
@@ -211,216 +213,263 @@ export default function OrderPage() {
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Welcome</p>
             <h1 className="text-xl font-black">{clientName}님 안녕하세요! 👋</h1>
-            <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 주문하세요</p>
+            <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 {activeTab === 'quote' ? '문의' : '주문'}하세요</p>
           </div>
         </motion.div>
 
-        {/* Orderer Info */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]"
-        >
-          <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-            <User className="w-4 h-4" /> 주문자 정보
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
-              <input
-                value={clientName}
-                onChange={e => setClientName(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input
-                  value={ordererName}
-                  onChange={e => setOrdererName(e.target.value)}
-                  placeholder="홍길동"
-                  required
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input
-                  value={ordererPhone}
-                  onChange={e => setOrdererPhone(e.target.value)}
-                  placeholder="010-0000-0000"
-                  type="tel"
-                  required
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-                <input
-                  value={ordererEmail}
-                  onChange={e => setOrdererEmail(e.target.value)}
-                  placeholder="email@company.com"
-                  type="email"
-                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Product Catalog */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]"
-        >
-          <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-            <Package className="w-4 h-4" /> 제품 목록
-          </h2>
-
-          {/* Search & Filter */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-5">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-              <input
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="제품명 또는 코드로 검색..."
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Products by Category */}
-          <div className="space-y-4">
-            {(selectedCategory === '전체' ? categories.slice(1) : [selectedCategory]).map(cat => {
-              const catProducts = productsByCategory(cat);
-              if (catProducts.length === 0) return null;
-              const expanded = expandedCategories[cat] !== false;
-
-              return (
-                <div key={cat} className="border border-slate-100 rounded-2xl overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors"
-                  >
-                    <span className="text-xs font-extrabold text-primary uppercase tracking-widest">{cat}</span>
-                    {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                  </button>
-                  <AnimatePresence>
-                    {expanded && (
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: 'auto' }}
-                        exit={{ height: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="divide-y divide-slate-50">
-                          {catProducts.map(product => {
-                            const qty = quantities[product.id] || 0;
-                            return (
-                              <div key={product.id} className={`flex items-center gap-3 px-4 py-3 transition-colors ${qty > 0 ? 'bg-green-50/50' : 'hover:bg-slate-50/80'}`}>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-600 font-mono">{product.code}</p>
-                                  <p className="text-sm font-semibold text-slate-800 leading-tight truncate">{product.name}</p>
-                                  <p className="text-[11px] text-slate-400 mt-0.5">{product.spec}</p>
-                                </div>
-                                <div className="flex flex-col items-end gap-1 shrink-0">
-                                  <span className="text-sm font-black text-primary">₩{product.price.toLocaleString()}</span>
-                                  <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-xl px-2 py-1 shadow-sm">
-                                    <button
-                                      type="button"
-                                      onClick={() => updateQty(product.id, -1)}
-                                      disabled={qty === 0}
-                                      className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center disabled:opacity-30 hover:bg-slate-200 active:scale-90 transition-all"
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </button>
-                                    <span className="w-6 text-center text-sm font-black text-slate-800">{qty}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => updateQty(product.id, 1)}
-                                      className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-white hover:bg-primary-dark active:scale-90 transition-all"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Other Request */}
-          <div className="mt-6 pt-5 border-t border-dashed border-slate-200">
-            <label className="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
-              <MessageSquare className="w-3.5 h-3.5" /> 기타 제품 견적 문의 / 요청사항
-            </label>
-            <textarea
-              value={otherRequest}
-              onChange={e => setOtherRequest(e.target.value)}
-              placeholder="제품명, 규격, 수량 등을 자유롭게 입력해주세요"
-              rows={3}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-            />
-          </div>
-        </motion.section>
-
-        {/* Submit Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        {/* Tab Navigation */}
+        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-[#E2E8E4] sticky top-[72px] z-30 shadow-sm">
           <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
+            onClick={() => setActiveTab('quote')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'quote' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            {isSubmitting ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
+            <MessageSquare className="w-4 h-4" />
+            견적문의
+          </button>
+          <button
+            onClick={() => setActiveTab('order')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'order' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Package className="w-4 h-4" />
+            발주서 제출
+          </button>
+          <button
+            onClick={() => setActiveTab('payment')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <CreditCard className="w-4 h-4" />
+            결제창
+          </button>
+        </div>
+
+        {/* Main Content based on activeTab */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'quote' && (
+            <motion.div
+              key="quote"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-6"
+            >
+              {/* Orderer Info */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                  <User className="w-4 h-4" /> 문의자 정보
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
+                    <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
+                    <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                    <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                    <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Inquiry Section */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                  <MessageSquare className="w-4 h-4" /> 견적 요청 내용
+                </h2>
+                <textarea
+                  value={otherRequest}
+                  onChange={e => setOtherRequest(e.target.value)}
+                  placeholder="구입을 원하시는 제품명, 규격, 수량 등을 자유롭게 입력해주세요. 타사 제품도 뉴진사이언스를 통해 구매 가능합니다."
+                  rows={8}
+                  className="w-full px-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                />
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full mt-6 py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-60"
+                >
+                  견적 문의 제출하기
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'order' && (
+            <motion.div
+              key="order"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-6"
+            >
+              {/* Orderer Info */}
+              <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                  <User className="w-4 h-4" /> 주문자 정보
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
+                    <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
+                    <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                    <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                    <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                </div>
+              </section>
+
+              {/* Product Catalog */}
+              <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
+                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
+                  <Package className="w-4 h-4" /> 제품 목록
+                </h2>
+                <div className="flex flex-col sm:flex-row gap-3 mb-5">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="제품명 또는 코드로 검색..." className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {categories.map(cat => (
+                      <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-primary text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{cat}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {(selectedCategory === '전체' ? categories.slice(1) : [selectedCategory]).map(cat => {
+                    const catProducts = productsByCategory(cat);
+                    if (catProducts.length === 0) return null;
+                    const expanded = expandedCategories[cat] !== false;
+                    return (
+                      <div key={cat} className="border border-slate-100 rounded-2xl overflow-hidden">
+                        <button type="button" onClick={() => setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }))} className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors">
+                          <span className="text-xs font-extrabold text-primary uppercase tracking-widest">{cat}</span>
+                          {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        <AnimatePresence>
+                          {expanded && (
+                            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
+                              <div className="divide-y divide-slate-50">
+                                {catProducts.map(product => {
+                                  const qty = quantities[product.id] || 0;
+                                  return (
+                                    <div key={product.id} className={`flex items-center gap-3 px-4 py-3 transition-colors ${qty > 0 ? 'bg-green-50/50' : 'hover:bg-slate-50/80'}`}>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-600 font-mono">{product.code}</p>
+                                        <p className="text-sm font-semibold text-slate-800 leading-tight truncate">{product.name}</p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">{product.spec}</p>
+                                      </div>
+                                      <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <span className="text-sm font-black text-primary">₩{product.price.toLocaleString()}</span>
+                                        <div className="flex items-center gap-2 bg-white border border-slate-100 rounded-xl px-2 py-1 shadow-sm">
+                                          <button type="button" onClick={() => updateQty(product.id, -1)} disabled={qty === 0} className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center disabled:opacity-30 hover:bg-slate-200 active:scale-90 transition-all"><Minus className="w-3 h-3" /></button>
+                                          <span className="w-6 text-center text-sm font-black text-slate-800">{qty}</span>
+                                          <button type="button" onClick={() => updateQty(product.id, 1)} className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-white hover:bg-primary-dark active:scale-90 transition-all"><Plus className="w-3 h-3" /></button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
+              >
                 <FileText className="w-5 h-5" />
                 발주서 제출 및 결제하기
-              </>
-            )}
-          </button>
-          <p className="text-center text-[11px] text-slate-400 mt-2">주문 제출 후 무통장 입금 안내로 이동합니다</p>
-        </motion.div>
+              </button>
+            </motion.div>
+          )}
+
+          {activeTab === 'payment' && (
+            <motion.div
+              key="payment"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              className="space-y-6"
+            >
+              <div className="bg-white rounded-3xl p-8 shadow-sm border border-[#E2E8E4] text-center space-y-6">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
+                  <CreditCard className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800">무통장 입금 안내</h2>
+                  <p className="text-sm text-slate-400 mt-1">아래 계좌로 입금해 주시면 확인 후 처리됩니다.</p>
+                </div>
+                
+                <div className="bg-slate-50 rounded-2xl p-6 text-left space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-400 font-bold uppercase">은행명</span>
+                    <span className="font-bold text-slate-800">{NGS_BANK.bank}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-400 font-bold uppercase">예금주</span>
+                    <span className="font-bold text-slate-800">{NGS_BANK.holder}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 pt-2 border-t border-dashed border-slate-200">
+                    <span className="text-xs text-slate-400 font-bold uppercase">계좌번호</span>
+                    <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                      <span className="font-black text-slate-800 font-mono text-lg">{NGS_BANK.account}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(NGS_BANK.account);
+                          alert('계좌번호가 복사되었습니다.');
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-dark transition-all"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        복사
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 text-left">
+                  <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                    발주서 제출 후 <strong>3영업일 이내</strong>에 입금해 주세요. <br />
+                    입금 시 <strong>기관명 또는 주문자명</strong>으로 입금해 주시면 더 빠른 확인이 가능합니다.
+                  </p>
+                </div>
+
+                <a
+                  href="https://open.kakao.com/o/syour-link"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block w-full py-4 bg-[#FAE100] text-[#3C1E1E] rounded-2xl font-black text-sm hover:bg-[#F2D900] transition-all shadow-lg"
+                >
+                  카카오톡 문의하기
+                </a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Cart Drawer */}

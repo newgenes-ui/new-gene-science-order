@@ -71,41 +71,19 @@ export default function AdminDashboard() {
     });
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
+  const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order'), [filteredOrders]);
+  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType === 'quote'), [filteredOrders]);
+
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.quantity, 0), 0);
 
   const clientNames = ['전체', ...Array.from(new Set(allOrders.map(o => o.clientName)))];
 
-  // Daily aggregation
-  const dailyData = useMemo(() => {
-    const map: Record<string, { date: string; count: number; revenue: number }> = {};
-    filteredOrders.forEach(o => {
-      if (!map[o.orderDate]) map[o.orderDate] = { date: o.orderDate, count: 0, revenue: 0 };
-      map[o.orderDate].count++;
-      map[o.orderDate].revenue += o.totalAmount;
-    });
-    return Object.values(map).sort((a, b) => b.date.localeCompare(a.date));
-  }, [filteredOrders]);
-
-  // Product aggregation
-  const productData = useMemo(() => {
-    const map: Record<string, { code: string; name: string; qty: number; revenue: number }> = {};
-    filteredOrders.forEach(o => {
-      o.items.forEach(item => {
-        if (!map[item.productCode]) {
-          map[item.productCode] = { code: item.productCode, name: item.productName, qty: 0, revenue: 0 };
-        }
-        map[item.productCode].qty += item.quantity;
-        map[item.productCode].revenue += item.subtotal;
-      });
-    });
-    return Object.values(map).sort((a, b) => b.revenue - a.revenue);
-  }, [filteredOrders]);
 
   const downloadCSV = () => {
     // 모든 필드를 따옴표로 감싸서 쉼표(,) 충돌 방지
     const escape = (val: any) => `"${String(val).replace(/"/g, '""')}"`;
-    const headers = ['주문일', '업체명', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'].map(escape);
+    const headers = ['주문일', '업체명', '구분', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'].map(escape);
     const rows: string[] = [];
     
     filteredOrders.forEach(o => {
@@ -113,6 +91,7 @@ export default function AdminDashboard() {
         const row = [
           o.orderDate,
           o.clientName,
+          o.orderType === 'order' ? '발주' : '견적',
           o.id,
           o.ordererName,
           item.productCode,
@@ -124,9 +103,15 @@ export default function AdminDashboard() {
         ].map(escape);
         rows.push(row.join(','));
       });
-      if (o.otherRequest) {
-        const otherRow = [o.orderDate, o.clientName, o.id, o.ordererName, '-', '기타 요청사항', '-', '-', '-', o.otherRequest].map(escape);
+      if (o.otherRequest && o.orderType === 'order') {
+        const otherRow = [o.orderDate, o.clientName, '발주(기타)', o.id, o.ordererName, '-', '기타 요청사항', '-', '-', '-', o.otherRequest].map(escape);
         rows.push(otherRow.join(','));
+      } else if (o.orderType === 'quote') {
+        // 이미 아이템 루프에서 처리되지 않았을 경우 (견적은 아이템이 보통 0개)
+        if (o.items.length === 0) {
+          const quoteRow = [o.orderDate, o.clientName, '견적문의', o.id, o.ordererName, '-', o.otherRequest, '-', '-', '-', STATUS_LABELS[o.status]].map(escape);
+          rows.push(quoteRow.join(','));
+        }
       }
     });
 
@@ -226,17 +211,17 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> 주문 목록
-              <span className="ml-auto text-xs font-bold text-slate-400">{filteredOrders.length}건</span>
+              <ShoppingBag className="w-4 h-4 text-primary" /> 주문 목록
+              <span className="ml-auto text-xs font-bold text-slate-400">{ordersList.length}건</span>
             </h2>
           </div>
           <div className="divide-y divide-slate-50">
-            {filteredOrders.length === 0 ? (
+            {ordersList.length === 0 ? (
               <div className="py-16 text-center text-slate-300">
                 <ShoppingBag className="w-10 h-10 mx-auto mb-3" />
                 <p className="text-sm font-bold">조회된 주문이 없습니다</p>
               </div>
-            ) : filteredOrders.map(order => (
+            ) : ordersList.map(order => (
               <div key={order.id}>
                 <div
                   className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
@@ -287,7 +272,9 @@ export default function AdminDashboard() {
                           <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
                         </div>
                         <div>
-                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">발주 품목</p>
+                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+                            발주 품목
+                          </p>
                           <div className="space-y-1">
                             {order.items.map((item, i) => (
                               <div key={i} className="flex justify-between text-sm">
@@ -309,58 +296,86 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Daily Summary Table */}
+        {/* Quotes Table */}
         <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100">
             <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" /> 날짜별 집계
+              <MessageSquare className="w-4 h-4 text-primary" /> 견적문의 목록
+              <span className="ml-auto text-xs font-bold text-slate-400">{quotesList.length}건</span>
             </h2>
           </div>
           <div className="divide-y divide-slate-50">
-            {dailyData.length === 0 ? (
-              <div className="py-8 text-center text-slate-300 text-sm">데이터 없음</div>
-            ) : dailyData.map(d => (
-              <div key={d.date} className="flex items-center justify-between px-6 py-3 hover:bg-slate-50 transition-colors">
-                <span className="font-mono text-sm text-slate-600">{d.date}</span>
-                <span className="text-xs text-slate-400">{d.count}건</span>
-                <span className="font-black text-primary">₩{d.revenue.toLocaleString()}</span>
+            {quotesList.length === 0 ? (
+              <div className="py-16 text-center text-slate-300">
+                <MessageSquare className="w-10 h-10 mx-auto mb-3" />
+                <p className="text-sm font-bold">조회된 견적문의가 없습니다</p>
+              </div>
+            ) : quotesList.map(order => (
+              <div key={order.id}>
+                <div
+                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                >
+                  <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
+                    <div>
+                      <p className="text-xs font-mono text-slate-400">{order.id}</p>
+                      <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">업체</p>
+                      <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
+                    </div>
+                    <div className="hidden md:block">
+                      <p className="text-xs text-slate-400">문의자</p>
+                      <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">상태</p>
+                      <p className="text-sm font-black text-primary">견적문의</p>
+                    </div>
+                    <div className="hidden md:flex justify-end">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-slate-400">
+                        문의접수
+                      </span>
+                    </div>
+                  </div>
+                  <div className="ml-2">
+                    {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                  </div>
+                </div>
+                {expandedOrder === order.id && (
+                  <motion.div
+                    initial={{ height: 0 }}
+                    animate={{ height: 'auto' }}
+                    exit={{ height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                        <div>
+                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
+                          <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
+                          <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+                            견적 요청 내용
+                          </p>
+                          <div className="space-y-1">
+                            <p className="text-sm text-slate-800 bg-white p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                              {order.otherRequest || '요청 내용 없음'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Product Summary */}
-        <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-              <Package className="w-4 h-4 text-primary" /> 품목별 판매 집계
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  <th className="px-6 py-3 text-left">제품코드</th>
-                  <th className="px-6 py-3 text-left">제품명</th>
-                  <th className="px-6 py-3 text-right">수량</th>
-                  <th className="px-6 py-3 text-right">매출</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {productData.length === 0 ? (
-                  <tr><td colSpan={4} className="py-8 text-center text-slate-300 text-sm">데이터 없음</td></tr>
-                ) : productData.map(p => (
-                  <tr key={p.code} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3 font-mono text-xs text-slate-400">{p.code}</td>
-                    <td className="px-6 py-3 text-sm font-semibold text-slate-700">{p.name}</td>
-                    <td className="px-6 py-3 text-right font-bold text-slate-600">{p.qty}</td>
-                    <td className="px-6 py-3 text-right font-black text-primary">₩{p.revenue.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </main>
     </div>
   );

@@ -26,6 +26,7 @@ export interface Order {
   status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped';
   paymentMethod: 'bank_transfer';
   depositName?: string;
+  orderType: 'order' | 'quote';
 }
 
 const STORAGE_KEY = 'ngs_orders';
@@ -112,6 +113,7 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
       total_amount: order.totalAmount,
       status: order.status,
       payment_method: order.paymentMethod,
+      order_type: order.orderType,
     });
     if (error) {
       console.error('Supabase 저장 오류:', error.message);
@@ -163,6 +165,7 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       totalAmount: row.total_amount,
       status: row.status,
       paymentMethod: row.payment_method,
+      orderType: row.order_type || (row.items && row.items.length > 0 ? 'order' : 'quote'),
     }));
   } catch (e) {
     console.error('Supabase 조회 실패:', e);
