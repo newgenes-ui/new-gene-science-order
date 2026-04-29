@@ -116,20 +116,19 @@ export default function AdminDashboard() {
     });
 
     const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `NGS_상세발주내역_${fromDate}_${toDate}.csv`);
+    link.setAttribute('download', `NGS_OrderData_${fromDate.replace(/-/g, '')}.csv`);
     document.body.appendChild(link);
     link.click();
     
-    // Cleanup
     setTimeout(() => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    }, 100);
+    }, 200);
   };
 
   return (
