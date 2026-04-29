@@ -142,10 +142,10 @@ export default function OrderPage() {
       ? orderItems.map(i =>
           `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()}`
         ).join('\n')
-      : '(선택 제품 없음)';
+      : (order.orderType === 'quote' && otherRequest ? `[견적 요청 내역]\n${otherRequest}` : '(선택 제품 없음)');
 
     const emailParams = {
-      order_title:    `[${order.orderType === 'order' ? '발주진행' : '견적문의'}] ${clientName} - ${ordererName}님`,
+      order_title:    `[${order.orderType === 'order' ? '신규 주문 접수' : '신규 견적 문의'}] ${clientName} - ${ordererName}님`,
       order_id:       order.id,
       order_date:     order.orderDate,
       client_name:    clientName,
