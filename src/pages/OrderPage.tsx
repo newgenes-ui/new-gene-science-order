@@ -323,11 +323,13 @@ export default function OrderPage() {
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
                         <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
-                      <div>
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                        <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                      </div>
                     </>
+                  )}
+                  {(!isBertis || isBertis) && (
+                    <div className={isBertis ? 'sm:col-span-2' : ''}>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                      <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
                   )}
                 </div>
               </div>
@@ -370,18 +372,18 @@ export default function OrderPage() {
                     <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
                       <Building2 className="w-4 h-4" /> 공급사 정보 (뉴진사이언스)
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">영업담당자</p>
-                        <p className="text-sm font-bold text-slate-800">양유지</p>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">담당자</span>
+                        <span className="text-sm font-bold text-slate-800">양유지</span>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">연락처</p>
-                        <p className="text-sm font-bold text-slate-800">010-9915-5974</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">연락처</span>
+                        <span className="text-sm font-bold text-slate-800">010-9915-5974</span>
                       </div>
-                      <div className="sm:col-span-2">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">이메일</p>
-                        <p className="text-sm font-bold text-slate-800">newgenes@newgenesci.com</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">이메일</span>
+                        <span className="text-sm font-bold text-slate-800">newgenes@newgenesci.com</span>
                       </div>
                     </div>
                   </div>
@@ -408,11 +410,13 @@ export default function OrderPage() {
                           <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
                           <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="010-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                         </div>
-                        <div>
-                          <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                          <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                        </div>
                       </>
+                    )}
+                    {(!isBertis || isBertis) && (
+                      <div className={isBertis ? 'sm:col-span-2' : ''}>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                        <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
                     )}
                   </div>
                 </div>
