@@ -321,7 +321,7 @@ export default function OrderPage() {
             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <CreditCard className="w-4 h-4" />
-            결제하기
+            {isBertis ? '결제정보' : '결제하기'}
           </button>
         </div>
 
