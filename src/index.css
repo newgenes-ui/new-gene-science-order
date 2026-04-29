@@ -1,0 +1,40 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard", "Inter", ui-sans-serif, system-ui, sans-serif;
+  
+  --color-primary: #2D5A47;
+  --color-primary-dark: #1E3D30;
+  --color-brand-bg: #F0F4F1;
+  --color-brand-card: #ffffff;
+  --color-brand-text: #1e293b;
+  --color-brand-muted: #64748b;
+  --color-brand-border: #E2E8E4;
+  --color-kakao: #FAE100;
+  --color-kakao-dark: #F2D900;
+  --color-kakao-text: #3C1E1E;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-brand-text font-sans antialiased selection:bg-primary/20 selection:text-primary;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgba(45, 90, 71, 0.05), 0 2px 4px -2px rgba(45, 90, 71, 0.05);
+}
+
+.qty-btn-press {
+  @apply active:scale-95 transition-transform;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1E0D5; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #2D5A47; }
