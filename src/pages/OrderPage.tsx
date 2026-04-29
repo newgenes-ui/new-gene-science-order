@@ -261,7 +261,7 @@ export default function OrderPage() {
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative z-10">
             <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Welcome</p>
-            <h1 className="text-xl font-black">{clientName}님 안녕하세요! 👋</h1>
+            <h1 className="text-xl font-black">{clientName}님 반갑습니다! 👋</h1>
             <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 {activeTab === 'quote' ? '문의' : '주문'}하세요</p>
           </div>
         </motion.div>
