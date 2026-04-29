@@ -327,7 +327,12 @@ export default function OrderPage() {
                     {isBertis && (
                       <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                        <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="000-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                        <input 
+                          value={ordererPhone} 
+                          onChange={e => setOrdererPhone(e.target.value)} 
+                          placeholder="000-0000-0000" 
+                          className={`w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${ordererPhone === '000-0000-0000' ? 'text-slate-300' : 'text-slate-800'}`} 
+                        />
                       </div>
                     )}
                   </div>
@@ -414,7 +419,12 @@ export default function OrderPage() {
                     {isBertis && (
                       <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                        <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="000-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                        <input 
+                          value={ordererPhone} 
+                          onChange={e => setOrdererPhone(e.target.value)} 
+                          placeholder="000-0000-0000" 
+                          className={`w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${ordererPhone === '000-0000-0000' ? 'text-slate-300' : 'text-slate-800'}`} 
+                        />
                       </div>
                     )}
                   </div>
