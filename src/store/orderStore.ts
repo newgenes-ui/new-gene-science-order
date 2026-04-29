@@ -81,10 +81,18 @@ export function getOrdersByDateRange(from: string, to: string): Order[] {
 
 export function generateOrderId(): string {
   const now = new Date();
-  // KST (UTC+9) 시간 반영
-  const kstOffset = 9 * 60 * 60 * 1000;
-  const kstDate = new Date(now.getTime() + kstOffset);
-  const ymd = kstDate.toISOString().slice(0,10).replace(/-/g,'');
+  const formatter = new Intl.DateTimeFormat('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Seoul'
+  });
+  const parts = formatter.formatToParts(now);
+  const y = parts.find(p => p.type === 'year')?.value;
+  const m = parts.find(p => p.type === 'month')?.value;
+  const d = parts.find(p => p.type === 'day')?.value;
+  const ymd = `${y}${m}${d}`;
+  
   const rand = Math.floor(Math.random() * 9000) + 1000;
   return `NGS-${ymd}-${rand}`;
 }

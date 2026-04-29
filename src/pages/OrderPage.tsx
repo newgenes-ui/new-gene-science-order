@@ -95,14 +95,32 @@ export default function OrderPage() {
     }));
 
     const now = new Date();
-    const kstOffset = 9 * 60 * 60 * 1000;
-    const kstDate = new Date(now.getTime() + kstOffset);
-    const kstIsoString = kstDate.toISOString();
+    const kstFormatter = new Intl.DateTimeFormat('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Seoul'
+    });
+    
+    const parts = kstFormatter.formatToParts(now);
+    const y = parts.find(p => p.type === 'year')?.value;
+    const mo = parts.find(p => p.type === 'month')?.value;
+    const d = parts.find(p => p.type === 'day')?.value;
+    const h = parts.find(p => p.type === 'hour')?.value;
+    const mi = parts.find(p => p.type === 'minute')?.value;
+    const s = parts.find(p => p.type === 'second')?.value;
+    
+    const kstDateString = `${y}-${mo}-${d}`;
+    const kstDateTimeString = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
 
     const order: Order = {
       id: generateOrderId(),
-      orderDate: kstIsoString.slice(0, 10),
-      orderDateTime: kstIsoString,
+      orderDate: kstDateString,
+      orderDateTime: kstDateTimeString,
       clientId,
       clientName,
       clientEmail: clientData.email,
