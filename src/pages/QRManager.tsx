@@ -11,7 +11,7 @@ export default function QRManager() {
   const [newId, setNewId] = useState('');
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [baseUrl, setBaseUrl] = useState(window.location.origin);
+  const [baseUrl, setBaseUrl] = useState('https://new-gene-science-order.vercel.app');
   const [showUrlEdit, setShowUrlEdit] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
 
