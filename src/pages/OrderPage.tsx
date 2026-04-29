@@ -238,7 +238,7 @@ export default function OrderPage() {
             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <CreditCard className="w-4 h-4" />
-            결제창
+            결제하기
           </button>
         </div>
 
@@ -401,7 +401,7 @@ export default function OrderPage() {
                 className="w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
               >
                 <FileText className="w-5 h-5" />
-                발주서 제출 및 결제하기
+                발주서 제출
               </button>
             </motion.div>
           )}
@@ -457,15 +457,6 @@ export default function OrderPage() {
                     입금 시 <strong>기관명 또는 주문자명</strong>으로 입금해 주시면 더 빠른 확인이 가능합니다.
                   </p>
                 </div>
-
-                <a
-                  href="https://open.kakao.com/o/syour-link"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block w-full py-4 bg-[#FAE100] text-[#3C1E1E] rounded-2xl font-black text-sm hover:bg-[#F2D900] transition-all shadow-lg"
-                >
-                  카카오톡 문의하기
-                </a>
               </div>
             </motion.div>
           )}
@@ -561,8 +552,10 @@ export default function OrderPage() {
                 <FileText className="w-8 h-8 text-primary animate-pulse" />
               </div>
               <div>
-                <h3 className="font-black text-slate-800">발주서 처리 중</h3>
-                <p className="text-xs text-slate-400 mt-1">이메일 발송 및 주문 등록 중입니다...</p>
+                <h3 className="font-black text-slate-800">
+                  {cartItems.length > 0 ? '발주서 처리 중' : '견적문의 제출 처리중'}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">이메일 발송 및 내역 등록 중입니다...</p>
               </div>
             </motion.div>
           </motion.div>

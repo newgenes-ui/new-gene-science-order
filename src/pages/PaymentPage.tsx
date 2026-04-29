@@ -63,13 +63,6 @@ export default function PaymentPage() {
             <p className="text-sm font-semibold text-slate-700">{order.clientName} | {order.ordererName}</p>
             <p className="text-lg font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
           </div>
-          <a
-            href="https://open.kakao.com/o/syour-link"
-            className="block w-full py-3.5 bg-[#FAE100] text-[#3C1E1E] rounded-xl font-black text-sm hover:bg-[#F2D900] transition-all"
-          >
-            <MessageSquare className="w-4 h-4 inline mr-2" />
-            카카오 담당자 연결
-          </a>
         </motion.div>
       </div>
     );
