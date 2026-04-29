@@ -138,7 +138,7 @@ export default function OrderPage() {
     };
 
     // 주문 내용 텍스트 구성
-    let itemsText = orderItems.length > 0
+    let finalItemsText = orderItems.length > 0
       ? orderItems.map(i =>
           `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()}`
         ).join('\n')
@@ -146,20 +146,20 @@ export default function OrderPage() {
 
     // 견적 문의의 경우 상세 요청 사항이 있으면 상단에 추가
     if (activeTab === 'quote' && otherRequest) {
-      itemsText = `[상세 요청 내역]\n${otherRequest}\n\n${itemsText === '(선택 제품 없음)' ? '' : '[선택 제품 목록]\n' + itemsText}`;
+      finalItemsText = `[상세 요청 내역]\n${otherRequest}${finalItemsText === '(선택 제품 없음)' ? '' : '\n\n[선택 제품 목록]\n' + finalItemsText}`;
     }
 
     const emailParams = {
-      order_title:    `[새로운 ${order.orderType === 'order' ? '주문' : '견적'} 접수]`,
-      order_type_text: order.orderType === 'order' ? '주문' : '견적',
-      detail_label:   `${order.orderType === 'order' ? '주문' : '견적'} 상세 내역`,
+      order_title:    `[새로운 ${activeTab === 'quote' ? '견적' : '주문'} 접수]`,
+      order_type_text: activeTab === 'quote' ? '견적' : '주문',
+      detail_label:   `${activeTab === 'quote' ? '견적' : '주문'} 상세 내역`,
       order_id:       order.id,
       order_date:     order.orderDate,
       client_name:    clientName,
       orderer_name:   ordererName,
       orderer_phone:  order.ordererPhone,
       orderer_email:  order.ordererEmail || '(미입력)',
-      items_text:     itemsText,
+      items_text:     finalItemsText,
       subtotal_amount: `₩${subtotalAmount.toLocaleString()}`,
       vat_amount:      `₩${vatAmount.toLocaleString()}`,
       total_amount:   `₩${totalAmount.toLocaleString()}`,
