@@ -313,7 +313,7 @@ export default function OrderPage() {
                       <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                   )}
-                  <div className="flex flex-wrap items-end gap-x-16 gap-y-6">
+                  <div className={`flex flex-wrap items-end gap-x-12 gap-y-6 ${isBertis ? 'sm:col-span-2' : ''}`}>
                     <div className="min-w-[140px]">
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -405,7 +405,7 @@ export default function OrderPage() {
                         <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
-                  <div className="flex flex-wrap items-end gap-x-16 gap-y-6">
+                  <div className={`flex flex-wrap items-end gap-x-12 gap-y-6 ${isBertis ? 'sm:col-span-2' : ''}`}>
                     <div className="min-w-[140px]">
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
