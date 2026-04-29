@@ -304,7 +304,7 @@ export default function OrderPage() {
               {/* Orderer Info */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                 <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                  <User className="w-4 h-4" /> 문의자 정보
+                  <User className="w-4 h-4" /> 주문자 정보 {isBertis && '(베르티스)'}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {!isBertis && (
@@ -313,7 +313,7 @@ export default function OrderPage() {
                       <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                   )}
-                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -322,6 +322,12 @@ export default function OrderPage() {
                       <div className={!isBertis && !isBertis ? 'sm:col-span-2' : ''}>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
                         <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
+                    {isBertis && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                        <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="000-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
                   </div>
@@ -385,7 +391,7 @@ export default function OrderPage() {
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                    <User className="w-4 h-4" /> 주문자 정보
+                    <User className="w-4 h-4" /> 주문자 정보 {isBertis && '(베르티스)'}
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {!isBertis && (
@@ -394,7 +400,7 @@ export default function OrderPage() {
                         <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
-                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2'}`}>
+                  <div className={`grid gap-4 ${isBertis ? 'grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -403,6 +409,12 @@ export default function OrderPage() {
                       <div className={!isBertis && !isBertis ? 'sm:col-span-2' : ''}>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
                         <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
+                    {isBertis && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                        <input value={ordererPhone} onChange={e => setOrdererPhone(e.target.value)} placeholder="000-0000-0000" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
                     )}
                   </div>
