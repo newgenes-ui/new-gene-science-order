@@ -26,17 +26,20 @@ export default function OrderPage() {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
   }, [clientId]);
 
+  // 초기 상태를 clientData에서 직접 가져옴
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
   const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
   const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
 
-  // clientData가 바뀌면 입력 필드 자동 채우기
+  // clientData가 바뀌면 입력 필드 자동 채우기 (모바일 인식 지연 방지)
   useEffect(() => {
-    setClientName(clientData.name);
-    setOrdererName(clientData.contactPerson || '');
-    setOrdererPhone(clientData.phone || '');
-    setOrdererEmail(clientData.email || '');
+    if (clientData) {
+      setClientName(clientData.name);
+      setOrdererName(clientData.contactPerson || '');
+      setOrdererPhone(clientData.phone || '');
+      setOrdererEmail(clientData.email || '');
+    }
   }, [clientData]);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
