@@ -188,51 +188,27 @@ export default function PaymentPage() {
           </div>
         </motion.div>
 
-        {/* Deposit Confirmation */}
+        {/* Order Cancellation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
           className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]"
         >
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">입금 완료 확인</h3>
+          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">주문 취소 안내</h3>
           <div className="space-y-3">
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">입금자명 *</label>
-              <input
-                value={depositName}
-                onChange={e => setDepositName(e.target.value)}
-                placeholder="통장에 표시될 입금자명"
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              />
-            </div>
-            <button
-              onClick={handleConfirmDeposit}
-              className="w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-lg shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
-            >
-              <CheckCircle2 className="w-5 h-5 inline mr-2" />
-              입금 완료했습니다
-            </button>
-            <p className="text-[10px] text-slate-400 text-center">
-              입금 후 이 버튼을 눌러주세요. 확인 후 빠르게 처리됩니다.
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              잘못 주문하셨거나 취소가 필요한 경우 아래 버튼을 눌러주세요.<br />
+              취소 즉시 시스템에 반영됩니다.
             </p>
+            <button
+              onClick={handleCancelOrder}
+              className="w-full py-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-black text-base hover:bg-rose-100 transition-all active:scale-[0.98]"
+            >
+              <XCircle className="w-5 h-5 inline mr-2" />
+              주문 취소하기
+            </button>
           </div>
-        </motion.div>
-
-        {/* Cancel Order Button */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center pb-10"
-        >
-          <button
-            onClick={handleCancelOrder}
-            className="text-xs font-bold text-slate-400 hover:text-red-400 transition-colors flex items-center gap-1 mx-auto"
-          >
-            <XCircle className="w-3 h-3" />
-            주문 취소하기
-          </button>
         </motion.div>
       </div>
     </div>
