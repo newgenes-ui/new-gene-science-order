@@ -24,11 +24,11 @@ function AdminNav() {
         <QrCode className="w-5 h-5" />
         <span className="text-[10px] font-bold">QR 관리</span>
       </NavLink>
-      <NavLink to="/?client=demo" className={
+      <NavLink to="/?client=bertis" className={
         `flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-slate-400`
       }>
         <ShoppingBag className="w-5 h-5" />
-        <span className="text-[10px] font-bold">주문 미리보기</span>
+        <span className="text-[10px] font-bold">베르티스 미리보기</span>
       </NavLink>
     </nav>
   );
