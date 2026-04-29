@@ -23,9 +23,20 @@ export default function OrderPage() {
   const clientData = CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
 
   const [clientName, setClientName] = useState(clientData.name);
-  const [ordererName, setOrdererName] = useState(clientData.contactPerson && clientData.contactPerson !== '담당자' ? clientData.contactPerson : '');
+  const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
   const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
   const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
+
+  // clientData가 바뀌면 입력 필드 자동 채우기
+  useEffect(() => {
+    if (clientData) {
+      setClientName(clientData.name);
+      setOrdererName(clientData.contactPerson || '');
+      setOrdererPhone(clientData.phone || '');
+      setOrdererEmail(clientData.email || '');
+    }
+  }, [clientData]);
+
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [otherRequest, setOtherRequest] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +108,7 @@ export default function OrderPage() {
       : '(선택 제품 없음)';
 
     const emailParams = {
+      order_title:    `[발주서] ${clientName} - ${ordererName}님`,
       order_id:       order.id,
       order_date:     order.orderDate,
       client_name:    clientName,
@@ -111,6 +123,7 @@ export default function OrderPage() {
       ngs_email:      NGS_EMAIL,
       client_email:   clientData.email,
     };
+
 
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
       try {
