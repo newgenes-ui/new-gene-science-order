@@ -82,13 +82,14 @@ export default function AdminDashboard() {
   }, [filteredOrders]);
 
   const downloadCSV = () => {
-    // 엑셀에서 바로 보기 편하도록 상세 내역(품목별)으로 출력
-    const headers = ['주문일', '업체명', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'];
-    const rows: any[] = [];
+    // 모든 필드를 따옴표로 감싸서 쉼표(,) 충돌 방지
+    const escape = (val: any) => `"${String(val).replace(/"/g, '""')}"`;
+    const headers = ['주문일', '업체명', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '합계금액', '상태'].map(escape);
+    const rows: string[] = [];
     
     filteredOrders.forEach(o => {
       o.items.forEach(item => {
-        rows.push([
+        const row = [
           o.orderDate,
           o.clientName,
           o.id,
@@ -99,16 +100,17 @@ export default function AdminDashboard() {
           item.unitPrice,
           item.subtotal,
           STATUS_LABELS[o.status]
-        ]);
+        ].map(escape);
+        rows.push(row.join(','));
       });
-      // 기타 요청사항이 있는 경우 별도 행 추가 (옵션)
       if (o.otherRequest) {
-        rows.push([o.orderDate, o.clientName, o.id, o.ordererName, '-', '기타 요청사항', '-', '-', '-', o.otherRequest]);
+        const otherRow = [o.orderDate, o.clientName, o.id, o.ordererName, '-', '기타 요청사항', '-', '-', '-', o.otherRequest].map(escape);
+        rows.push(otherRow.join(','));
       }
     });
 
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
