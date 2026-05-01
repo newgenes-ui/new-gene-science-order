@@ -79,7 +79,7 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
-    orders[idx].status = 'order_requested';
+    orders[idx].status = 'pending';
     orders[idx].orderType = 'order';
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }
@@ -87,7 +87,7 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderInSupabase(orderId, { status: 'order_requested', order_type: 'order' });
+      await updateOrderInSupabase(orderId, { status: 'pending', order_type: 'order' });
     }
     return true;
   } catch (e) {

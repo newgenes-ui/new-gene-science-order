@@ -176,7 +176,7 @@ export default function OrderPage() {
       const success = await convertQuoteToOrder(order.id);
       if (success) {
         // 로컬 상태 업데이트 (주문으로 변환되었으므로 탭 이동 등이 발생할 수 있음)
-        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested', orderType: 'order' } : o));
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'pending', orderType: 'order' } : o));
       }
     } catch (error) {
       console.error('Place order from quote error:', error);
