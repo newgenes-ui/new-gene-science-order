@@ -280,8 +280,8 @@ export default function OrderPage() {
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
         o.orderType === historyTab &&
-        // 'paid' (입금확인) 시 화면 숨기기
-        o.status !== 'paid'
+        // 'paid' (입금확인) 및 'cancelled' (주문취소) 시 화면 숨기기
+        o.status !== 'paid' && o.status !== 'cancelled'
       )
       .sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [userOrders, appliedRange, historyTab]);
