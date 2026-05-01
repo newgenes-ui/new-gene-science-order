@@ -375,7 +375,7 @@ export default function OrderPage() {
       orderType: activeTab === 'quote' ? 'quote' : 'order',
     };
 
-    console.log('Submitting order with status:', newOrder.status);
+    console.log('Submitting order with status:', order.status);
 
     let finalItemsText = orderItems.length > 0
       ? orderItems.map(i =>

@@ -116,7 +116,7 @@ export default function AdminDashboard() {
     const escape = (val: any) => `"${String(val).replace(/"/g, '""')}"`;
     const headers = ['주문일', '업체명', '구분', '주문번호', '주문자', '제품코드', '제품명', '수량', '단가', '단가합계', '주문공급가액', '주문부가세', '주문총액', '상태'].map(escape);
     const rows: string[] = [];
-    
+
     filteredOrders.forEach(o => {
       o.items.forEach(item => {
         const row = [
@@ -151,15 +151,15 @@ export default function AdminDashboard() {
 
     const csvContent = [headers.join(','), ...rows].join('\n');
     const encodedUri = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csvContent);
-    
+
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `NGS_Data_${fromDate.replace(/-/g, '')}.csv`);
     document.body.appendChild(link);
-    
+
     alert('데이터 생성이 완료되었습니다. 다운로드를 시작합니다.');
     link.click();
-    
+
     setTimeout(() => {
       document.body.removeChild(link);
     }, 200);
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
                         <div className="hidden md:block col-span-2">
                           <p className="text-xs text-slate-400">주문 내역 / 요청 사항</p>
                           <p className="text-sm font-black text-slate-700 truncate">
-                            {order.items && order.items.length > 0 
+                            {order.items && order.items.length > 0
                               ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                               : order.otherRequest || '상세 내용 없음'}
                           </p>
@@ -331,11 +331,10 @@ export default function AdminDashboard() {
                               <button
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                  String(order.status).toLowerCase() === String(s.id).toLowerCase()
-                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10' 
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
-                                }`}
+                                  }`}
                                 style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
@@ -485,11 +484,10 @@ export default function AdminDashboard() {
                               <button
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                  String(order.status).toLowerCase() === String(s.id).toLowerCase()
-                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10' 
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
-                                }`}
+                                  }`}
                                 style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
