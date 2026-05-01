@@ -912,7 +912,7 @@ export default function OrderPage() {
                                     />
                                   )}
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm ${
-                                    order.status === 'paid' 
+                                    (order.status === 'paid' || order.status === 'processing' || order.status === 'shipped')
                                       ? 'bg-emerald-500 text-white' 
                                       : order.status === 'cancelled'
                                         ? 'bg-red-50 text-red-500 border border-red-100'
@@ -935,10 +935,7 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
-                                          결제 완료
-                                        </span>
-                                      ) : (order.status === 'processing' || order.status === 'shipped') ? (
+                                      {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
                                           결제 완료
                                         </span>
