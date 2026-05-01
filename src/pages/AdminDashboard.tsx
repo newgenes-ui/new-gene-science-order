@@ -303,32 +303,33 @@ export default function AdminDashboard() {
                         <p className="text-xs text-slate-400">금액</p>
                         <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                       </div>
-                      <div className="hidden md:flex justify-end gap-2 items-center">
-                        {order.status === 'payment_waiting' ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
-                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
-                          >
-                            결제 완료로 전환
-                          </button>
-                        ) : order.status === 'paid' ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'payment_waiting'); }}
-                            className="px-2 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg hover:bg-amber-600 transition-all shadow-sm active:scale-95"
-                          >
-                            입금 대기로 되돌리기
-                          </button>
-                        ) : null}
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                            order.status === 'cancelled' 
-                              ? 'bg-rose-50 text-rose-600 border border-rose-200' 
-                              : 'text-white'
-                          }`}
-                          style={order.status !== 'cancelled' ? { backgroundColor: STATUS_COLORS[order.status] } : {}}
-                        >
-                          {STATUS_LABELS[order.status]}
-                        </span>
+                      <div className="hidden md:flex justify-end items-center gap-2">
+                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50">
+                          {[
+                            { id: 'pending', label: '주문완료' },
+                            { id: 'payment_waiting', label: '입금대기' },
+                            { id: 'paid', label: '입금확인' },
+                            { id: 'shipped', label: '납품완료' }
+                          ].map((s) => (
+                            <button
+                              key={s.id}
+                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
+                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                                order.status === s.id 
+                                  ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                              }`}
+                              style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']]}` } : {}}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                        {order.status === 'cancelled' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200">
+                            주문취소
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
@@ -451,28 +452,28 @@ export default function AdminDashboard() {
                         <p className="text-xs text-slate-400">상태</p>
                         <p className="text-sm font-black text-primary">견적문의</p>
                       </div>
-                      <div className="hidden md:flex justify-end gap-2 items-center">
-                        {(order.status === 'payment_waiting' || order.status === 'order_requested' || order.status === 'pending') ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
-                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
-                          >
-                            결제 완료 처리
-                          </button>
-                        ) : order.status === 'paid' ? (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'order_requested'); }}
-                            className="px-2 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg hover:bg-amber-600 transition-all shadow-sm active:scale-95"
-                          >
-                            발주 완료로 되돌리기
-                          </button>
-                        ) : null}
-                        <span 
-                          className="px-2.5 py-1 rounded-full text-[10px] font-black text-white"
-                          style={{ backgroundColor: STATUS_COLORS[order.status] || '#94a3b8' }}
-                        >
-                          {STATUS_LABELS[order.status]}
-                        </span>
+                      <div className="hidden md:flex justify-end items-center">
+                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50">
+                          {[
+                            { id: 'pending', label: '주문완료' },
+                            { id: 'payment_waiting', label: '입금대기' },
+                            { id: 'paid', label: '입금확인' },
+                            { id: 'shipped', label: '납품완료' }
+                          ].map((s) => (
+                            <button
+                              key={s.id}
+                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
+                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                                order.status === s.id 
+                                  ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                              }`}
+                              style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']] || '#94a3b8'}` } : {}}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">

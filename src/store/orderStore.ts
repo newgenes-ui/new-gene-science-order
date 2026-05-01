@@ -108,11 +108,11 @@ export function generateOrderId(): string {
 }
 
 export const STATUS_LABELS: Record<Order['status'], string> = {
-  pending: '주문접수',
+  pending: '주문완료',
   payment_waiting: '입금대기',
   paid: '입금확인',
   processing: '처리중',
-  shipped: '출고완료',
+  shipped: '납품완료',
   cancelled: '주문취소',
   order_requested: '발주완료',
 };
