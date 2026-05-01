@@ -280,8 +280,8 @@ export default function OrderPage() {
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
         (historyTab === 'order' 
-          ? (o.orderType === 'order' && !o.isConverted) 
-          : (o.orderType === 'quote' || o.isConverted)) &&
+          ? (o.orderType === 'order' && !o.isConverted && o.items.length > 0) 
+          : (o.orderType === 'quote' || o.isConverted || o.items.length === 0)) &&
         // 'paid' (입금확인) 및 'cancelled' (주문취소) 시 화면 숨기기
         o.status !== 'paid' && o.status !== 'cancelled'
       )
@@ -904,7 +904,7 @@ export default function OrderPage() {
                               <p className="text-sm font-black text-slate-800 truncate">
                                 {order.items.length > 0 
                                   ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                  : '견적 문의 내역'}
+                                  : (order.orderType === 'quote' || order.isConverted ? '견적 문의 내역' : '기타 발주')}
                               </p>
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
