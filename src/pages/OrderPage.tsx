@@ -173,6 +173,8 @@ export default function OrderPage() {
       alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
       // 3. 상태 업데이트 및 화면 갱신
       updateOrderStatus(order.id, 'order_requested');
+      // 로컬 상태 즉시 반영하여 버튼 UI 즉시 변경
+      setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
       loadUserOrders();
     } catch (error) {
       console.error('Place order from quote error:', error);
@@ -889,7 +891,7 @@ export default function OrderPage() {
                                 </>
                               ) : (
                                 <>
-                                  {order.status !== 'cancelled' && (
+                                  {order.status === 'order_requested' && (
                                     <input 
                                       type="checkbox" 
                                       checked={selectedOrderIds.includes(order.id)}
