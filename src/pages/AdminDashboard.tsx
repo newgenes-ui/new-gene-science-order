@@ -317,6 +317,7 @@ export default function AdminDashboard() {
                           <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
                             {[
                               { id: 'pending', label: '주문완료' },
+                              { id: 'order_requested', label: '주문요청' },
                               { id: 'shipped', label: '납품완료' },
                               { id: 'payment_waiting', label: '입금대기' },
                               { id: 'paid', label: '입금확인' }

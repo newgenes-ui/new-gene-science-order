@@ -114,7 +114,7 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
   processing: '처리중',
   shipped: '납품완료',
   cancelled: '주문취소',
-  order_requested: '발주완료',
+  order_requested: '주문요청',
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
