@@ -171,14 +171,12 @@ export default function OrderPage() {
         }
       }
       
-      alert('발주 요청이 완료되었습니다. [발주내역 조회] 탭으로 이동합니다.');
+      alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
         // 로컬 상태 업데이트
         setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'pending', orderType: 'order' } : o));
-        // 발주내역 탭으로 자동 이동
-        setHistoryTab('order');
       }
     } catch (error) {
       console.error('Place order from quote error:', error);
@@ -904,7 +902,7 @@ export default function OrderPage() {
                               <p className="text-sm font-black text-slate-800 truncate">
                                 {order.items.length > 0 
                                   ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                  : (order.orderType === 'quote' ? '견적 문의 내역' : '기타 발주')}
+                                  : '견적 문의 내역'}
                               </p>
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
@@ -918,7 +916,7 @@ export default function OrderPage() {
                                         if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
                                         else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                       }}
-                                      className="w-4 h-4 rounded border-slate-200 text-primary focus:ring-primary cursor-pointer"
+                                      className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                     />
                                   )}
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm ${
@@ -926,15 +924,12 @@ export default function OrderPage() {
                                       ? 'bg-blue-500 text-white'
                                       : order.status === 'payment_waiting'
                                         ? 'bg-rose-500 text-white'
-                                        : order.status === 'order_requested'
-                                          ? 'bg-emerald-500 text-white'
-                                          : order.status === 'cancelled'
-                                            ? 'bg-red-50 text-red-500 border border-red-100'
-                                            : 'bg-emerald-500 text-white'
+                                        : order.status === 'cancelled'
+                                          ? 'bg-red-50 text-red-500 border border-red-100'
+                                          : 'bg-emerald-500 text-white'
                                   }`}>
                                     {order.status === 'shipped' ? '납품완료' : 
                                      order.status === 'payment_waiting' ? '미수금' : 
-                                     order.status === 'order_requested' ? '주문요청' :
                                      order.status === 'cancelled' ? '주문취소' : '주문완료'}
                                   </span>
                                 </>
