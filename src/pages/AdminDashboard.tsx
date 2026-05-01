@@ -320,7 +320,7 @@ export default function AdminDashboard() {
                             주문취소
                           </span>
                         ) : (
-                          <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
+                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                             {[
                               { id: 'pending', label: '주문완료' },
                               { id: 'order_requested', label: '주문요청' },
@@ -333,8 +333,8 @@ export default function AdminDashboard() {
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                   order.status === s.id 
-                                    ? 'text-white shadow-md scale-105' 
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                    ? 'text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-105 ring-2 ring-white/20' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80'
                                 }`}
                                 style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
                               >
@@ -474,9 +474,10 @@ export default function AdminDashboard() {
                             주문취소
                           </span>
                         ) : (
-                          <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
+                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                             {[
                               { id: 'pending', label: '주문완료' },
+                              { id: 'order_requested', label: '주문요청' },
                               { id: 'shipped', label: '납품완료' },
                               { id: 'payment_waiting', label: '입금대기' },
                               { id: 'paid', label: '입금확인' }
@@ -486,8 +487,8 @@ export default function AdminDashboard() {
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                   order.status === s.id 
-                                    ? 'text-white shadow-md scale-105' 
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                    ? 'text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-105 ring-2 ring-white/20' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80'
                                 }`}
                                 style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
                               >
