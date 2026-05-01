@@ -332,9 +332,7 @@ export default function AdminDashboard() {
                             {[
                               { id: 'pending', label: '발주확인' },
                               { id: 'order_requested', label: '주문확인' },
-                              { id: 'shipped', label: '납품완료' },
-                              { id: 'payment_waiting', label: '입금대기' },
-                              { id: 'paid', label: '입금확인' }
+                              { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
@@ -493,9 +491,7 @@ export default function AdminDashboard() {
                             {[
                               { id: 'pending', label: '발주확인' },
                               { id: 'order_requested', label: '주문' },
-                              { id: 'shipped', label: '납품완료' },
-                              { id: 'payment_waiting', label: '입금대기' },
-                              { id: 'paid', label: '입금확인' }
+                              { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
