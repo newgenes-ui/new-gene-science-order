@@ -802,13 +802,13 @@ export default function OrderPage() {
                   <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
                     <button
                       onClick={() => setHistoryTab('order')}
-                      className={`flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       발주내역 조회
                     </button>
                     <button
                       onClick={() => setHistoryTab('quote')}
-                      className={`flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                       견적내용 조회
                     </button>
