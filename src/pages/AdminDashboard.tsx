@@ -286,49 +286,55 @@ export default function AdminDashboard() {
                     className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
                     onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.2fr_100px_100px_350px] gap-2 items-center">
-                      <div>
-                        <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                        <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400">업체</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
-                      </div>
-                      <div className="hidden md:block">
-                        <p className="text-xs text-slate-400">주문자</p>
-                        <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400">금액</p>
-                        <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
-                      </div>
-                      <div className="hidden md:flex justify-end items-center gap-2">
-                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
-                          {[
-                            { id: 'pending', label: '주문완료' },
-                            { id: 'shipped', label: '납품완료' },
-                            { id: 'payment_waiting', label: '입금대기' },
-                            { id: 'paid', label: '입금확인' }
-                          ].map((s) => (
-                            <button
-                              key={s.id}
-                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-2 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                order.status === s.id 
-                                  ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
-                                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                              }`}
-                              style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']]}` } : {}}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
+                    <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
+                      {/* 기본 정보 영역 */}
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                        <div>
+                          <p className="text-xs font-mono text-slate-400">{order.id}</p>
+                          <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
                         </div>
-                        {order.status === 'cancelled' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-200">
+                        <div>
+                          <p className="text-xs text-slate-400">업체</p>
+                          <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-xs text-slate-400">주문자</p>
+                          <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-400">금액</p>
+                          <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      {/* 상태 관리 영역 */}
+                      <div className="flex items-center gap-2 min-w-fit">
+                        {order.status === 'cancelled' ? (
+                          <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200">
                             주문취소
                           </span>
+                        ) : (
+                          <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
+                            {[
+                              { id: 'pending', label: '주문완료' },
+                              { id: 'shipped', label: '납품완료' },
+                              { id: 'payment_waiting', label: '입금대기' },
+                              { id: 'paid', label: '입금확인' }
+                            ].map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
+                                  order.status === s.id 
+                                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                }`}
+                                style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']]}` } : {}}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -435,45 +441,57 @@ export default function AdminDashboard() {
                     className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
                     onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.2fr_100px_100px_350px] gap-2 items-center">
-                      <div>
-                        <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                        <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400">업체</p>
-                        <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
-                      </div>
-                      <div className="hidden md:block">
-                        <p className="text-xs text-slate-400">문의자</p>
-                        <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400">상태</p>
-                        <p className="text-sm font-black text-primary">견적문의</p>
-                      </div>
-                      <div className="hidden md:flex justify-end items-center gap-2">
-                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
-                          {[
-                            { id: 'pending', label: '주문완료' },
-                            { id: 'shipped', label: '납품완료' },
-                            { id: 'payment_waiting', label: '입금대기' },
-                            { id: 'paid', label: '입금확인' }
-                          ].map((s) => (
-                            <button
-                              key={s.id}
-                              onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-2 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                order.status === s.id 
-                                  ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
-                                  : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
-                              }`}
-                              style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']] || '#94a3b8'}` } : {}}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
+                    <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
+                      {/* 기본 정보 영역 */}
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                        <div>
+                          <p className="text-xs font-mono text-slate-400">{order.id}</p>
+                          <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
                         </div>
+                        <div>
+                          <p className="text-xs text-slate-400">업체</p>
+                          <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
+                        </div>
+                        <div className="hidden md:block">
+                          <p className="text-xs text-slate-400">문의자</p>
+                          <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-400">구분</p>
+                          <p className="text-sm font-black text-primary">견적문의</p>
+                        </div>
+                      </div>
+
+                      {/* 상태 관리 영역 */}
+                      <div className="flex items-center gap-2 min-w-fit">
+                        {order.status === 'cancelled' ? (
+                          <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200">
+                            주문취소
+                          </span>
+                        ) : (
+                          <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
+                            {[
+                              { id: 'pending', label: '주문완료' },
+                              { id: 'shipped', label: '납품완료' },
+                              { id: 'payment_waiting', label: '입금대기' },
+                              { id: 'paid', label: '입금확인' }
+                            ].map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
+                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
+                                  order.status === s.id 
+                                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                }`}
+                                style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']] || '#94a3b8'}` } : {}}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       {deletingId === order.id ? (
