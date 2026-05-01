@@ -34,27 +34,46 @@ export default function OrderPage() {
   const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
   const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
 
-  // 중복 발행 요청 방지를 위한 로컬 저장소 상태
-  const [requestedInvoiceOrderIds, setRequestedInvoiceOrderIds] = useState<string[]>(() => {
+  // 중복 발행 요청 방지를 위한 로컬 저장소 상태 (분리)
+  const [taxRequestedOrderIds, setTaxRequestedOrderIds] = useState<string[]>(() => {
     try {
-      const stored = localStorage.getItem('ngs_requested_invoices');
+      const stored = localStorage.getItem('ngs_tax_requested');
       return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
-  const markOrdersAsRequested = (orderIds: string[]) => {
+  const [statementRequestedOrderIds, setStatementRequestedOrderIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_statement_requested');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const markTaxRequested = (orderIds: string[]) => {
     if (orderIds.length === 0) return;
-    const newRequested = Array.from(new Set([...requestedInvoiceOrderIds, ...orderIds]));
-    setRequestedInvoiceOrderIds(newRequested);
-    localStorage.setItem('ngs_requested_invoices', JSON.stringify(newRequested));
+    const newRequested = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
+    setTaxRequestedOrderIds(newRequested);
+    localStorage.setItem('ngs_tax_requested', JSON.stringify(newRequested));
+    setSelectedOrderIds([]); // 선택 초기화
+  };
+
+  const markStatementRequested = (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+    const newRequested = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
+    setStatementRequestedOrderIds(newRequested);
+    localStorage.setItem('ngs_statement_requested', JSON.stringify(newRequested));
     setSelectedOrderIds([]); // 선택 초기화
   };
 
   const handleTaxInvoiceRequest = async () => {
     if (!taxEmail) {
       alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+
+    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert('이미 세금계산서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
       return;
     }
 
@@ -82,7 +101,7 @@ export default function OrderPage() {
         'Y4Bf666YxL-LOnR4h'
       );
 
-      markOrdersAsRequested(selectedOrderIds);
+      markTaxRequested(selectedOrderIds);
       alert('세금계산서 발행 요청이 완료되었습니다.');
     } catch (error) {
       console.error('Tax invoice request error:', error);
@@ -95,6 +114,12 @@ export default function OrderPage() {
   const handleStatementRequest = async () => {
     if (!taxEmail) {
       alert('거래명세서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+
+    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert('이미 거래명세서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
       return;
     }
 
@@ -122,7 +147,7 @@ export default function OrderPage() {
         'Y4Bf666YxL-LOnR4h'
       );
 
-      markOrdersAsRequested(selectedOrderIds);
+      markStatementRequested(selectedOrderIds);
       alert('거래명세서 발행 요청이 완료되었습니다.');
     } catch (error) {
       console.error('Statement request error:', error);
@@ -953,21 +978,30 @@ export default function OrderPage() {
                               {order.orderType === 'order' ? (
                                 <>
                                   {order.status !== 'paid' && order.status !== 'cancelled' && (
-                                    requestedInvoiceOrderIds.includes(order.id) ? (
-                                      <span className="text-[10px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded">
-                                        요청됨
-                                      </span>
-                                    ) : (
-                                      <input 
-                                        type="checkbox" 
-                                        checked={selectedOrderIds.includes(order.id)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                          else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                        }}
-                                        className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                      />
-                                    )
+                                    <>
+                                      {taxRequestedOrderIds.includes(order.id) && statementRequestedOrderIds.includes(order.id) ? (
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded text-center">계산서요청됨</span>
+                                          <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 py-0.5 rounded text-center">명세서요청됨</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
+                                              else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                          <div className="flex flex-col gap-0.5">
+                                            {taxRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 rounded">계산서요청됨</span>}
+                                            {statementRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 rounded">명세서요청됨</span>}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm ${
                                     order.status === 'shipped'
@@ -986,21 +1020,30 @@ export default function OrderPage() {
                               ) : (
                                 <>
                                   {order.status === 'order_requested' && (
-                                    requestedInvoiceOrderIds.includes(order.id) ? (
-                                      <span className="text-[10px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded">
-                                        요청됨
-                                      </span>
-                                    ) : (
-                                      <input 
-                                        type="checkbox" 
-                                        checked={selectedOrderIds.includes(order.id)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                          else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                        }}
-                                        className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                      />
-                                    )
+                                    <>
+                                      {taxRequestedOrderIds.includes(order.id) && statementRequestedOrderIds.includes(order.id) ? (
+                                        <div className="flex flex-col gap-1">
+                                          <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded text-center">계산서요청됨</span>
+                                          <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 py-0.5 rounded text-center">명세서요청됨</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
+                                              else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                          <div className="flex flex-col gap-0.5">
+                                            {taxRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 rounded">계산서요청됨</span>}
+                                            {statementRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 rounded">명세서요청됨</span>}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                     <div className="flex gap-2">
                                       {order.status === 'shipped' ? (
