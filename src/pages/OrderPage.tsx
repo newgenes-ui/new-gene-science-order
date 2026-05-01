@@ -34,142 +34,7 @@ export default function OrderPage() {
   const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
   const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
 
-  // 중복 발행 요청 방지를 위한 로컬 저장소 상태 (분리)
-  const [taxRequestedOrderIds, setTaxRequestedOrderIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_tax_requested');
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
 
-  const [statementRequestedOrderIds, setStatementRequestedOrderIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_statement_requested');
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
-
-  const markTaxRequested = (orderIds: string[]) => {
-    if (orderIds.length === 0) return;
-    const newRequested = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
-    setTaxRequestedOrderIds(newRequested);
-    localStorage.setItem('ngs_tax_requested', JSON.stringify(newRequested));
-    // 선택을 초기화하지 않음 (명세서도 이어서 요청할 수 있도록)
-  };
-
-  const markStatementRequested = (orderIds: string[]) => {
-    if (orderIds.length === 0) return;
-    const newRequested = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
-    setStatementRequestedOrderIds(newRequested);
-    localStorage.setItem('ngs_statement_requested', JSON.stringify(newRequested));
-    // 선택을 초기화하지 않음 (계산서도 이어서 요청할 수 있도록)
-  };
-
-  useEffect(() => {
-    // 세금계산서와 거래명세서가 모두 요청된 주문은 선택(체크) 해제
-    const fullyRequestedIds = userOrders
-      .map(o => o.id)
-      .filter(id => taxRequestedOrderIds.includes(id) && statementRequestedOrderIds.includes(id));
-      
-    if (fullyRequestedIds.length > 0) {
-      setSelectedOrderIds(prev => {
-        const next = prev.filter(id => !fullyRequestedIds.includes(id));
-        return next.length !== prev.length ? next : prev;
-      });
-    }
-  }, [taxRequestedOrderIds, statementRequestedOrderIds, userOrders]);
-
-  const handleTaxInvoiceRequest = async () => {
-    if (!taxEmail) {
-      alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
-      return;
-    }
-
-    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert('이미 세금계산서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
-      return;
-    }
-
-    setIsTaxSubmitting(true);
-    try {
-      const emailParams = {
-        order_title: `[세금계산서 발행 요청] ${clientName}`,
-        order_type_text: '세금계산서 발행 요청',
-        detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
-          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
-        from_name: ordererName,
-        contact_number: ordererPhone,
-        reply_to: taxEmail,
-        to_email: NGS_EMAIL,
-        ngs_email: NGS_EMAIL,
-      };
-
-      await emailjs.send(
-        'service_h8f3lfs',
-        'template_67u1m86',
-        emailParams,
-        'Y4Bf666YxL-LOnR4h'
-      );
-
-      markTaxRequested(selectedOrderIds);
-      alert('세금계산서 발행 요청이 완료되었습니다.');
-    } catch (error) {
-      console.error('Tax invoice request error:', error);
-      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsTaxSubmitting(false);
-    }
-  };
-
-  const handleStatementRequest = async () => {
-    if (!taxEmail) {
-      alert('거래명세서를 받으실 이메일 주소를 입력해주세요.');
-      return;
-    }
-
-    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert('이미 거래명세서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
-      return;
-    }
-
-    setIsStatementSubmitting(true);
-    try {
-      const emailParams = {
-        order_title: `[거래명세서 발행 요청] ${clientName}`,
-        order_type_text: '거래명세서 발행 요청',
-        detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
-          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
-        from_name: ordererName,
-        contact_number: ordererPhone,
-        reply_to: taxEmail,
-        to_email: NGS_EMAIL,
-        ngs_email: NGS_EMAIL,
-      };
-
-      await emailjs.send(
-        'service_h8f3lfs',
-        'template_67u1m86',
-        emailParams,
-        'Y4Bf666YxL-LOnR4h'
-      );
-
-      markStatementRequested(selectedOrderIds);
-      alert('거래명세서 발행 요청이 완료되었습니다.');
-    } catch (error) {
-      console.error('Statement request error:', error);
-      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsStatementSubmitting(false);
-    }
-  };
 
   const handlePlaceOrderFromQuote = async (order: Order) => {
     if (!window.confirm('해당 견적 내역으로 발주를 진행하시겠습니까?')) return;
@@ -309,6 +174,143 @@ export default function OrderPage() {
   });
   const [appliedRange, setAppliedRange] = useState(dateRange);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+
+  // 중복 발행 요청 방지를 위한 로컬 저장소 상태 (분리)
+  const [taxRequestedOrderIds, setTaxRequestedOrderIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_tax_requested');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const [statementRequestedOrderIds, setStatementRequestedOrderIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_statement_requested');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+
+  const markTaxRequested = (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+    const newRequested = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
+    setTaxRequestedOrderIds(newRequested);
+    localStorage.setItem('ngs_tax_requested', JSON.stringify(newRequested));
+    // 선택을 초기화하지 않음 (명세서도 이어서 요청할 수 있도록)
+  };
+
+  const markStatementRequested = (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+    const newRequested = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
+    setStatementRequestedOrderIds(newRequested);
+    localStorage.setItem('ngs_statement_requested', JSON.stringify(newRequested));
+    // 선택을 초기화하지 않음 (계산서도 이어서 요청할 수 있도록)
+  };
+
+  useEffect(() => {
+    // 세금계산서와 거래명세서가 모두 요청된 주문은 선택(체크) 해제
+    const fullyRequestedIds = userOrders
+      .map(o => o.id)
+      .filter(id => taxRequestedOrderIds.includes(id) && statementRequestedOrderIds.includes(id));
+      
+    if (fullyRequestedIds.length > 0) {
+      setSelectedOrderIds(prev => {
+        const next = prev.filter(id => !fullyRequestedIds.includes(id));
+        return next.length !== prev.length ? next : prev;
+      });
+    }
+  }, [taxRequestedOrderIds, statementRequestedOrderIds, userOrders]);
+
+  const handleTaxInvoiceRequest = async () => {
+    if (!taxEmail) {
+      alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+
+    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert('이미 세금계산서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
+      return;
+    }
+
+    setIsTaxSubmitting(true);
+    try {
+      const emailParams = {
+        order_title: `[세금계산서 발행 요청] ${clientName}`,
+        order_type_text: '세금계산서 발행 요청',
+        detail_label: '요청 주문/문의 내역',
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
+          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
+        from_name: ordererName,
+        contact_number: ordererPhone,
+        reply_to: taxEmail,
+        to_email: NGS_EMAIL,
+        ngs_email: NGS_EMAIL,
+      };
+
+      await emailjs.send(
+        'service_h8f3lfs',
+        'template_67u1m86',
+        emailParams,
+        'Y4Bf666YxL-LOnR4h'
+      );
+
+      markTaxRequested(selectedOrderIds);
+      alert('세금계산서 발행 요청이 완료되었습니다.');
+    } catch (error) {
+      console.error('Tax invoice request error:', error);
+      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsTaxSubmitting(false);
+    }
+  };
+
+  const handleStatementRequest = async () => {
+    if (!taxEmail) {
+      alert('거래명세서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+
+    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert('이미 거래명세서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
+      return;
+    }
+
+    setIsStatementSubmitting(true);
+    try {
+      const emailParams = {
+        order_title: `[거래명세서 발행 요청] ${clientName}`,
+        order_type_text: '거래명세서 발행 요청',
+        detail_label: '요청 주문/문의 내역',
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
+          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
+        from_name: ordererName,
+        contact_number: ordererPhone,
+        reply_to: taxEmail,
+        to_email: NGS_EMAIL,
+        ngs_email: NGS_EMAIL,
+      };
+
+      await emailjs.send(
+        'service_h8f3lfs',
+        'template_67u1m86',
+        emailParams,
+        'Y4Bf666YxL-LOnR4h'
+      );
+
+      markStatementRequested(selectedOrderIds);
+      alert('거래명세서 발행 요청이 완료되었습니다.');
+    } catch (error) {
+      console.error('Statement request error:', error);
+      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setIsStatementSubmitting(false);
+    }
+  };
 
   // 초기 이메일 설정
   useEffect(() => {
