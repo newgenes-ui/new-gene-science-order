@@ -950,41 +950,12 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      {order.status === 'shipped' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white shadow-sm">
-                                          납품완료
-                                        </span>
-                                      ) : order.status === 'payment_waiting' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-rose-500 text-white shadow-sm">
-                                          미수금
-                                        </span>
-                                      ) : order.status === 'cancelled' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-red-50 text-red-500 border-red-100">
-                                          문의취소
-                                        </span>
-                                      ) : (
-                                        <>
-                                          <button 
-                                            onClick={() => handlePlaceOrderFromQuote(order)}
-                                            disabled={order.status === 'order_requested'}
-                                            className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors shadow-sm ${
-                                              order.status === 'order_requested'
-                                                ? 'bg-emerald-500 text-white border-emerald-600'
-                                                : 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600'
-                                            }`}
-                                          >
-                                            {order.status === 'order_requested' ? '발주완료' : '발주요청'}
-                                          </button>
-                                          {order.status === 'order_requested' && (
-                                            <button
-                                              onClick={() => handleClientPaymentConfirm(order)}
-                                              className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
-                                            >
-                                              결제완료
-                                            </button>
-                                          )}
-                                        </>
-                                      )}
+                                      <button 
+                                        onClick={() => handlePlaceOrderFromQuote(order)}
+                                        className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
+                                      >
+                                        발주요청
+                                      </button>
                                     </div>
                                 </>
                               )}
