@@ -949,7 +949,15 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      {order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0)) ? (
+                                      {order.status === 'shipped' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-600 text-white border-blue-700 shadow-sm">
+                                          납품완료
+                                        </span>
+                                      ) : order.status === 'payment_waiting' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-amber-500 text-white border-amber-600 shadow-sm">
+                                          미수금
+                                        </span>
+                                      ) : (order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0))) ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 shadow-sm">
                                           주문요청
                                         </span>
