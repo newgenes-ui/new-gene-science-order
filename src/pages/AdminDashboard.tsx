@@ -100,8 +100,12 @@ export default function AdminDashboard() {
 
   const handleStatusUpdate = async (id: string, newStatus: Order['status']) => {
     try {
-      updateOrderStatus(id, newStatus);
-      setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+      const success = await updateOrderStatus(id, newStatus);
+      if (success) {
+        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+      } else {
+        alert('DB 업데이트에 실패했습니다. 다시 시도해 주세요.');
+      }
     } catch (err: any) {
       alert('상태 업데이트 중 오류가 발생했습니다: ' + err.message);
     }

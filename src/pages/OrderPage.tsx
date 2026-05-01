@@ -173,9 +173,11 @@ export default function OrderPage() {
       
       alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
       // 3. 상태 업데이트 및 화면 갱신
-      updateOrderStatus(order.id, 'order_requested');
-      // 로컬 상태 즉시 반영하여 버튼 UI 즉시 변경
-      setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
+      const success = await updateOrderStatus(order.id, 'order_requested');
+      if (success) {
+        // 로컬 상태 즉시 반영하여 버튼 UI 즉시 변경
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
+      }
     } catch (error) {
       console.error('Place order from quote error:', error);
       alert('발주 요청 중 오류가 발생했습니다.');
@@ -187,9 +189,13 @@ export default function OrderPage() {
   const handleClientPaymentConfirm = async (order: Order) => {
     if (!window.confirm('입금 또는 결제를 완료하셨습니까? 관리자가 확인 후 승인해 드립니다.')) return;
     try {
-      updateOrderStatus(order.id, 'paid');
-      setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'paid' } : o));
-      alert('결제 완료 알림이 전송되었습니다.');
+      const success = await updateOrderStatus(order.id, 'paid');
+      if (success) {
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'paid' } : o));
+        alert('결제 완료 알림이 전송되었습니다.');
+      } else {
+        alert('DB 업데이트에 실패했습니다. 다시 시도해 주세요.');
+      }
     } catch (error) {
       console.error('Payment confirm error:', error);
       alert('오류가 발생했습니다.');

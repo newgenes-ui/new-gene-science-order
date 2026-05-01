@@ -53,15 +53,23 @@ export function saveOrder(order: Order): void {
   saveOrderToSupabase(order);
 }
 
-export function updateOrderStatus(orderId: string, status: Order['status']): void {
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
     orders[idx].status = status;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    // Supabase에도 상태 업데이트
-    updateOrderStatusInSupabase(orderId, status);
+    
+    // Supabase 업데이트
+    try {
+      await updateOrderStatusInSupabase(orderId, status);
+      return true;
+    } catch (e) {
+      console.error('Supabase update failed:', e);
+      return false;
+    }
   }
+  return false;
 }
 
 export function deleteOrder(orderId: string): void {
@@ -189,9 +197,14 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
 async function updateOrderStatusInSupabase(orderId: string, status: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    await supabase.from('orders').update({ status }).eq('id', orderId);
-  } catch (e) {
+    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    if (error) {
+      throw new Error(`Supabase 상태 업데이트 오류: ${error.message}`);
+    }
+    console.log('✅ Supabase 상태 업데이트 완료:', orderId, status);
+  } catch (e: any) {
     console.error('Supabase 상태 업데이트 실패:', e);
+    throw e;
   }
 }
 
