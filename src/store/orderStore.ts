@@ -29,7 +29,6 @@ export interface Order {
   paymentMethod: 'bank_transfer';
   depositName?: string;
   orderType: 'order' | 'quote';
-  isConverted?: boolean;
 }
 
 const STORAGE_KEY = 'ngs_orders';
@@ -89,7 +88,7 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderInSupabase(orderId, { status: 'pending', order_type: 'order', is_converted: true });
+      await updateOrderInSupabase(orderId, { status: 'pending', order_type: 'order' });
     }
     return true;
   } catch (e) {
@@ -290,7 +289,6 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
         : (row.order_type === 'quote' 
             ? 'quote' 
             : (row.items && Array.isArray(row.items) && row.items.length > 0 ? 'order' : 'quote')),
-      isConverted: row.is_converted || false
     }));
   } catch (e) {
     console.error('Supabase 조회 실패:', e);

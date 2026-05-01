@@ -280,8 +280,8 @@ export default function OrderPage() {
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
         (historyTab === 'order' 
-          ? (o.orderType === 'order' && !o.isConverted && o.items.length > 0) 
-          : (o.orderType === 'quote' || o.isConverted || o.items.length === 0)) &&
+          ? (o.orderType === 'order' && o.items && o.items.length > 0) 
+          : (o.orderType === 'quote' || !o.items || o.items.length === 0)) &&
         // 'paid' (입금확인) 및 'cancelled' (주문취소) 시 화면 숨기기
         o.status !== 'paid' && o.status !== 'cancelled'
       )
@@ -949,7 +949,7 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      {order.status === 'pending' || order.status === 'order_requested' || order.orderType === 'order' ? (
+                                      {order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0)) ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
                                           주문완료
                                         </span>
