@@ -175,7 +175,6 @@ export default function OrderPage() {
       updateOrderStatus(order.id, 'order_requested');
       // 로컬 상태 즉시 반영하여 버튼 UI 즉시 변경
       setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
-      loadUserOrders();
     } catch (error) {
       console.error('Place order from quote error:', error);
       alert('발주 요청 중 오류가 발생했습니다.');
