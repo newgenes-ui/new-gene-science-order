@@ -279,7 +279,9 @@ export default function OrderPage() {
       .filter(o => 
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
-        o.orderType === historyTab &&
+        (historyTab === 'order' 
+          ? (o.orderType === 'order' && !o.isConverted) 
+          : (o.orderType === 'quote' || o.isConverted)) &&
         // 'paid' (입금확인) 및 'cancelled' (주문취소) 시 화면 숨기기
         o.status !== 'paid' && o.status !== 'cancelled'
       )
