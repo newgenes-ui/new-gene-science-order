@@ -1178,7 +1178,9 @@ export default function OrderPage() {
               </div>
               <div>
                 <h3 className="font-black text-slate-800">
-                  {cartItems.length > 0 ? '발주서 처리 중' : '견적문의 제출 처리중'}
+                  {activeTab === 'payment' 
+                    ? '발주요청 처리중' 
+                    : (cartItems.length > 0 ? '발주서 처리 중' : '견적문의 제출 처리중')}
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">이메일 발송 및 내역 등록 중입니다...</p>
               </div>
