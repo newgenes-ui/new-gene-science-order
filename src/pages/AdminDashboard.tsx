@@ -332,11 +332,11 @@ export default function AdminDashboard() {
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                  order.status === s.id 
-                                    ? 'text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-105 ring-2 ring-white/20' 
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80'
+                                  String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                 }`}
-                                style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
+                                style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
                               </button>
@@ -486,11 +486,11 @@ export default function AdminDashboard() {
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                  order.status === s.id 
-                                    ? 'text-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] scale-105 ring-2 ring-white/20' 
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80'
+                                  String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10' 
+                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                 }`}
-                                style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
+                                style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
                               </button>

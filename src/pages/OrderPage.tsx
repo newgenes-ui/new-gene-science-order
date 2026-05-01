@@ -178,9 +178,9 @@ export default function OrderPage() {
         // 로컬 상태 업데이트
         setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'pending', orderType: 'order' } : o));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Place order from quote error:', error);
-      alert('발주 요청 중 오류가 발생했습니다.');
+      alert(`발주 요청 중 오류가 발생했습니다.\n상세: ${error.message || '알 수 없는 오류'}\n(Supabase RLS 권한을 확인해 주세요)`);
     } finally {
       setIsSubmitting(false);
     }
@@ -902,7 +902,7 @@ export default function OrderPage() {
                                 <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
                               </div>
                               <p className="text-sm font-black text-slate-800 truncate">
-                                {order.items.length > 0 
+                                {order.items && order.items.length > 0 
                                   ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                                   : '견적 문의 내역'}
                               </p>
