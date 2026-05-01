@@ -279,7 +279,12 @@ export default function OrderPage() {
       .filter(o => 
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
-        o.orderType === historyTab
+        o.orderType === historyTab &&
+        // 'paid', 'processing', 'shipped' (결제완료 계열) 및 'cancelled' (취소) 제외
+        o.status !== 'paid' && 
+        o.status !== 'processing' && 
+        o.status !== 'shipped' && 
+        o.status !== 'cancelled'
       )
       .sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [userOrders, appliedRange, historyTab]);
