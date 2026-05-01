@@ -25,7 +25,7 @@ export interface Order {
   subtotalAmount: number;
   vatAmount: number;
   totalAmount: number;
-  status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped' | 'cancelled';
+  status: 'pending' | 'payment_waiting' | 'paid' | 'processing' | 'shipped' | 'cancelled' | 'order_requested';
   paymentMethod: 'bank_transfer';
   depositName?: string;
   orderType: 'order' | 'quote';
@@ -104,6 +104,7 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
   processing: '처리중',
   shipped: '출고완료',
   cancelled: '주문취소',
+  order_requested: '발주완료',
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
@@ -113,6 +114,7 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
   processing: '#8b5cf6',
   shipped: '#2D5A47',
   cancelled: '#ef4444',
+  order_requested: '#2563eb',
 };
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────

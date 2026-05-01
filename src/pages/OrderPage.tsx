@@ -6,7 +6,7 @@ import {
   User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
-import { Order, OrderItem, generateOrderId, saveOrder, getOrdersFromSupabase } from '../store/orderStore';
+import { Order, OrderItem, generateOrderId, saveOrder, getOrdersFromSupabase, updateOrderStatus } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 
 // ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
@@ -171,6 +171,9 @@ export default function OrderPage() {
       }
       
       alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
+      // 3. 상태 업데이트 및 화면 갱신
+      updateOrderStatus(order.id, 'order_requested');
+      loadUserOrders();
     } catch (error) {
       console.error('Place order from quote error:', error);
       alert('발주 요청 중 오류가 발생했습니다.');
@@ -904,9 +907,14 @@ export default function OrderPage() {
                                   ) : (
                                     <button 
                                       onClick={() => handlePlaceOrderFromQuote(order)}
-                                      className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
+                                      disabled={order.status === 'order_requested'}
+                                      className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors shadow-sm ${
+                                        order.status === 'order_requested'
+                                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                          : 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600'
+                                      }`}
                                     >
-                                      발주요청
+                                      {order.status === 'order_requested' ? '발주완료' : '발주요청'}
                                     </button>
                                   )}
                                 </>
