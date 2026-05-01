@@ -799,16 +799,16 @@ export default function OrderPage() {
                   </div>
 
                   {/* Sub Tabs */}
-                  <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                  <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
                     <button
                       onClick={() => setHistoryTab('order')}
-                      className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${historyTab === 'order' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                       발주내역 조회
                     </button>
                     <button
                       onClick={() => setHistoryTab('quote')}
-                      className={`flex-1 py-2 text-[11px] font-black rounded-lg transition-all ${historyTab === 'quote' ? 'bg-white text-primary shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-2.5 text-[11px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                     >
                       견적내용 조회
                     </button>
