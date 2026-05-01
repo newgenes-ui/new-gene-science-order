@@ -286,7 +286,7 @@ export default function AdminDashboard() {
                     className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
                     onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.5fr_100px_120px_auto] gap-2 items-center">
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.2fr_100px_100px_350px] gap-2 items-center">
                       <div>
                         <p className="text-xs font-mono text-slate-400">{order.id}</p>
                         <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
@@ -314,7 +314,7 @@ export default function AdminDashboard() {
                             <button
                               key={s.id}
                               onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-1.5 py-1 rounded-lg text-[9px] font-black transition-all whitespace-nowrap ${
+                              className={`px-2 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                 order.status === s.id 
                                   ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
                     className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
                     onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
-                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.5fr_100px_120px_auto] gap-2 items-center">
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-[100px_1.2fr_100px_100px_350px] gap-2 items-center">
                       <div>
                         <p className="text-xs font-mono text-slate-400">{order.id}</p>
                         <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
@@ -463,7 +463,7 @@ export default function AdminDashboard() {
                             <button
                               key={s.id}
                               onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-1.5 py-1 rounded-lg text-[9px] font-black transition-all whitespace-nowrap ${
+                              className={`px-2 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                 order.status === s.id 
                                   ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
