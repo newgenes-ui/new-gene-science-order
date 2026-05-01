@@ -485,12 +485,9 @@ export default function OrderPage() {
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[#E2E8E4] shadow-sm">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
-              <Package className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-primary tracking-widest uppercase leading-none">New Gene Science</p>
-              <p className="text-[10px] text-slate-400 leading-none mt-0.5">{clientName} 전용 주문</p>
+            <img src="/logo.png" alt="New Gene Science Logo" className="h-10 w-auto" />
+            <div className="border-l border-slate-200 pl-3">
+              <p className="text-[10px] font-medium text-slate-400 leading-none">{clientName} 전용 주문 시스템</p>
             </div>
           </div>
           <button
