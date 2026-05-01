@@ -290,37 +290,45 @@ export default function AdminDashboard() {
                   >
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
-                      <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
-                        <div>
-                          <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                          <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
+                      {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">{order.orderDate}</p>
+                          <p className="text-xs font-mono font-bold text-slate-700 truncate">{order.id}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-400">업체</p>
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">업체명</p>
                           <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
                         </div>
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">주문자</p>
+                          <p className="text-sm font-bold text-slate-700 truncate">{order.ordererName}</p>
+                        </div>
                         <div className="hidden md:block col-span-2">
-                          <p className="text-xs text-slate-400">주문 내역 / 요청 사항</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">주문 내역 / 요청 사항</p>
                           <p className="text-sm font-black text-slate-700 truncate">
                             {order.items && order.items.length > 0
                               ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                               : order.otherRequest || '상세 내용 없음'}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-400">총 금액</p>
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">총 금액</p>
                           <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                         </div>
                       </div>
 
                       {/* 상태 관리 영역 */}
-                      <div className="flex items-center gap-2 min-w-fit">
+                      {/* 상태 관리 영역 */}
+                      <div className="flex items-center justify-start md:justify-end gap-2 w-full md:w-[290px] shrink-0 overflow-x-auto pb-1 md:pb-0">
                         {order.status === 'cancelled' ? (
-                          <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200">
-                            주문취소
-                          </span>
+                          <div className="w-full md:text-right md:pr-2">
+                            <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200 inline-block">
+                              주문취소
+                            </span>
+                          </div>
                         ) : (
-                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
+                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
                               { id: 'pending', label: '발주확인' },
                               { id: 'order_requested', label: '주문확인' },
@@ -449,17 +457,22 @@ export default function AdminDashboard() {
                   >
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
-                      <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
-                        <div>
-                          <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                          <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
+                      {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">{order.orderDate}</p>
+                          <p className="text-xs font-mono font-bold text-slate-700 truncate">{order.id}</p>
                         </div>
-                        <div>
-                          <p className="text-xs text-slate-400">업체</p>
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">업체명</p>
                           <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
                         </div>
-                        <div className="md:col-span-3">
-                          <p className="text-xs text-slate-400">문의 및 요청 상세 내용</p>
+                        <div className="col-span-1">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">주문자</p>
+                          <p className="text-sm font-bold text-slate-700 truncate">{order.ordererName}</p>
+                        </div>
+                        <div className="hidden md:block col-span-3">
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">문의 및 요청 상세 내용</p>
                           <p className="text-sm font-black text-slate-700 truncate">
                             {order.otherRequest || '상세 내용 없음'}
                           </p>
@@ -467,13 +480,16 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* 상태 관리 영역 */}
-                      <div className="flex items-center gap-2 min-w-fit">
+                      {/* 상태 관리 영역 */}
+                      <div className="flex items-center justify-start md:justify-end gap-2 w-full md:w-[290px] shrink-0 overflow-x-auto pb-1 md:pb-0">
                         {order.status === 'cancelled' ? (
-                          <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200">
-                            주문취소
-                          </span>
+                          <div className="w-full md:text-right md:pr-2">
+                            <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200 inline-block">
+                              주문취소
+                            </span>
+                          </div>
                         ) : (
-                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
+                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
                               { id: 'pending', label: '발주확인' },
                               { id: 'order_requested', label: '주문' },
