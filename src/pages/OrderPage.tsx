@@ -54,7 +54,7 @@ export default function OrderPage() {
     const newRequested = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
     setTaxRequestedOrderIds(newRequested);
     localStorage.setItem('ngs_tax_requested', JSON.stringify(newRequested));
-    setSelectedOrderIds([]); // 선택 초기화
+    // 선택을 초기화하지 않음 (명세서도 이어서 요청할 수 있도록)
   };
 
   const markStatementRequested = (orderIds: string[]) => {
@@ -62,8 +62,22 @@ export default function OrderPage() {
     const newRequested = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
     setStatementRequestedOrderIds(newRequested);
     localStorage.setItem('ngs_statement_requested', JSON.stringify(newRequested));
-    setSelectedOrderIds([]); // 선택 초기화
+    // 선택을 초기화하지 않음 (계산서도 이어서 요청할 수 있도록)
   };
+
+  useEffect(() => {
+    // 세금계산서와 거래명세서가 모두 요청된 주문은 선택(체크) 해제
+    const fullyRequestedIds = userOrders
+      .map(o => o.id)
+      .filter(id => taxRequestedOrderIds.includes(id) && statementRequestedOrderIds.includes(id));
+      
+    if (fullyRequestedIds.length > 0) {
+      setSelectedOrderIds(prev => {
+        const next = prev.filter(id => !fullyRequestedIds.includes(id));
+        return next.length !== prev.length ? next : prev;
+      });
+    }
+  }, [taxRequestedOrderIds, statementRequestedOrderIds, userOrders]);
 
   const handleTaxInvoiceRequest = async () => {
     if (!taxEmail) {
