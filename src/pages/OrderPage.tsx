@@ -375,6 +375,8 @@ export default function OrderPage() {
       orderType: activeTab === 'quote' ? 'quote' : 'order',
     };
 
+    console.log('Submitting order with status:', newOrder.status);
+
     let finalItemsText = orderItems.length > 0
       ? orderItems.map(i =>
           `• ${i.productName} (${i.productCode}) - ${i.spec} / ${i.quantity}개 / ₩${i.subtotal.toLocaleString()} (부가세 별도)`
