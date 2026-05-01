@@ -326,10 +326,10 @@ export default function AdminDashboard() {
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                   order.status === s.id 
-                                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                    ? 'text-white shadow-md scale-105' 
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                                 }`}
-                                style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']]}` } : {}}
+                                style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
                               >
                                 {s.label}
                               </button>
@@ -481,10 +481,10 @@ export default function AdminDashboard() {
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
                                   order.status === s.id 
-                                    ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
+                                    ? 'text-white shadow-md scale-105' 
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
                                 }`}
-                                style={order.status === s.id ? { borderLeft: `3px solid ${STATUS_COLORS[s.id as Order['status']] || '#94a3b8'}` } : {}}
+                                style={order.status === s.id ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8' } : {}}
                               >
                                 {s.label}
                               </button>

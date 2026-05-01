@@ -118,13 +118,13 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
-  pending: '#f59e0b',
-  payment_waiting: '#3b82f6',
-  paid: '#10b981',
-  processing: '#8b5cf6',
-  shipped: '#2D5A47',
-  cancelled: '#ef4444',
-  order_requested: '#2563eb',
+  pending: '#f97316',        // 오렌지 (주문완료)
+  payment_waiting: '#eab308', // 노란색 (입금대기)
+  paid: '#10b981',           // 녹색 (입금확인)
+  processing: '#8b5cf6',      // 보라 (처리중)
+  shipped: '#3b82f6',        // 파란색 (납품완료)
+  cancelled: '#ef4444',       // 빨간색 (주문취소)
+  order_requested: '#2563eb', // 파랑 (발주완료)
 };
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────
