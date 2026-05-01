@@ -184,6 +184,18 @@ export default function OrderPage() {
     }
   };
 
+  const handleClientPaymentConfirm = async (order: Order) => {
+    if (!window.confirm('입금 또는 결제를 완료하셨습니까? 관리자가 확인 후 승인해 드립니다.')) return;
+    try {
+      updateOrderStatus(order.id, 'paid');
+      setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'paid' } : o));
+      alert('결제 완료 알림이 전송되었습니다.');
+    } catch (error) {
+      console.error('Payment confirm error:', error);
+      alert('오류가 발생했습니다.');
+    }
+  };
+
   // clientData가 바뀌면 입력 필드 자동 채우기 (모바일 인식 지연 방지)
 
   useEffect(() => {
@@ -912,23 +924,39 @@ export default function OrderPage() {
                                       className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                     />
                                   )}
-                                  {order.status === 'cancelled' ? (
-                                    <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-red-50 text-red-500 border-red-100">
-                                      문의취소
-                                    </span>
-                                  ) : (
-                                    <button 
-                                      onClick={() => handlePlaceOrderFromQuote(order)}
-                                      disabled={order.status === 'order_requested'}
-                                      className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors shadow-sm ${
-                                        order.status === 'order_requested'
-                                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                                          : 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600'
-                                      }`}
-                                    >
-                                      {order.status === 'order_requested' ? '발주완료' : '발주요청'}
-                                    </button>
-                                  )}
+                                    <div className="flex gap-2">
+                                      {order.status === 'paid' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
+                                          결제 완료
+                                        </span>
+                                      ) : order.status === 'cancelled' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-red-50 text-red-500 border-red-100">
+                                          문의취소
+                                        </span>
+                                      ) : (
+                                        <>
+                                          <button 
+                                            onClick={() => handlePlaceOrderFromQuote(order)}
+                                            disabled={order.status === 'order_requested'}
+                                            className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors shadow-sm ${
+                                              order.status === 'order_requested'
+                                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                                : 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600'
+                                            }`}
+                                          >
+                                            {order.status === 'order_requested' ? '발주완료' : '발주요청'}
+                                          </button>
+                                          {order.status === 'order_requested' && (
+                                            <button
+                                              onClick={() => handleClientPaymentConfirm(order)}
+                                              className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
+                                            >
+                                              결제완료
+                                            </button>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
                                 </>
                               )}
                             </div>

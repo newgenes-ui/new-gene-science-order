@@ -4,7 +4,7 @@ import {
   BarChart3, Calendar, Download, TrendingUp, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder, updateOrderStatus } from '../store/orderStore';
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
@@ -95,6 +95,15 @@ export default function AdminDashboard() {
       setDeletingId(null);
     } catch (err: any) {
       alert('삭제 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, newStatus: Order['status']) => {
+    try {
+      updateOrderStatus(id, newStatus);
+      setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    } catch (err: any) {
+      alert('상태 업데이트 중 오류가 발생했습니다: ' + err.message);
     }
   };
 
@@ -290,7 +299,15 @@ export default function AdminDashboard() {
                         <p className="text-xs text-slate-400">금액</p>
                         <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                       </div>
-                      <div className="hidden md:flex justify-end">
+                      <div className="hidden md:flex justify-end gap-2 items-center">
+                        {order.status === 'payment_waiting' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
+                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm"
+                          >
+                            결제 완료 처리
+                          </button>
+                        )}
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
                             order.status === 'cancelled' 
@@ -423,9 +440,20 @@ export default function AdminDashboard() {
                         <p className="text-xs text-slate-400">상태</p>
                         <p className="text-sm font-black text-primary">견적문의</p>
                       </div>
-                      <div className="hidden md:flex justify-end">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-slate-400">
-                          문의접수
+                      <div className="hidden md:flex justify-end gap-2 items-center">
+                        {(order.status === 'payment_waiting' || order.status === 'order_requested' || order.status === 'pending') && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
+                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm"
+                          >
+                            결제 완료 처리
+                          </button>
+                        )}
+                        <span 
+                          className="px-2.5 py-1 rounded-full text-[10px] font-black text-white"
+                          style={{ backgroundColor: STATUS_COLORS[order.status] || '#94a3b8' }}
+                        >
+                          {STATUS_LABELS[order.status]}
                         </span>
                       </div>
                     </div>
