@@ -904,7 +904,7 @@ export default function OrderPage() {
                               <p className="text-sm font-black text-slate-800 truncate">
                                 {order.items.length > 0 
                                   ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                  : (order.orderType === 'quote' || order.isConverted ? '견적 문의 내역' : '기타 발주')}
+                                  : '견적 문의 내역'}
                               </p>
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
