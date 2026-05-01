@@ -54,7 +54,7 @@ export function saveOrder(order: Order): void {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
-  // 1) localStorage 업데이트 (현재 브라우저에 데이터가 있는 경우에만)
+  // 1) localStorage 업데이트
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
@@ -65,12 +65,34 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderStatusInSupabase(orderId, status);
+      await updateOrderInSupabase(orderId, { status });
     }
     return true;
   } catch (e) {
     console.error('Supabase update failed:', e);
-    throw e; // 상세 에러 메시지 전달을 위해 re-throw
+    throw e;
+  }
+}
+
+export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
+  // 1) localStorage 업데이트
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx !== -1) {
+    orders[idx].status = 'order_requested';
+    orders[idx].orderType = 'order';
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  }
+  
+  // 2) Supabase 업데이트
+  try {
+    if (isSupabaseConfigured && supabase) {
+      await updateOrderInSupabase(orderId, { status: 'order_requested', order_type: 'order' });
+    }
+    return true;
+  } catch (e) {
+    console.error('Supabase convert failed:', e);
+    throw e;
   }
 }
 
@@ -196,21 +218,20 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
   }
 }
 
-async function updateOrderStatusInSupabase(orderId: string, status: string): Promise<void> {
+async function updateOrderInSupabase(orderId: string, updates: any): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    // upsert 대신 다시 update 사용 (NOT NULL 제약 조건 충돌 방지)
     const { error } = await supabase
       .from('orders')
-      .update({ status })
+      .update(updates)
       .eq('id', orderId);
       
     if (error) {
       throw new Error(`Supabase 업데이트 실패: ${error.message} (코드: ${error.code})`);
     }
-    console.log('✅ Supabase 상태 업데이트 완료:', orderId, status);
+    console.log('✅ Supabase 업데이트 완료:', orderId, updates);
   } catch (e: any) {
-    console.error('Supabase 상태 업데이트 실패:', e);
+    console.error('Supabase 업데이트 실패:', e);
     throw e;
   }
 }

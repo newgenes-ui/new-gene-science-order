@@ -6,7 +6,7 @@ import {
   User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
-import { Order, OrderItem, generateOrderId, saveOrder, getOrdersFromSupabase, updateOrderStatus } from '../store/orderStore';
+import { Order, OrderItem, generateOrderId, saveOrder, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 
 // ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
@@ -172,11 +172,11 @@ export default function OrderPage() {
       }
       
       alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
-      // 3. 상태 업데이트 및 화면 갱신
-      const success = await updateOrderStatus(order.id, 'order_requested');
+      // 3. 상태 업데이트 및 주문으로 변환
+      const success = await convertQuoteToOrder(order.id);
       if (success) {
-        // 로컬 상태 즉시 반영하여 버튼 UI 즉시 변경
-        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
+        // 로컬 상태 업데이트 (주문으로 변환되었으므로 탭 이동 등이 발생할 수 있음)
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested', orderType: 'order' } : o));
       }
     } catch (error) {
       console.error('Place order from quote error:', error);
@@ -924,12 +924,15 @@ export default function OrderPage() {
                                       ? 'bg-blue-500 text-white'
                                       : order.status === 'payment_waiting'
                                         ? 'bg-rose-500 text-white'
-                                        : order.status === 'cancelled'
-                                          ? 'bg-red-50 text-red-500 border border-red-100'
-                                          : 'bg-emerald-500 text-white'
+                                        : order.status === 'order_requested'
+                                          ? 'bg-emerald-500 text-white'
+                                          : order.status === 'cancelled'
+                                            ? 'bg-red-50 text-red-500 border border-red-100'
+                                            : 'bg-emerald-500 text-white'
                                   }`}>
                                     {order.status === 'shipped' ? '납품완료' : 
                                      order.status === 'payment_waiting' ? '미수금' : 
+                                     order.status === 'order_requested' ? '주문요청' :
                                      order.status === 'cancelled' ? '주문취소' : '주문완료'}
                                   </span>
                                 </>
