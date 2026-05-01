@@ -821,19 +821,29 @@ export default function OrderPage() {
                     </button>
                   </div>
 
-                  {/* Sub Tabs */}
-                  <div className="flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
+                  {/* Sub Tabs and Refresh */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
+                      <button
+                        onClick={() => setHistoryTab('order')}
+                        className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        발주내역 조회
+                      </button>
+                      <button
+                        onClick={() => setHistoryTab('quote')}
+                        className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        견적내용 조회
+                      </button>
+                    </div>
                     <button
-                      onClick={() => setHistoryTab('order')}
-                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      onClick={loadUserOrders}
+                      disabled={isOrdersLoading}
+                      className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-primary transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                      title="내역 새로고침"
                     >
-                      발주내역 조회
-                    </button>
-                    <button
-                      onClick={() => setHistoryTab('quote')}
-                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                      견적내용 조회
+                      <RefreshCw className={`w-4 h-4 ${isOrdersLoading ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
 
@@ -908,7 +918,7 @@ export default function OrderPage() {
                                         ? 'bg-red-50 text-red-500 border border-red-100'
                                         : 'bg-amber-100 text-amber-600 border border-amber-200'
                                   }`}>
-                                    {order.status === 'paid' ? '결제 완료' : order.status === 'cancelled' ? '주문취소' : '미수금'}
+                                    {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? '결제 완료' : order.status === 'cancelled' ? '주문취소' : '미수금'}
                                   </span>
                                 </>
                               ) : (
@@ -925,7 +935,10 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      {order.status === 'paid' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
+                                          결제 완료
+                                        </span>
+                                      ) : (order.status === 'processing' || order.status === 'shipped') ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
                                           결제 완료
                                         </span>
