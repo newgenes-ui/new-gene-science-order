@@ -54,22 +54,24 @@ export function saveOrder(order: Order): void {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
+  // 1) localStorage 업데이트 (현재 브라우저에 데이터가 있는 경우에만)
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
     orders[idx].status = status;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
-    
-    // Supabase 업데이트
-    try {
-      await updateOrderStatusInSupabase(orderId, status);
-      return true;
-    } catch (e) {
-      console.error('Supabase update failed:', e);
-      throw e; // 에러를 상위(대시보드)로 던져서 상세 메시지를 보여줌
-    }
   }
-  return false;
+  
+  // 2) Supabase 업데이트
+  try {
+    if (isSupabaseConfigured && supabase) {
+      await updateOrderStatusInSupabase(orderId, status);
+    }
+    return true;
+  } catch (e) {
+    console.error('Supabase update failed:', e);
+    throw e; // 상세 에러 메시지 전달을 위해 re-throw
+  }
 }
 
 export function deleteOrder(orderId: string): void {
