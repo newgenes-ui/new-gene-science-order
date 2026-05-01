@@ -280,11 +280,8 @@ export default function OrderPage() {
         o.orderDate >= appliedRange.start && 
         o.orderDate <= appliedRange.end &&
         o.orderType === historyTab &&
-        // 'paid', 'processing', 'shipped' (결제완료 계열) 및 'cancelled' (취소) 제외
-        o.status !== 'paid' && 
-        o.status !== 'processing' && 
-        o.status !== 'shipped' && 
-        o.status !== 'cancelled'
+        // 'paid' (입금확인) 시 화면 숨기기
+        o.status !== 'paid'
       )
       .sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [userOrders, appliedRange, historyTab]);
@@ -923,13 +920,17 @@ export default function OrderPage() {
                                     />
                                   )}
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm ${
-                                    (order.status === 'paid' || order.status === 'processing' || order.status === 'shipped')
-                                      ? 'bg-emerald-500 text-white' 
-                                      : order.status === 'cancelled'
-                                        ? 'bg-red-50 text-red-500 border border-red-100'
-                                        : 'bg-amber-100 text-amber-600 border border-amber-200'
+                                    order.status === 'shipped'
+                                      ? 'bg-blue-500 text-white'
+                                      : order.status === 'payment_waiting'
+                                        ? 'bg-rose-500 text-white'
+                                        : order.status === 'cancelled'
+                                          ? 'bg-red-50 text-red-500 border border-red-100'
+                                          : 'bg-emerald-500 text-white'
                                   }`}>
-                                    {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? '결제 완료' : order.status === 'cancelled' ? '주문취소' : '주문완료'}
+                                    {order.status === 'shipped' ? '납품완료' : 
+                                     order.status === 'payment_waiting' ? '미수금' : 
+                                     order.status === 'cancelled' ? '주문취소' : '주문완료'}
                                   </span>
                                 </>
                               ) : (
@@ -946,9 +947,13 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-50 text-emerald-500 border-emerald-100 shadow-sm">
-                                          결제 완료
+                                      {order.status === 'shipped' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white shadow-sm">
+                                          납품완료
+                                        </span>
+                                      ) : order.status === 'payment_waiting' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-rose-500 text-white shadow-sm">
+                                          미수금
                                         </span>
                                       ) : order.status === 'cancelled' ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-red-50 text-red-500 border-red-100">
@@ -961,7 +966,7 @@ export default function OrderPage() {
                                             disabled={order.status === 'order_requested'}
                                             className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-colors shadow-sm ${
                                               order.status === 'order_requested'
-                                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                                ? 'bg-emerald-500 text-white border-emerald-600'
                                                 : 'bg-blue-500 text-white border-blue-600 hover:bg-blue-600'
                                             }`}
                                           >
