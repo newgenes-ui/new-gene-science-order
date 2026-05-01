@@ -304,17 +304,17 @@ export default function AdminDashboard() {
                         <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                       </div>
                       <div className="hidden md:flex justify-end items-center gap-2">
-                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50">
+                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
                           {[
                             { id: 'pending', label: '주문완료' },
+                            { id: 'shipped', label: '납품완료' },
                             { id: 'payment_waiting', label: '입금대기' },
-                            { id: 'paid', label: '입금확인' },
-                            { id: 'shipped', label: '납품완료' }
+                            { id: 'paid', label: '입금확인' }
                           ].map((s) => (
                             <button
                               key={s.id}
                               onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all min-w-[50px] ${
                                 order.status === s.id 
                                   ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
@@ -452,18 +452,18 @@ export default function AdminDashboard() {
                         <p className="text-xs text-slate-400">상태</p>
                         <p className="text-sm font-black text-primary">견적문의</p>
                       </div>
-                      <div className="hidden md:flex justify-end items-center">
-                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50">
+                      <div className="hidden md:flex justify-end items-center gap-2">
+                        <div className="flex gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/50 whitespace-nowrap">
                           {[
                             { id: 'pending', label: '주문완료' },
+                            { id: 'shipped', label: '납품완료' },
                             { id: 'payment_waiting', label: '입금대기' },
-                            { id: 'paid', label: '입금확인' },
-                            { id: 'shipped', label: '납품완료' }
+                            { id: 'paid', label: '입금확인' }
                           ].map((s) => (
                             <button
                               key={s.id}
                               onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all ${
+                              className={`px-2 py-1.5 rounded-lg text-[9px] font-black transition-all min-w-[50px] ${
                                 order.status === s.id 
                                   ? 'bg-white text-slate-800 shadow-sm border border-slate-200' 
                                   : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
@@ -474,7 +474,6 @@ export default function AdminDashboard() {
                             </button>
                           ))}
                         </div>
-                      </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
                       {deletingId === order.id ? (
