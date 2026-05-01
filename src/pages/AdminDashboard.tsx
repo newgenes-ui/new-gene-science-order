@@ -322,7 +322,8 @@ export default function AdminDashboard() {
                         ) : (
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                             {[
-                              { id: 'pending', label: '주문확인' },
+                              { id: 'pending', label: '발주확인' },
+                              { id: 'order_requested', label: '주문' },
                               { id: 'shipped', label: '납품완료' },
                               { id: 'payment_waiting', label: '입금대기' },
                               { id: 'paid', label: '입금확인' }
@@ -475,7 +476,8 @@ export default function AdminDashboard() {
                         ) : (
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                             {[
-                              { id: 'pending', label: '주문확인' },
+                              { id: 'pending', label: '발주확인' },
+                              { id: 'order_requested', label: '주문' },
                               { id: 'shipped', label: '납품완료' },
                               { id: 'payment_waiting', label: '입금대기' },
                               { id: 'paid', label: '입금확인' }

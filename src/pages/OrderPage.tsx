@@ -176,7 +176,7 @@ export default function OrderPage() {
       const success = await convertQuoteToOrder(order.id);
       if (success) {
         // 로컬 상태 업데이트
-        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'pending', orderType: 'order' } : o));
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested', orderType: 'order' } : o));
       }
     } catch (error: any) {
       console.error('Place order from quote error:', error);
@@ -968,10 +968,17 @@ export default function OrderPage() {
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-amber-500 text-white border-amber-600 shadow-sm">
                                           미수금
                                         </span>
-                                      ) : (order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0))) ? (
+                                      ) : order.status === 'order_requested' ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
                                           주문접수
                                         </span>
+                                      ) : (order.status === 'pending' || (order.orderType === 'order' && (!order.items || order.items.length === 0))) ? (
+                                        <button 
+                                          onClick={() => handlePlaceOrderFromQuote(order)}
+                                          className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
+                                        >
+                                          발주요청
+                                        </button>
                                       ) : (
                                         <button 
                                           onClick={() => handlePlaceOrderFromQuote(order)}
