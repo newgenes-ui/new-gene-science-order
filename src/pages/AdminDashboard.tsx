@@ -104,10 +104,10 @@ export default function AdminDashboard() {
       if (success) {
         setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
       } else {
-        alert('DB 업데이트에 실패했습니다. 다시 시도해 주세요.');
+        alert('DB 업데이트에 실패했습니다. Supabase의 RLS 정책에서 UPDATE 또는 UPSERT 권한이 허용되어 있는지 확인해 주세요.');
       }
     } catch (err: any) {
-      alert('상태 업데이트 중 오류가 발생했습니다: ' + err.message);
+      alert('상태 업데이트 중 오류가 발생했습니다:\n' + err.message);
     }
   };
 
