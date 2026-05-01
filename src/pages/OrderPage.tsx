@@ -517,9 +517,16 @@ export default function OrderPage() {
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative z-10">
-            <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Welcome</p>
             <h1 className="text-xl font-black">{clientName}님 반갑습니다! 👋</h1>
             <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 {activeTab === 'quote' ? '문의' : '주문'}하세요</p>
+            <div className="flex gap-4 mt-3 pt-3 border-t border-white/10">
+              <p className="text-[10px] font-bold opacity-60 flex items-center gap-1.5">
+                <span className="bg-white/20 px-1.5 py-0.5 rounded">T</span> 02-898-8805
+              </p>
+              <p className="text-[10px] font-bold opacity-60 flex items-center gap-1.5">
+                <span className="bg-white/20 px-1.5 py-0.5 rounded">M</span> 010-7169-8805
+              </p>
+            </div>
           </div>
         </motion.div>
 
