@@ -245,7 +245,7 @@ export default function OrderPage() {
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,
-        to_email: NGS_EMAIL,
+        to_email: `${NGS_EMAIL}, ${taxEmail}`,
         ngs_email: NGS_EMAIL,
       };
 
@@ -295,7 +295,7 @@ export default function OrderPage() {
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,
-        to_email: NGS_EMAIL,
+        to_email: `${NGS_EMAIL}, ${taxEmail}`,
         ngs_email: NGS_EMAIL,
       };
 
