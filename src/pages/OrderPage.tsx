@@ -249,11 +249,15 @@ export default function OrderPage() {
         ngs_email: NGS_EMAIL,
       };
 
+      if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+        throw new Error('EmailJS 설정이 누락되었습니다.');
+      }
+
       await emailjs.send(
-        'service_h8f3lfs',
-        'template_67u1m86',
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
         emailParams,
-        'Y4Bf666YxL-LOnR4h'
+        EMAILJS_PUBLIC_KEY
       );
 
       markTaxRequested(selectedOrderIds);
@@ -295,11 +299,15 @@ export default function OrderPage() {
         ngs_email: NGS_EMAIL,
       };
 
+      if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+        throw new Error('EmailJS 설정이 누락되었습니다.');
+      }
+
       await emailjs.send(
-        'service_h8f3lfs',
-        'template_67u1m86',
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
         emailParams,
-        'Y4Bf666YxL-LOnR4h'
+        EMAILJS_PUBLIC_KEY
       );
 
       markStatementRequested(selectedOrderIds);
