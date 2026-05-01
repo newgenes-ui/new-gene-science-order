@@ -950,8 +950,8 @@ export default function OrderPage() {
                                   )}
                                     <div className="flex gap-2">
                                       {order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0)) ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
-                                          주문완료
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 shadow-sm">
+                                          주문요청
                                         </span>
                                       ) : (
                                         <button 
