@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeListTab, setActiveListTab] = useState<'order' | 'quote'>('order');
 
   // Supabase에서 주문 데이터 로드 (없으면 localStorage fallback)
   const loadOrders = async () => {
@@ -75,11 +76,11 @@ export default function AdminDashboard() {
         o.ordererName.toLowerCase().includes(searchTerm.toLowerCase());
       const inClient = clientFilter === '전체' || o.clientName === clientFilter;
       return inDate && inSearch && inClient;
-    });
+    }).sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
   const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order'), [filteredOrders]);
-  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType === 'quote'), [filteredOrders]);
+  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType !== 'order'), [filteredOrders]);
 
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.quantity, 0), 0);
@@ -233,246 +234,265 @@ export default function AdminDashboard() {
           <StatCard icon={<TrendingUp className="w-4 h-4" />} label="건당 평균" value={filteredOrders.length > 0 ? `₩${Math.floor(totalRevenue / filteredOrders.length).toLocaleString()}` : '-'} />
         </div>
 
-        {/* Orders Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-primary" /> 주문 목록
-              <span className="ml-auto text-xs font-bold text-slate-400">{ordersList.length}건</span>
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {ordersList.length === 0 ? (
-              <div className="py-16 text-center text-slate-300">
-                <ShoppingBag className="w-10 h-10 mx-auto mb-3" />
-                <p className="text-sm font-bold">조회된 주문이 없습니다</p>
-              </div>
-            ) : ordersList.map(order => (
-              <div key={order.id}>
-                <div
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
-                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                >
-                  <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
-                    <div>
-                      <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                      <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">업체</p>
-                      <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
-                    </div>
-                    <div className="hidden md:block">
-                      <p className="text-xs text-slate-400">주문자</p>
-                      <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">금액</p>
-                      <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
-                    </div>
-                    <div className="hidden md:flex justify-end">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                          order.status === 'cancelled' 
-                            ? 'bg-rose-50 text-rose-600 border border-rose-200' 
-                            : 'text-white'
-                        }`}
-                        style={order.status !== 'cancelled' ? { backgroundColor: STATUS_COLORS[order.status] } : {}}
-                      >
-                        {STATUS_LABELS[order.status]}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    {deletingId === order.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
-                          className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
-                        >
-                          진짜 삭제
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
-                          className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingId(order.id);
-                        }}
-                        className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
-                        title="삭제"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
-                  </div>
-                </div>
-                {expandedOrder === order.id && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: 'auto' }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
-                          <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
-                          <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
-                            발주 품목
-                          </p>
-                          <div className="space-y-1">
-                            {order.items.map((item, i) => (
-                              <div key={i} className="flex justify-between text-sm">
-                                <span className="text-slate-600 truncate flex-1 mr-2">{item.productName}</span>
-                                <span className="font-bold text-slate-500 shrink-0">×{item.quantity} = ₩{item.subtotal.toLocaleString()}</span>
-                              </div>
-                            ))}
-                            <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
-                              <div className="flex justify-between text-[11px] font-bold text-slate-400">
-                                <span>공급가액</span>
-                                <span>₩{order.subtotalAmount.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between text-[11px] font-bold text-slate-400">
-                                <span>부가세</span>
-                                <span>₩{order.vatAmount.toLocaleString()}</span>
-                              </div>
-                              <div className="flex justify-between text-sm font-black text-primary pt-1">
-                                <span>합계</span>
-                                <span>₩{order.totalAmount.toLocaleString()}</span>
-                              </div>
-                            </div>
-                            {order.otherRequest && (
-                              <p className="text-xs text-slate-400 italic mt-1">기타: {order.otherRequest}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            ))}
-          </div>
+        {/* Tab Navigation for Lists */}
+        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-[#E2E8E4] shadow-sm">
+          <button
+            onClick={() => setActiveListTab('order')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            발주 내역 ({ordersList.length})
+          </button>
+          <button
+            onClick={() => setActiveListTab('quote')}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            견적 문의 ({quotesList.length})
+          </button>
         </div>
 
-        {/* Quotes Table */}
-        <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100">
-            <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" /> 견적문의 목록
-              <span className="ml-auto text-xs font-bold text-slate-400">{quotesList.length}건</span>
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-50">
-            {quotesList.length === 0 ? (
-              <div className="py-16 text-center text-slate-300">
-                <MessageSquare className="w-10 h-10 mx-auto mb-3" />
-                <p className="text-sm font-bold">조회된 견적문의가 없습니다</p>
-              </div>
-            ) : quotesList.map(order => (
-              <div key={order.id}>
-                <div
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
-                  onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                >
-                  <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
-                    <div>
-                      <p className="text-xs font-mono text-slate-400">{order.id}</p>
-                      <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">업체</p>
-                      <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
-                    </div>
-                    <div className="hidden md:block">
-                      <p className="text-xs text-slate-400">문의자</p>
-                      <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">상태</p>
-                      <p className="text-sm font-black text-primary">견적문의</p>
-                    </div>
-                    <div className="hidden md:flex justify-end">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-slate-400">
-                        문의접수
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2">
-                    {deletingId === order.id ? (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
-                          className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
-                        >
-                          진짜 삭제
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
-                          className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
-                        >
-                          취소
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingId(order.id);
-                        }}
-                        className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
-                        title="삭제"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-                    {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
-                  </div>
+        {/* Conditional Table Rendering */}
+        {activeListTab === 'order' ? (
+          <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
+                <ShoppingBag className="w-4 h-4 text-primary" /> 발주 목록
+                <span className="ml-auto text-xs font-bold text-slate-400">{ordersList.length}건</span>
+              </h2>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {ordersList.length === 0 ? (
+                <div className="py-16 text-center text-slate-300">
+                  <ShoppingBag className="w-10 h-10 mx-auto mb-3" />
+                  <p className="text-sm font-bold">조회된 발주 내역이 없습니다</p>
                 </div>
-                {expandedOrder === order.id && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: 'auto' }}
-                    exit={{ height: 0 }}
-                    className="overflow-hidden"
+              ) : ordersList.map(order => (
+                <div key={order.id}>
+                  <div
+                    className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
-                    <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
-                          <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
-                          <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
+                      <div>
+                        <p className="text-xs font-mono text-slate-400">{order.id}</p>
+                        <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">업체</p>
+                        <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
+                      </div>
+                      <div className="hidden md:block">
+                        <p className="text-xs text-slate-400">주문자</p>
+                        <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">금액</p>
+                        <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
+                      </div>
+                      <div className="hidden md:flex justify-end">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
+                            order.status === 'cancelled' 
+                              ? 'bg-rose-50 text-rose-600 border border-rose-200' 
+                              : 'text-white'
+                          }`}
+                          style={order.status !== 'cancelled' ? { backgroundColor: STATUS_COLORS[order.status] } : {}}
+                        >
+                          {STATUS_LABELS[order.status]}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      {deletingId === order.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                            className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
+                          >
+                            진짜 삭제
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                            className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
+                          >
+                            취소
+                          </button>
                         </div>
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
-                            견적 요청 내용
-                          </p>
-                          <div className="space-y-1">
-                            <p className="text-sm text-slate-800 bg-white p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
-                              {order.otherRequest || '요청 내용 없음'}
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingId(order.id);
+                          }}
+                          className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                          title="삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                    </div>
+                  </div>
+                  {expandedOrder === order.id && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: 'auto' }}
+                      exit={{ height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
+                            <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
+                            <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+                              발주 품목
                             </p>
+                            <div className="space-y-1">
+                              {order.items.map((item, i) => (
+                                <div key={i} className="flex justify-between text-sm">
+                                  <span className="text-slate-600 truncate flex-1 mr-2">{item.productName}</span>
+                                  <span className="font-bold text-slate-500 shrink-0">×{item.quantity} = ₩{item.subtotal.toLocaleString()}</span>
+                                </div>
+                              ))}
+                              <div className="mt-2 pt-2 border-t border-slate-200 space-y-1">
+                                <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                                  <span>공급가액</span>
+                                  <span>₩{order.subtotalAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-[11px] font-bold text-slate-400">
+                                  <span>부가세</span>
+                                  <span>₩{order.vatAmount.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between text-sm font-black text-primary pt-1">
+                                  <span>합계</span>
+                                  <span>₩{order.totalAmount.toLocaleString()}</span>
+                                </div>
+                              </div>
+                              {order.otherRequest && (
+                                <p className="text-xs text-slate-400 italic mt-1">기타: {order.otherRequest}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-            ))}
+                    </motion.div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100">
+              <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-primary" /> 견적문의 목록
+                <span className="ml-auto text-xs font-bold text-slate-400">{quotesList.length}건</span>
+              </h2>
+            </div>
+            <div className="divide-y divide-slate-50">
+              {quotesList.length === 0 ? (
+                <div className="py-16 text-center text-slate-300">
+                  <MessageSquare className="w-10 h-10 mx-auto mb-3" />
+                  <p className="text-sm font-bold">조회된 견적문의가 없습니다</p>
+                </div>
+              ) : quotesList.map(order => (
+                <div key={order.id}>
+                  <div
+                    className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                  >
+                    <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
+                      <div>
+                        <p className="text-xs font-mono text-slate-400">{order.id}</p>
+                        <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">업체</p>
+                        <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
+                      </div>
+                      <div className="hidden md:block">
+                        <p className="text-xs text-slate-400">문의자</p>
+                        <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">상태</p>
+                        <p className="text-sm font-black text-primary">견적문의</p>
+                      </div>
+                      <div className="hidden md:flex justify-end">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white bg-slate-400">
+                          문의접수
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-2">
+                      {deletingId === order.id ? (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
+                            className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
+                          >
+                            진짜 삭제
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                            className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
+                          >
+                            취소
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingId(order.id);
+                          }}
+                          className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
+                          title="삭제"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                    </div>
+                  </div>
+                  {expandedOrder === order.id && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: 'auto' }}
+                      exit={{ height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
+                            <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
+                            <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
+                              견적 요청 내용
+                            </p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-slate-800 bg-white p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                                {order.otherRequest || '요청 내용 없음'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </main>
     </div>

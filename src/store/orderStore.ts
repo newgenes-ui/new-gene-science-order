@@ -240,7 +240,11 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       totalAmount: row.total_amount,
       status: row.status,
       paymentMethod: row.payment_method,
-      orderType: row.order_type || (row.items && row.items.length > 0 ? 'order' : 'quote'),
+      orderType: row.order_type === 'order' 
+        ? 'order' 
+        : (row.order_type === 'quote' 
+            ? 'quote' 
+            : (row.items && Array.isArray(row.items) && row.items.length > 0 ? 'order' : 'quote')),
     }));
   } catch (e) {
     console.error('Supabase 조회 실패:', e);
