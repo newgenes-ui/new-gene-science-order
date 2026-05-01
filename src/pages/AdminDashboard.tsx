@@ -300,14 +300,21 @@ export default function AdminDashboard() {
                         <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                       </div>
                       <div className="hidden md:flex justify-end gap-2 items-center">
-                        {order.status === 'payment_waiting' && (
+                        {order.status === 'payment_waiting' ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
-                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm"
+                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
                           >
-                            결제 완료 처리
+                            결제 완료로 전환
                           </button>
-                        )}
+                        ) : order.status === 'paid' ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'payment_waiting'); }}
+                            className="px-2 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg hover:bg-amber-600 transition-all shadow-sm active:scale-95"
+                          >
+                            입금 대기로 되돌리기
+                          </button>
+                        ) : null}
                         <span
                           className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
                             order.status === 'cancelled' 
@@ -441,14 +448,21 @@ export default function AdminDashboard() {
                         <p className="text-sm font-black text-primary">견적문의</p>
                       </div>
                       <div className="hidden md:flex justify-end gap-2 items-center">
-                        {(order.status === 'payment_waiting' || order.status === 'order_requested' || order.status === 'pending') && (
+                        {(order.status === 'payment_waiting' || order.status === 'order_requested' || order.status === 'pending') ? (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'paid'); }}
-                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm"
+                            className="px-2 py-1 bg-emerald-500 text-white text-[10px] font-black rounded-lg hover:bg-emerald-600 transition-all shadow-sm active:scale-95"
                           >
                             결제 완료 처리
                           </button>
-                        )}
+                        ) : order.status === 'paid' ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'order_requested'); }}
+                            className="px-2 py-1 bg-amber-500 text-white text-[10px] font-black rounded-lg hover:bg-amber-600 transition-all shadow-sm active:scale-95"
+                          >
+                            발주 완료로 되돌리기
+                          </button>
+                        ) : null}
                         <span 
                           className="px-2.5 py-1 rounded-full text-[10px] font-black text-white"
                           style={{ backgroundColor: STATUS_COLORS[order.status] || '#94a3b8' }}
