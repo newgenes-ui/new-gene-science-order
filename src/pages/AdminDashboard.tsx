@@ -290,7 +290,7 @@ export default function AdminDashboard() {
                   >
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
-                      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
                         <div>
                           <p className="text-xs font-mono text-slate-400">{order.id}</p>
                           <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
@@ -299,12 +299,16 @@ export default function AdminDashboard() {
                           <p className="text-xs text-slate-400">업체</p>
                           <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
                         </div>
-                        <div className="hidden md:block">
-                          <p className="text-xs text-slate-400">주문자</p>
-                          <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
+                        <div className="hidden md:block col-span-2">
+                          <p className="text-xs text-slate-400">주문 내역 / 요청 사항</p>
+                          <p className="text-sm font-black text-slate-700 truncate">
+                            {order.items && order.items.length > 0 
+                              ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                              : order.otherRequest || '상세 내용 없음'}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-slate-400">금액</p>
+                          <p className="text-xs text-slate-400">총 금액</p>
                           <p className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
                         </div>
                       </div>
@@ -446,7 +450,7 @@ export default function AdminDashboard() {
                   >
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
-                      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4 items-center">
                         <div>
                           <p className="text-xs font-mono text-slate-400">{order.id}</p>
                           <p className="text-sm font-bold text-slate-700">{order.orderDate}</p>
@@ -455,13 +459,11 @@ export default function AdminDashboard() {
                           <p className="text-xs text-slate-400">업체</p>
                           <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
                         </div>
-                        <div className="hidden md:block">
-                          <p className="text-xs text-slate-400">문의자</p>
-                          <p className="text-sm font-semibold text-slate-600">{order.ordererName || '-'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-400">구분</p>
-                          <p className="text-sm font-black text-primary">견적문의</p>
+                        <div className="md:col-span-3">
+                          <p className="text-xs text-slate-400">문의 및 요청 상세 내용</p>
+                          <p className="text-sm font-black text-slate-700 truncate">
+                            {order.otherRequest || '상세 내용 없음'}
+                          </p>
                         </div>
                       </div>
 
