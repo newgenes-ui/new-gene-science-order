@@ -370,7 +370,7 @@ export default function OrderPage() {
       subtotalAmount,
       vatAmount,
       totalAmount,
-      status: 'payment_waiting',
+      status: 'pending',
       paymentMethod: 'bank_transfer',
       orderType: activeTab === 'quote' ? 'quote' : 'order',
     };
@@ -901,11 +901,20 @@ export default function OrderPage() {
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
                               </div>
-                              <p className="text-sm font-black text-slate-800 truncate">
-                                {order.items && order.items.length > 0 
-                                  ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                  : '견적 문의 내역'}
-                              </p>
+                              {order.orderType === 'quote' ? (
+                                <>
+                                  <h4 className="text-sm font-black text-slate-800">견적 문의 내역</h4>
+                                  {order.ordererName && (
+                                    <p className="text-xs font-bold text-slate-400 mt-0.5">주문자: {order.ordererName}</p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-sm font-black text-slate-800 truncate">
+                                  {order.items && order.items.length > 0 
+                                    ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                                    : '견적 문의 내역'}
+                                </p>
+                              )}
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
                               {order.orderType === 'order' ? (
@@ -958,8 +967,8 @@ export default function OrderPage() {
                                           미수금
                                         </span>
                                       ) : (order.status === 'pending' || order.status === 'order_requested' || (order.orderType === 'order' && (!order.items || order.items.length === 0))) ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 shadow-sm">
-                                          주문요청
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
+                                          주문접수
                                         </span>
                                       ) : (
                                         <button 
