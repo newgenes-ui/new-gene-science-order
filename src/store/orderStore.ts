@@ -140,8 +140,8 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
-  pending: '#f97316',        // 오렌지 (주문완료)
-  payment_waiting: '#eab308', // 노란색 (입금대기)
+  pending: '#3b82f6',        // 파란색 (주문완료 - 오렌지색과 겹쳐서 변경)
+  payment_waiting: '#f97316', // 오렌지 (입금대기/미수금)
   paid: '#10b981',           // 녹색 (입금확인)
   processing: '#8b5cf6',      // 보라 (처리중)
   shipped: '#3b82f6',        // 파란색 (납품완료)

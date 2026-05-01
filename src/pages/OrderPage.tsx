@@ -911,11 +911,16 @@ export default function OrderPage() {
                                   )}
                                 </>
                               ) : (
-                                <p className="text-sm font-black text-slate-800 truncate">
-                                  {order.items && order.items.length > 0 
-                                    ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                    : '견적 문의 내역'}
-                                </p>
+                                <>
+                                  <p className="text-sm font-black text-slate-800 truncate">
+                                    {order.items && order.items.length > 0 
+                                      ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                                      : '견적 문의 내역'}
+                                  </p>
+                                  {order.ordererName && (
+                                    <p className="text-xs font-bold text-slate-400 mt-0.5">주문자: {order.ordererName}</p>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
@@ -936,7 +941,7 @@ export default function OrderPage() {
                                     order.status === 'shipped'
                                       ? 'bg-blue-500 text-white'
                                       : order.status === 'payment_waiting'
-                                        ? 'bg-rose-500 text-white'
+                                        ? 'bg-orange-500 text-white'
                                         : order.status === 'cancelled'
                                           ? 'bg-red-50 text-red-500 border border-red-100'
                                           : 'bg-emerald-500 text-white'
