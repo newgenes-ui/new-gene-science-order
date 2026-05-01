@@ -66,7 +66,7 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
       return true;
     } catch (e) {
       console.error('Supabase update failed:', e);
-      return false;
+      throw e; // 에러를 상위(대시보드)로 던져서 상세 메시지를 보여줌
     }
   }
   return false;
