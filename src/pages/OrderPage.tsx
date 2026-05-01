@@ -965,7 +965,7 @@ export default function OrderPage() {
                                           납품완료
                                         </span>
                                       ) : order.status === 'payment_waiting' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-amber-500 text-white border-amber-600 shadow-sm">
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-orange-500 text-white border-orange-600 shadow-sm">
                                           미수금
                                         </span>
                                       ) : order.status === 'order_requested' ? (
