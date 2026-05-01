@@ -171,12 +171,14 @@ export default function OrderPage() {
         }
       }
       
-      alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
+      alert('발주 요청이 완료되었습니다. [발주내역 조회] 탭으로 이동합니다.');
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
-        // 로컬 상태 업데이트 (주문으로 변환되었으므로 탭 이동 등이 발생할 수 있음)
+        // 로컬 상태 업데이트
         setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'pending', orderType: 'order' } : o));
+        // 발주내역 탭으로 자동 이동
+        setHistoryTab('order');
       }
     } catch (error) {
       console.error('Place order from quote error:', error);
@@ -950,12 +952,18 @@ export default function OrderPage() {
                                     />
                                   )}
                                     <div className="flex gap-2">
-                                      <button 
-                                        onClick={() => handlePlaceOrderFromQuote(order)}
-                                        className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
-                                      >
-                                        발주요청
-                                      </button>
+                                      {order.status === 'pending' || order.status === 'order_requested' || order.orderType === 'order' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
+                                          주문완료
+                                        </span>
+                                      ) : (
+                                        <button 
+                                          onClick={() => handlePlaceOrderFromQuote(order)}
+                                          className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
+                                        >
+                                          발주요청
+                                        </button>
+                                      )}
                                     </div>
                                 </>
                               )}
