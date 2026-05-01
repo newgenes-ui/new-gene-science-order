@@ -46,7 +46,10 @@ export default function OrderPage() {
         order_title: `[세금계산서 발행 요청] ${clientName}`,
         order_type_text: '세금계산서 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n선택된 내역: ${selectedOrderIds.length > 0 ? selectedOrderIds.join(', ') : '전체(최근)'}`,
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
+          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,
@@ -82,7 +85,10 @@ export default function OrderPage() {
         order_title: `[거래명세서 발행 요청] ${clientName}`,
         order_type_text: '거래명세서 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n선택된 내역: ${selectedOrderIds.length > 0 ? selectedOrderIds.join(', ') : '전체(최근)'}`,
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
+          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,

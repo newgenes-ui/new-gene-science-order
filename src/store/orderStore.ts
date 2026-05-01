@@ -37,7 +37,69 @@ const STORAGE_KEY = 'ngs_orders';
 export function getOrders(): Order[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (raw && raw !== '[]') return JSON.parse(raw);
+    
+    // Seed mock data for local demonstration (matching the live deployed database screenshot)
+    const mockData: Order[] = [
+      {
+        id: "NGS-20260430-9989", orderDate: "2026-04-30", orderDateTime: "2026-04-30T10:00:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p1", productCode: "NGS-STAG-200-RTS", productName: "NGS-STAG-200-RTS", spec: "200 rxns", unitPrice: 52800, quantity: 1, subtotal: 52800 }],
+        otherRequest: "", subtotalAmount: 48000, vatAmount: 4800, totalAmount: 52800,
+        status: "payment_waiting", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260430-3099", orderDate: "2026-04-30", orderDateTime: "2026-04-30T10:05:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p2", productCode: "NGS-SEP-50", productName: "NGS-SEP-50", spec: "50 rxns", unitPrice: 77000, quantity: 1, subtotal: 77000 }],
+        otherRequest: "", subtotalAmount: 70000, vatAmount: 7000, totalAmount: 77000,
+        status: "payment_waiting", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260429-9619", orderDate: "2026-04-29", orderDateTime: "2026-04-29T10:00:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p3", productCode: "NGS-STAG-10-RTS", productName: "NGS-STAG-10-RTS", spec: "10 rxns", unitPrice: 96000, quantity: 1, subtotal: 96000 }],
+        otherRequest: "", subtotalAmount: 87272, vatAmount: 8728, totalAmount: 96000,
+        status: "cancelled", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260429-7687", orderDate: "2026-04-29", orderDateTime: "2026-04-29T10:05:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p4", productCode: "NGS-STAG-10-RTS", productName: "NGS-STAG-10-RTS", spec: "10 rxns", unitPrice: 48000, quantity: 1, subtotal: 48000 }],
+        otherRequest: "", subtotalAmount: 43636, vatAmount: 4364, totalAmount: 48000,
+        status: "payment_waiting", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260429-5305", orderDate: "2026-04-29", orderDateTime: "2026-04-29T10:10:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p5", productCode: "NGS-SEP-100", productName: "NGS-SEP-100", spec: "100 rxns", unitPrice: 425000, quantity: 1, subtotal: 425000 }],
+        otherRequest: "", subtotalAmount: 386363, vatAmount: 38637, totalAmount: 425000,
+        status: "paid", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260429-3871", orderDate: "2026-04-29", orderDateTime: "2026-04-29T10:15:00Z",
+        clientId: "bertis", clientName: "(주)베르티스", clientEmail: "hugyoung@naver.com",
+        ordererName: "양유지", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p6", productCode: "NGS-STAG-10-RTS", productName: "NGS-STAG-10-RTS", spec: "10 rxns", unitPrice: 24000, quantity: 1, subtotal: 24000 }],
+        otherRequest: "", subtotalAmount: 21818, vatAmount: 2182, totalAmount: 24000,
+        status: "cancelled", paymentMethod: "bank_transfer", orderType: "order"
+      },
+      {
+        id: "NGS-20260429-3429", orderDate: "2026-04-29", orderDateTime: "2026-04-29T10:20:00Z",
+        clientId: "demo", clientName: "데모고객사", clientEmail: "demo@demo.com",
+        ordererName: "데모사용자", ordererPhone: "010-0000-0000", ordererEmail: "",
+        items: [{ productId: "p7", productCode: "NGS-STAG-10-RTS", productName: "NGS-STAG-10-RTS", spec: "10 rxns", unitPrice: 24000, quantity: 1, subtotal: 24000 }],
+        otherRequest: "", subtotalAmount: 21818, vatAmount: 2182, totalAmount: 24000,
+        status: "payment_waiting", paymentMethod: "bank_transfer", orderType: "order"
+      }
+    ];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockData));
+    return mockData;
   } catch {
     return [];
   }
