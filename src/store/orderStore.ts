@@ -199,11 +199,11 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
 async function updateOrderStatusInSupabase(orderId: string, status: string): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
   try {
-    // update 대신 upsert 시도 (RLS 정책에 따라 upsert가 더 잘 작동할 수 있음)
-    // id가 일치하는 행의 status만 업데이트
+    // upsert 대신 다시 update 사용 (NOT NULL 제약 조건 충돌 방지)
     const { error } = await supabase
       .from('orders')
-      .upsert({ id: orderId, status: status }, { onConflict: 'id' });
+      .update({ status })
+      .eq('id', orderId);
       
     if (error) {
       throw new Error(`Supabase 업데이트 실패: ${error.message} (코드: ${error.code})`);
