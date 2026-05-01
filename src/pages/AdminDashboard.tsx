@@ -79,8 +79,8 @@ export default function AdminDashboard() {
     }).sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
-  const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order'), [filteredOrders]);
-  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType !== 'order'), [filteredOrders]);
+  const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order' && o.items && o.items.length > 0), [filteredOrders]);
+  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType === 'quote' || !o.items || o.items.length === 0), [filteredOrders]);
 
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.quantity, 0), 0);
@@ -248,21 +248,23 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab Navigation for Lists */}
-        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-[#E2E8E4] shadow-sm">
-          <button
-            onClick={() => setActiveListTab('order')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            발주 내역 ({ordersList.length})
-          </button>
-          <button
-            onClick={() => setActiveListTab('quote')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            견적 문의 ({quotesList.length})
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-[#E2E8E4] shadow-sm w-full md:w-auto">
+            <button
+              onClick={() => setActiveListTab('order')}
+              className={`px-6 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              발주 내역 ({ordersList.length})
+            </button>
+            <button
+              onClick={() => setActiveListTab('quote')}
+              className={`px-6 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              견적 문의 ({quotesList.length})
+            </button>
+          </div>
         </div>
 
         {/* Conditional Table Rendering */}
