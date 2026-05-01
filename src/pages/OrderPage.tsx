@@ -929,7 +929,7 @@ export default function OrderPage() {
                                         ? 'bg-red-50 text-red-500 border border-red-100'
                                         : 'bg-amber-100 text-amber-600 border border-amber-200'
                                   }`}>
-                                    {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? '결제 완료' : order.status === 'cancelled' ? '주문취소' : '미수금'}
+                                    {(order.status === 'paid' || order.status === 'processing' || order.status === 'shipped') ? '결제 완료' : order.status === 'cancelled' ? '주문취소' : '주문완료'}
                                   </span>
                                 </>
                               ) : (
