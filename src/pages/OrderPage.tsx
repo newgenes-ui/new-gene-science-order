@@ -18,6 +18,7 @@ const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
   const clientId = searchParams.get('client') || 'demo';
   
@@ -510,9 +511,15 @@ export default function OrderPage() {
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Welcome Banner */}
         <motion.div
+          layout
+          onClick={() => setIsBannerEnlarged(!isBannerEnlarged)}
           initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-primary rounded-3xl p-6 text-white relative overflow-hidden"
+          animate={{ 
+            opacity: 1, 
+            y: 0,
+            scale: isBannerEnlarged ? 1.05 : 1,
+          }}
+          className={`bg-primary rounded-3xl p-6 text-white relative overflow-hidden transition-all duration-300 ${isBannerEnlarged ? 'shadow-2xl z-50 ring-4 ring-primary/30' : 'shadow-sm'}`}
         >
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
