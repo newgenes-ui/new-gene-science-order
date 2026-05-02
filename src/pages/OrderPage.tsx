@@ -21,7 +21,17 @@ export default function OrderPage() {
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
   const clientId = searchParams.get('client') || 'demo';
-  
+  const shouldReset = searchParams.get('reset') === 'true';
+
+  useEffect(() => {
+    if (shouldReset) {
+      localStorage.removeItem('ngs_tax_requested');
+      localStorage.removeItem('ngs_statement_requested');
+      alert('테스트용 발행 요청 기록이 모두 초기화되었습니다. 다시 테스트가 가능합니다!');
+      window.location.href = '/?client=bertis'; // 파라미터 제거 후 리다이렉트
+    }
+  }, [shouldReset]);
+
   // clientData를 찾되, 없을 경우 마지막(데모) 데이터 사용
   const clientData = useMemo(() => {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
