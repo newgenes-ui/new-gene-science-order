@@ -140,11 +140,11 @@ export default function StatementViewer() {
               </tr>
               <tr>
                 <th className="border border-black p-1.5 tracking-[0.5em]">주문번호</th>
-                <td className="border border-black p-1.5 text-center font-mono text-xs">{orderIds.join(', ')}</td>
+                <td className="border border-black p-1.5 text-center font-mono text-xs">{todayStr.replace(/-/g, '')}-1</td>
               </tr>
               <tr>
                 <th className="border border-black p-1.5 tracking-[0.5em]">수 신</th>
-                <td className="border border-black p-1.5 text-center font-bold">({clientName})</td>
+                <td className="border border-black p-1.5 text-center font-bold">{clientName}</td>
               </tr>
               <tr>
                 <th className="border border-black p-1.5 tracking-[0.5em]">담 당</th>
