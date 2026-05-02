@@ -322,6 +322,13 @@ export default function OrderPage() {
       return;
     }
 
+    // [중복 방지] 이미 명세서가 발행된 항목이 포함되어 있는지 확인
+    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert(`⚠️ 선택하신 항목 중 이미 명세서가 발행(요청)된 내역이 포함되어 있습니다.\n(중복 발행 불가)`);
+      return;
+    }
+
     setIsStatementSubmitting(true);
     try {
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
@@ -373,6 +380,13 @@ export default function OrderPage() {
       return;
     }
 
+    // [중복 방지] 이미 계산서가 발행된 항목이 포함되어 있는지 확인
+    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert(`⚠️ 선택하신 항목 중 이미 계산서가 발행(요청)된 내역이 포함되어 있습니다.\n(중복 발행 불가)`);
+      return;
+    }
+
     setIsTaxSubmitting(true);
     try {
       const emailParams = {
@@ -414,6 +428,13 @@ export default function OrderPage() {
     }
 
     if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})에 대해 거래명세서와 세금계산서를 한 번에 일괄 요청하시겠습니까?\n\n(금액 일치가 자동으로 보장됩니다.)`)) {
+      return;
+    }
+
+    // [중복 방지] 이미 명세서나 계산서가 발행된 항목이 포함되어 있는지 확인
+    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id) || taxRequestedOrderIds.includes(id));
+    if (alreadyRequested.length > 0) {
+      alert(`⚠️ 선택하신 항목 중 이미 증빙 서류가 발행(요청)된 내역이 포함되어 있습니다.\n\n일괄 발행은 아직 아무 서류도 발행되지 않은 신규 항목에만 사용할 수 있습니다. 기존 내역은 개별 발행을 이용해주세요.`);
       return;
     }
 
