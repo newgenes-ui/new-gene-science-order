@@ -112,6 +112,9 @@ export default function OrderPage() {
           reply_to: order.ordererEmail || order.clientEmail || NGS_EMAIL,
         }, EMAILJS_PUBLIC_KEY);
 
+        // EmailJS API 연속 호출 시 누락 방지를 위한 1초 대기
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // 2. 고객 발송
         const targetEmail = order.ordererEmail || order.clientEmail;
         if (targetEmail && targetEmail.includes('@')) {
@@ -272,6 +275,9 @@ export default function OrderPage() {
           to_email: NGS_EMAIL,
           reply_to: taxEmail,
         }, EMAILJS_PUBLIC_KEY);
+
+        // EmailJS API 연속 호출 시 누락 방지를 위한 1초 대기
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // 2. 고객(taxEmail) 발송
         if (taxEmail && taxEmail.includes('@')) {
