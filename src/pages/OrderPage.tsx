@@ -260,12 +260,34 @@ export default function OrderPage() {
         }).join('\n')}`,
         from_name: ordererName,
         contact_number: ordererPhone,
-        reply_to: taxEmail,
-        to_email: `${NGS_EMAIL}, ${taxEmail}`,
         ngs_email: NGS_EMAIL,
       };
 
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+      if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+        // 1. 본사(NGS_EMAIL) 발송
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          ...emailParams,
+          info_label: '요청자 정보',
+          greeting: '관리자님, 안녕하세요. 거래명세서 발행 요청이 접수되었습니다.',
+          to_email: NGS_EMAIL,
+          reply_to: taxEmail,
+        }, EMAILJS_PUBLIC_KEY);
+
+        // 2. 고객(taxEmail) 발송
+        if (taxEmail && taxEmail.includes('@')) {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            ...emailParams,
+            info_label: '공급자 정보',
+            greeting: '담당자님, 안녕하세요. 요청하신 거래명세서 내역입니다.',
+            orderer_name: '나혜원',
+            orderer_phone: '010-9915-5974',
+            orderer_email: 'newgenes@newgenesci.com',
+            to_email: taxEmail,
+            reply_to: NGS_EMAIL,
+          }, EMAILJS_PUBLIC_KEY);
+        }
+      }
+
       markInvoiceRequested(selectedOrderIds);
       alert('거래명세서 발행 요청이 완료되었습니다.');
       setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
