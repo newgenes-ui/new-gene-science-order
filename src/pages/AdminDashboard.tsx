@@ -183,6 +183,10 @@ export default function AdminDashboard() {
               <div className={`w-1.5 h-1.5 rounded-full ${allOrders.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {allOrders.length > 0 ? 'DB 연결됨' : '로컬 모드'}
             </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
+              <RefreshCw className="w-3 h-3" />
+              v1.3.0 Stable
+            </div>
             <button
               onClick={loadOrders}
               disabled={isLoading}
@@ -203,6 +207,46 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Practice Hub Banner */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute right-0 top-0 p-8 opacity-10">
+            <RefreshCw className="w-32 h-32 rotate-12" />
+          </div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-blue-500 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">Practice Mode</span>
+              <span className="text-slate-400 text-xs font-bold">최신 배포 연습용 환경</span>
+            </div>
+            <h2 className="text-2xl font-black mb-4">뉴진사이언스 배포 연습 및 데이터 관리</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                <p className="text-[10px] font-black text-blue-300 uppercase mb-1">Step 1. 빌드 확인</p>
+                <p className="text-sm font-bold">npm run build 완료</p>
+                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 w-full" />
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                <p className="text-[10px] font-black text-emerald-300 uppercase mb-1">Step 2. DB 동기화</p>
+                <p className="text-sm font-bold">Supabase Realtime 연결됨</p>
+                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 w-full" />
+                </div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                <p className="text-[10px] font-black text-rose-300 uppercase mb-1">Step 3. 배포 진행</p>
+                <p className="text-sm font-bold">Vercel CLI 대기 중...</p>
+                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-500 w-1/3 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
         {/* Filters */}
         <div className="bg-white rounded-2xl p-4 border border-[#E2E8E4] flex flex-wrap gap-3 items-end">
           <div>
