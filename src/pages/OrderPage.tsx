@@ -30,12 +30,8 @@ export default function OrderPage() {
       localStorage.removeItem('ngs_last_statement_total');
       localStorage.removeItem('ngs_last_statement_ids');
       localStorage.removeItem('ngs_statement_history');
-      setTaxRequestedOrderIds([]);
       setStatementRequestedOrderIds([]);
       setSelectedOrderIds([]);
-      setLastStatementTotal(0);
-      setLastStatementIds([]);
-      setStatementHistory([]);
       alert('연습용 발행 요청 기록이 모두 초기화되었습니다!');
       window.location.href = '/?client=bertis'; 
     }
@@ -48,12 +44,8 @@ export default function OrderPage() {
       localStorage.removeItem('ngs_last_statement_total');
       localStorage.removeItem('ngs_last_statement_ids');
       localStorage.removeItem('ngs_statement_history');
-      setTaxRequestedOrderIds([]);
       setStatementRequestedOrderIds([]);
       setSelectedOrderIds([]);
-      setLastStatementTotal(0);
-      setLastStatementIds([]);
-      setStatementHistory([]);
       alert('초기화되었습니다. 다시 연습해보세요!');
     }
   };
@@ -190,9 +182,7 @@ export default function OrderPage() {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'AG Tip': true, '파이펫': true, '튜브': true, '랙': true });
   const [activeTab, setActiveTab] = useState<'quote' | 'order' | 'payment'>('order');
   const [taxEmail, setTaxEmail] = useState('');
-  const [isTaxSubmitting, setIsTaxSubmitting] = useState(false);
   const [isStatementSubmitting, setIsStatementSubmitting] = useState(false);
-  const [isCombinedSubmitting, setIsCombinedSubmitting] = useState(false);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
   const [historyTab, setHistoryTab] = useState<'order' | 'quote'>('order');
@@ -212,33 +202,7 @@ export default function OrderPage() {
   const [appliedRange, setAppliedRange] = useState(dateRange);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
-  // 마지막으로 발행(요청)된 거래명세서의 정보 (검증 및 동기화용 - 로컬 저장소 연동)
-  const [lastStatementTotal, setLastStatementTotal] = useState<number>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_last_statement_total');
-      return stored ? Number(stored) : 0;
-    } catch { return 0; }
-  });
-  const [lastStatementIds, setLastStatementIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_last_statement_ids');
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
-  const [statementHistory, setStatementHistory] = useState<string[][]>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_statement_history');
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
-
-  // 중복 발행 요청 방지를 위한 로컬 저장소 상태 (분리)
-  const [taxRequestedOrderIds, setTaxRequestedOrderIds] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('ngs_tax_requested');
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
-  });
+  // 명세서 발행 요청 방지를 위한 로컬 저장소 상태
 
   const [statementRequestedOrderIds, setStatementRequestedOrderIds] = useState<string[]>(() => {
     try {
@@ -247,35 +211,12 @@ export default function OrderPage() {
     } catch { return []; }
   });
 
-  const markInvoiceRequested = (orderIds: string[], type: 'tax' | 'statement' | 'both') => {
+  const markInvoiceRequested = (orderIds: string[]) => {
     if (orderIds.length === 0) return;
     
-    if (type === 'tax' || type === 'both') {
-      const newTax = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
-      setTaxRequestedOrderIds(newTax);
-      localStorage.setItem('ngs_tax_requested', JSON.stringify(newTax));
-    }
-    
-    if (type === 'statement' || type === 'both') {
-      const newStatement = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
-      setStatementRequestedOrderIds(newStatement);
-      localStorage.setItem('ngs_statement_requested', JSON.stringify(newStatement));
-      
-      // 거래명세서 발행 시점의 합계와 ID들을 스냅샷으로 저장
-      const currentTotal = userOrders
-        .filter(o => orderIds.includes(o.id))
-        .reduce((sum, o) => sum + o.totalAmount, 0);
-      
-      setLastStatementTotal(currentTotal);
-      setLastStatementIds(orderIds);
-      
-      const newHistory = [...statementHistory, orderIds];
-      setStatementHistory(newHistory);
-      
-      localStorage.setItem('ngs_last_statement_total', currentTotal.toString());
-      localStorage.setItem('ngs_last_statement_ids', JSON.stringify(orderIds));
-      localStorage.setItem('ngs_statement_history', JSON.stringify(newHistory));
-    }
+    const newStatement = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
+    setStatementRequestedOrderIds(newStatement);
+    localStorage.setItem('ngs_statement_requested', JSON.stringify(newStatement));
   };
 
   const selectedTotalAmount = useMemo(() => {
@@ -283,29 +224,6 @@ export default function OrderPage() {
       .filter(o => selectedOrderIds.includes(o.id))
       .reduce((sum, o) => sum + o.totalAmount, 0);
   }, [selectedOrderIds, userOrders]);
-
-  // 현재 선택된 항목들이 '과거 어느 시점의 거래명세서'와 정확히 일치하는지 확인
-  const isStatementMatched = useMemo(() => {
-    if (statementHistory.length === 0) return false;
-    return statementHistory.some(historyIds => {
-      if (historyIds.length !== selectedOrderIds.length) return false;
-      return selectedOrderIds.every(id => historyIds.includes(id));
-    });
-  }, [selectedOrderIds, statementHistory]);
-
-  useEffect(() => {
-    // 세금계산서와 거래명세서가 모두 요청된 주문은 선택(체크) 해제
-    const fullyRequestedIds = userOrders
-      .map(o => o.id)
-      .filter(id => taxRequestedOrderIds.includes(id) && statementRequestedOrderIds.includes(id));
-      
-    if (fullyRequestedIds.length > 0) {
-      setSelectedOrderIds(prev => {
-        const next = prev.filter(id => !fullyRequestedIds.includes(id));
-        return next.length !== prev.length ? next : prev;
-      });
-    }
-  }, [taxRequestedOrderIds, statementRequestedOrderIds, userOrders]);
 
   // 거래명세서 발행 요청
   const handleStatementRequest = async () => {
@@ -348,7 +266,7 @@ export default function OrderPage() {
       };
 
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-      markInvoiceRequested(selectedOrderIds, 'statement');
+      markInvoiceRequested(selectedOrderIds);
       alert('거래명세서 발행 요청이 완료되었습니다.');
       setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
     } catch (error) {
@@ -359,130 +277,6 @@ export default function OrderPage() {
     }
   };
 
-  // 세금계산서 발행 요청 (히스토리 전수 검증 포함)
-  const handleTaxInvoiceRequest = async () => {
-    if (!taxEmail) {
-      alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
-      return;
-    }
-    if (selectedOrderIds.length === 0) {
-      alert('발행할 항목을 먼저 선택해주세요.');
-      return;
-    }
-
-    // [강화된 유효성 검사] 과거에 발행된 어떤 명세서와도 일치하지 않는 경우 차단
-    if (!isStatementMatched) {
-      alert(`⚠️ 기존 거래명세서와 선택 내역이 일치하지 않습니다.\n\n각 세금계산서는 이미 발행된 특정 거래명세서의 항목 구성과 100% 일치해야 합니다. (다른 명세서의 항목을 섞어서 발행할 수 없습니다.)`);
-      return;
-    }
-
-    if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})의 세금계산서를 발행 요청하시겠습니까?`)) {
-      return;
-    }
-
-    // [중복 방지] 이미 계산서가 발행된 항목이 포함되어 있는지 확인
-    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert(`⚠️ 선택하신 항목 중 이미 계산서가 발행(요청)된 내역이 포함되어 있습니다.\n(중복 발행 불가)`);
-      return;
-    }
-
-    setIsTaxSubmitting(true);
-    try {
-      const emailParams = {
-        order_title: `[세금계산서 발행 요청] ${clientName}`,
-        order_type_text: '세금계산서 발행 요청',
-        detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
-          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n')}`,
-        from_name: ordererName,
-        contact_number: ordererPhone,
-        reply_to: taxEmail,
-        to_email: `${NGS_EMAIL}, ${taxEmail}`,
-        ngs_email: NGS_EMAIL,
-      };
-
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-      markInvoiceRequested(selectedOrderIds, 'tax');
-      alert('세금계산서 발행 요청이 완료되었습니다.');
-      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
-    } catch (error) {
-      console.error('Tax invoice request error:', error);
-      alert('요청 중 오류가 발생했습니다.');
-    } finally {
-      setIsTaxSubmitting(false);
-    }
-  };
-
-  // [핵심] 명세서 + 세금계산서 일괄 발행 요청 (가장 안전한 원클릭 방식)
-  const handleCombinedRequest = async () => {
-    if (!taxEmail) {
-      alert('서류를 받으실 이메일 주소를 입력해주세요.');
-      return;
-    }
-    if (selectedOrderIds.length === 0) {
-      alert('발행할 항목을 먼저 선택해주세요.');
-      return;
-    }
-
-    if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})에 대해 거래명세서와 세금계산서를 한 번에 일괄 요청하시겠습니까?\n\n(금액 일치가 자동으로 보장됩니다.)`)) {
-      return;
-    }
-
-    // [중복 방지] 이미 명세서나 계산서가 발행된 항목이 포함되어 있는지 확인
-    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id) || taxRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert(`⚠️ 선택하신 항목 중 이미 증빙 서류가 발행(요청)된 내역이 포함되어 있습니다.\n\n일괄 발행은 아직 아무 서류도 발행되지 않은 신규 항목에만 사용할 수 있습니다. 기존 내역은 개별 발행을 이용해주세요.`);
-      return;
-    }
-
-    setIsCombinedSubmitting(true);
-    try {
-      const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
-      
-      const emailParams = {
-        order_title: `[일괄 발행 요청] ${clientName} (총 ₩${selectedTotalAmount.toLocaleString()})`,
-        order_type_text: '거래명세서 및 세금계산서 일괄 발행 요청',
-        detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
-          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n')}`,
-        from_name: ordererName,
-        contact_number: ordererPhone,
-        reply_to: taxEmail,
-        to_email: `${NGS_EMAIL}, ${taxEmail}`,
-        ngs_email: NGS_EMAIL,
-      };
-
-      if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
-        throw new Error('EmailJS 설정이 누락되었습니다.');
-      }
-
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-      
-      markInvoiceRequested(selectedOrderIds, 'both');
-      alert('거래명세서와 세금계산서 일괄 요청이 완료되었습니다.');
-      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
-    } catch (error) {
-      console.error('Combined request error:', error);
-      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setIsCombinedSubmitting(false);
-    }
-  };
-
-  // 명세서 기반 계산서 생성 (동기화 기능 - 개별 발행 시 사용)
-  const handleSyncFromStatement = () => {
-    if (lastStatementIds.length === 0) {
-      alert('이전에 요청된 거래명세서 내역이 없습니다.');
-      return;
-    }
-    setSelectedOrderIds(lastStatementIds);
-    alert('이전에 발행된 거래명세서 항목들을 그대로 불러왔습니다.');
-  };
 
   // 초기 이메일 설정
   useEffect(() => {
@@ -1167,9 +961,8 @@ export default function OrderPage() {
                                 <>
                                   {order.status !== 'paid' && order.status !== 'cancelled' && (
                                     <>
-                                      {taxRequestedOrderIds.includes(order.id) && statementRequestedOrderIds.includes(order.id) ? (
+                                      {statementRequestedOrderIds.includes(order.id) ? (
                                         <div className="flex flex-col gap-1">
-                                          <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded text-center">계산서요청됨</span>
                                           <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 py-0.5 rounded text-center">명세서요청됨</span>
                                         </div>
                                       ) : (
@@ -1183,10 +976,6 @@ export default function OrderPage() {
                                             }}
                                             className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                           />
-                                          <div className="flex flex-col gap-0.5">
-                                            {taxRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 rounded">계산서요청됨</span>}
-                                            {statementRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 rounded">명세서요청됨</span>}
-                                          </div>
                                         </div>
                                       )}
                                     </>
@@ -1378,7 +1167,7 @@ export default function OrderPage() {
 
                   {/* Unified Issuance Module */}
                   <div className="grid grid-cols-1 gap-6">
-                    {/* Integrated Issuance Card */}
+                    {/* Statement Issuance Card */}
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100 space-y-6 overflow-hidden relative group">
                       {/* Background Decoration */}
                       <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
@@ -1388,8 +1177,8 @@ export default function OrderPage() {
                           <FileText className="w-6 h-6" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-black text-slate-800 tracking-tight">증빙 서류 일괄 발행</h3>
-                          <p className="text-[11px] text-slate-400 font-bold mt-0.5">명세서와 계산서를 한 번의 클릭으로 동시 요청합니다.</p>
+                          <h3 className="text-lg font-black text-slate-800 tracking-tight">거래명세서 발행 요청</h3>
+                          <p className="text-[11px] text-slate-400 font-bold mt-0.5">선택한 항목에 대한 거래명세서를 이메일로 발행합니다.</p>
                         </div>
                       </div>
 
@@ -1407,62 +1196,17 @@ export default function OrderPage() {
 
                       <div className="space-y-3">
                         <button
-                          onClick={handleCombinedRequest}
-                          disabled={isCombinedSubmitting || selectedOrderIds.length === 0}
+                          onClick={handleStatementRequest}
+                          disabled={isStatementSubmitting || selectedOrderIds.length === 0}
                           className="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-black text-base hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-slate-200 flex items-center justify-center gap-3"
                         >
-                          {isCombinedSubmitting ? (
+                          {isStatementSubmitting ? (
                             <RefreshCw className="w-5 h-5 animate-spin" />
                           ) : (
                             <CheckCircle2 className="w-5 h-5" />
                           )}
-                          {isCombinedSubmitting ? '발행 요청 중...' : '명세서 + 세금계산서 일괄 발행'}
+                          {isStatementSubmitting ? '발행 요청 중...' : '거래명세서 발행 요청'}
                         </button>
-
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleStatementRequest}
-                            disabled={isStatementSubmitting || selectedOrderIds.length === 0}
-                            className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all disabled:opacity-30"
-                          >
-                            명세서만 발행
-                          </button>
-                          <button
-                            onClick={handleTaxInvoiceRequest}
-                            disabled={isTaxSubmitting || selectedOrderIds.length === 0 || (lastStatementIds.length > 0 && !isStatementMatched)}
-                            className="flex-1 py-3 bg-amber-50 text-amber-600 rounded-xl font-bold text-xs hover:bg-amber-100 transition-all disabled:opacity-30"
-                          >
-                            계산서만 발행
-                          </button>
-                        </div>
-                        
-                        {!isStatementMatched && lastStatementIds.length > 0 && selectedOrderIds.length > 0 && (
-                          <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between gap-3">
-                            <p className="text-[10px] text-rose-500 font-bold leading-tight">
-                              ⚠️ 명세서와 금액이 일치하지 않습니다.
-                            </p>
-                            <button 
-                              onClick={handleSyncFromStatement}
-                              className="text-[10px] font-black text-rose-600 underline underline-offset-2"
-                            >
-                              명세서 기준 동기화
-                            </button>
-                          </div>
-                        )}
-
-                        {lastStatementIds.length > 0 && selectedOrderIds.length === 0 && lastStatementIds.some(id => !taxRequestedOrderIds.includes(id)) && (
-                          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between gap-3 shadow-sm animate-pulse">
-                            <p className="text-[10px] text-blue-600 font-bold leading-tight">
-                              💡 방금 발행한 명세서 항목이 있습니다. 이어서 계산서를 발행할까요?
-                            </p>
-                            <button 
-                              onClick={handleSyncFromStatement}
-                              className="text-[10px] font-black text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg shrink-0 transition-colors shadow-sm"
-                            >
-                              이전 묶음 자동체크
-                            </button>
-                          </div>
-                        )}
                       </div>
                     </div>
 
