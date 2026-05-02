@@ -1493,6 +1493,7 @@ export default function OrderPage() {
                     </div> 
                   </div>
                 </div>
+              </div>
               )}
               </div>
             </motion.div>
