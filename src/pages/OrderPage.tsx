@@ -1452,7 +1452,7 @@ export default function OrderPage() {
                       <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-1">
                         ※ 요청하신 서류는 입력하신 이메일로 영업일 기준 1~2일 내에 발송됩니다. <strong>{NGS_EMAIL}</strong>으로도 사본이 전달됩니다.
                       </p>
-                    </div>
+                    </div> 
                   </div>
                 </div>
               )}
