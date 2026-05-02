@@ -393,6 +393,7 @@ export default function OrderPage() {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
       markInvoiceRequested(selectedOrderIds, 'tax');
       alert('세금계산서 발행 요청이 완료되었습니다.');
+      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
     } catch (error) {
       console.error('Tax invoice request error:', error);
       alert('요청 중 오류가 발생했습니다.');
@@ -443,6 +444,7 @@ export default function OrderPage() {
       
       markInvoiceRequested(selectedOrderIds, 'both');
       alert('거래명세서와 세금계산서 일괄 요청이 완료되었습니다.');
+      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
     } catch (error) {
       console.error('Combined request error:', error);
       alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
