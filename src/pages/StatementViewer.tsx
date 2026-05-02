@@ -178,7 +178,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1 font-bold relative w-[25%]">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
                   {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src="/stamp.png" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[60%] h-14 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
+                  <img src="/stamp.png" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
                 </td>
               </tr>
               <tr>
