@@ -238,10 +238,10 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <p className="text-[10px] font-black text-rose-300 uppercase mb-1">Step 3. 배포 진행</p>
-                <p className="text-sm font-bold">Vercel CLI 대기 중...</p>
+                <p className="text-[10px] font-black text-emerald-300 uppercase mb-1">Step 3. 배포 진행</p>
+                <p className="text-sm font-bold">최신 배포 완료 (v1.3.0)</p>
                 <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-rose-500 w-1/3 animate-pulse" />
+                  <div className="h-full bg-emerald-500 w-full" />
                 </div>
               </div>
             </div>
