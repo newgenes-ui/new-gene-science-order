@@ -4,6 +4,7 @@ import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import AdminDashboard from './pages/AdminDashboard';
 import QRManager from './pages/QRManager';
+import StatementViewer from './pages/StatementViewer';
 
 function AdminNav() {
   const location = useLocation();
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/qr" element={<QRManager />} />
+        <Route path="/statement" element={<StatementViewer />} />
       </Routes>
       <AdminNav />
     </BrowserRouter>
