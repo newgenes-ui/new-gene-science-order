@@ -343,6 +343,7 @@ export default function OrderPage() {
       await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
       markInvoiceRequested(selectedOrderIds, 'statement');
       alert('거래명세서 발행 요청이 완료되었습니다.');
+      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
     } catch (error) {
       console.error('Statement request error:', error);
       alert('요청 중 오류가 발생했습니다.');
@@ -1422,6 +1423,20 @@ export default function OrderPage() {
                               className="text-[10px] font-black text-rose-600 underline underline-offset-2"
                             >
                               명세서 기준 동기화
+                            </button>
+                          </div>
+                        )}
+
+                        {lastStatementIds.length > 0 && selectedOrderIds.length === 0 && lastStatementIds.some(id => !taxRequestedOrderIds.includes(id)) && (
+                          <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between gap-3 shadow-sm animate-pulse">
+                            <p className="text-[10px] text-blue-600 font-bold leading-tight">
+                              💡 방금 발행한 명세서 항목이 있습니다. 이어서 계산서를 발행할까요?
+                            </p>
+                            <button 
+                              onClick={handleSyncFromStatement}
+                              className="text-[10px] font-black text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg shrink-0 transition-colors shadow-sm"
+                            >
+                              이전 묶음 자동체크
                             </button>
                           </div>
                         )}
