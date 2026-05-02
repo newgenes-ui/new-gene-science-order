@@ -27,10 +27,36 @@ export default function OrderPage() {
     if (shouldReset) {
       localStorage.removeItem('ngs_tax_requested');
       localStorage.removeItem('ngs_statement_requested');
-      alert('테스트용 발행 요청 기록이 모두 초기화되었습니다. 다시 테스트가 가능합니다!');
-      window.location.href = '/?client=bertis'; // 파라미터 제거 후 리다이렉트
+      localStorage.removeItem('ngs_last_statement_total');
+      localStorage.removeItem('ngs_last_statement_ids');
+      localStorage.removeItem('ngs_statement_history');
+      setTaxRequestedOrderIds([]);
+      setStatementRequestedOrderIds([]);
+      setSelectedOrderIds([]);
+      setLastStatementTotal(0);
+      setLastStatementIds([]);
+      setStatementHistory([]);
+      alert('연습용 발행 요청 기록이 모두 초기화되었습니다!');
+      window.location.href = '/?client=bertis'; 
     }
   }, [shouldReset]);
+
+  const handleResetPractice = () => {
+    if (window.confirm('모든 발행 요청 기록과 선택 내역을 초기화하시겠습니까?')) {
+      localStorage.removeItem('ngs_tax_requested');
+      localStorage.removeItem('ngs_statement_requested');
+      localStorage.removeItem('ngs_last_statement_total');
+      localStorage.removeItem('ngs_last_statement_ids');
+      localStorage.removeItem('ngs_statement_history');
+      setTaxRequestedOrderIds([]);
+      setStatementRequestedOrderIds([]);
+      setSelectedOrderIds([]);
+      setLastStatementTotal(0);
+      setLastStatementIds([]);
+      setStatementHistory([]);
+      alert('초기화되었습니다. 다시 연습해보세요!');
+    }
+  };
 
   // clientData를 찾되, 없을 경우 마지막(데모) 데이터 사용
   const clientData = useMemo(() => {
@@ -166,6 +192,7 @@ export default function OrderPage() {
   const [taxEmail, setTaxEmail] = useState('');
   const [isTaxSubmitting, setIsTaxSubmitting] = useState(false);
   const [isStatementSubmitting, setIsStatementSubmitting] = useState(false);
+  const [isCombinedSubmitting, setIsCombinedSubmitting] = useState(false);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
   const [historyTab, setHistoryTab] = useState<'order' | 'quote'>('order');
@@ -184,6 +211,26 @@ export default function OrderPage() {
   });
   const [appliedRange, setAppliedRange] = useState(dateRange);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  
+  // 마지막으로 발행(요청)된 거래명세서의 정보 (검증 및 동기화용 - 로컬 저장소 연동)
+  const [lastStatementTotal, setLastStatementTotal] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_last_statement_total');
+      return stored ? Number(stored) : 0;
+    } catch { return 0; }
+  });
+  const [lastStatementIds, setLastStatementIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_last_statement_ids');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
+  const [statementHistory, setStatementHistory] = useState<string[][]>(() => {
+    try {
+      const stored = localStorage.getItem('ngs_statement_history');
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
+  });
 
   // 중복 발행 요청 방지를 위한 로컬 저장소 상태 (분리)
   const [taxRequestedOrderIds, setTaxRequestedOrderIds] = useState<string[]>(() => {
@@ -200,21 +247,51 @@ export default function OrderPage() {
     } catch { return []; }
   });
 
-  const markTaxRequested = (orderIds: string[]) => {
+  const markInvoiceRequested = (orderIds: string[], type: 'tax' | 'statement' | 'both') => {
     if (orderIds.length === 0) return;
-    const newRequested = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
-    setTaxRequestedOrderIds(newRequested);
-    localStorage.setItem('ngs_tax_requested', JSON.stringify(newRequested));
-    // 선택을 초기화하지 않음 (명세서도 이어서 요청할 수 있도록)
+    
+    if (type === 'tax' || type === 'both') {
+      const newTax = Array.from(new Set([...taxRequestedOrderIds, ...orderIds]));
+      setTaxRequestedOrderIds(newTax);
+      localStorage.setItem('ngs_tax_requested', JSON.stringify(newTax));
+    }
+    
+    if (type === 'statement' || type === 'both') {
+      const newStatement = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
+      setStatementRequestedOrderIds(newStatement);
+      localStorage.setItem('ngs_statement_requested', JSON.stringify(newStatement));
+      
+      // 거래명세서 발행 시점의 합계와 ID들을 스냅샷으로 저장
+      const currentTotal = userOrders
+        .filter(o => orderIds.includes(o.id))
+        .reduce((sum, o) => sum + o.totalAmount, 0);
+      
+      setLastStatementTotal(currentTotal);
+      setLastStatementIds(orderIds);
+      
+      const newHistory = [...statementHistory, orderIds];
+      setStatementHistory(newHistory);
+      
+      localStorage.setItem('ngs_last_statement_total', currentTotal.toString());
+      localStorage.setItem('ngs_last_statement_ids', JSON.stringify(orderIds));
+      localStorage.setItem('ngs_statement_history', JSON.stringify(newHistory));
+    }
   };
 
-  const markStatementRequested = (orderIds: string[]) => {
-    if (orderIds.length === 0) return;
-    const newRequested = Array.from(new Set([...statementRequestedOrderIds, ...orderIds]));
-    setStatementRequestedOrderIds(newRequested);
-    localStorage.setItem('ngs_statement_requested', JSON.stringify(newRequested));
-    // 선택을 초기화하지 않음 (계산서도 이어서 요청할 수 있도록)
-  };
+  const selectedTotalAmount = useMemo(() => {
+    return userOrders
+      .filter(o => selectedOrderIds.includes(o.id))
+      .reduce((sum, o) => sum + o.totalAmount, 0);
+  }, [selectedOrderIds, userOrders]);
+
+  // 현재 선택된 항목들이 '과거 어느 시점의 거래명세서'와 정확히 일치하는지 확인
+  const isStatementMatched = useMemo(() => {
+    if (statementHistory.length === 0) return false;
+    return statementHistory.some(historyIds => {
+      if (historyIds.length !== selectedOrderIds.length) return false;
+      return selectedOrderIds.every(id => historyIds.includes(id));
+    });
+  }, [selectedOrderIds, statementHistory]);
 
   useEffect(() => {
     // 세금계산서와 거래명세서가 모두 요청된 주문은 선택(체크) 해제
@@ -230,15 +307,68 @@ export default function OrderPage() {
     }
   }, [taxRequestedOrderIds, statementRequestedOrderIds, userOrders]);
 
+  // 거래명세서 발행 요청
+  const handleStatementRequest = async () => {
+    if (!taxEmail) {
+      alert('명세서를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+    if (selectedOrderIds.length === 0) {
+      alert('발행할 항목을 먼저 선택해주세요.');
+      return;
+    }
+
+    if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})의 거래명세서를 발행 요청하시겠습니까?`)) {
+      return;
+    }
+
+    setIsStatementSubmitting(true);
+    try {
+      const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
+      const emailParams = {
+        order_title: `[거래명세서 발행 요청] ${clientName}`,
+        order_type_text: '거래명세서 발행 요청',
+        detail_label: '요청 주문/문의 내역',
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
+          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+        }).join('\n')}`,
+        from_name: ordererName,
+        contact_number: ordererPhone,
+        reply_to: taxEmail,
+        to_email: `${NGS_EMAIL}, ${taxEmail}`,
+        ngs_email: NGS_EMAIL,
+      };
+
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+      markInvoiceRequested(selectedOrderIds, 'statement');
+      alert('거래명세서 발행 요청이 완료되었습니다.');
+    } catch (error) {
+      console.error('Statement request error:', error);
+      alert('요청 중 오류가 발생했습니다.');
+    } finally {
+      setIsStatementSubmitting(false);
+    }
+  };
+
+  // 세금계산서 발행 요청 (히스토리 전수 검증 포함)
   const handleTaxInvoiceRequest = async () => {
     if (!taxEmail) {
       alert('세금계산서를 받으실 이메일 주소를 입력해주세요.');
       return;
     }
+    if (selectedOrderIds.length === 0) {
+      alert('발행할 항목을 먼저 선택해주세요.');
+      return;
+    }
 
-    const alreadyRequested = selectedOrderIds.filter(id => taxRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert('이미 세금계산서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
+    // [강화된 유효성 검사] 과거에 발행된 어떤 명세서와도 일치하지 않는 경우 차단
+    if (!isStatementMatched) {
+      alert(`⚠️ 기존 거래명세서와 선택 내역이 일치하지 않습니다.\n\n각 세금계산서는 이미 발행된 특정 거래명세서의 항목 구성과 100% 일치해야 합니다. (다른 명세서의 항목을 섞어서 발행할 수 없습니다.)`);
+      return;
+    }
+
+    if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})의 세금계산서를 발행 요청하시겠습니까?`)) {
       return;
     }
 
@@ -248,10 +378,10 @@ export default function OrderPage() {
         order_title: `[세금계산서 발행 요청] ${clientName}`,
         order_type_text: '세금계산서 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[선택된 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
           return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
+        }).join('\n')}`,
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,
@@ -259,51 +389,44 @@ export default function OrderPage() {
         ngs_email: NGS_EMAIL,
       };
 
-      if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
-        throw new Error('EmailJS 설정이 누락되었습니다.');
-      }
-
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        emailParams,
-        EMAILJS_PUBLIC_KEY
-      );
-
-      markTaxRequested(selectedOrderIds);
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+      markInvoiceRequested(selectedOrderIds, 'tax');
       alert('세금계산서 발행 요청이 완료되었습니다.');
     } catch (error) {
       console.error('Tax invoice request error:', error);
-      alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      alert('요청 중 오류가 발생했습니다.');
     } finally {
       setIsTaxSubmitting(false);
     }
   };
 
-  const handleStatementRequest = async () => {
+  // [핵심] 명세서 + 세금계산서 일괄 발행 요청 (가장 안전한 원클릭 방식)
+  const handleCombinedRequest = async () => {
     if (!taxEmail) {
-      alert('거래명세서를 받으실 이메일 주소를 입력해주세요.');
+      alert('서류를 받으실 이메일 주소를 입력해주세요.');
+      return;
+    }
+    if (selectedOrderIds.length === 0) {
+      alert('발행할 항목을 먼저 선택해주세요.');
       return;
     }
 
-    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert('이미 거래명세서가 요청된 주문이 포함되어 있습니다.\n선택 해제 후 다시 시도해주세요.');
+    if (!window.confirm(`선택하신 ${selectedOrderIds.length}건 (합계 ₩${selectedTotalAmount.toLocaleString()})에 대해 거래명세서와 세금계산서를 한 번에 일괄 요청하시겠습니까?\n\n(금액 일치가 자동으로 보장됩니다.)`)) {
       return;
     }
 
-    setIsStatementSubmitting(true);
+    setIsCombinedSubmitting(true);
     try {
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       
       const emailParams = {
-        order_title: `[거래명세서 발행 요청] ${clientName}`,
-        order_type_text: '거래명세서 발행 요청',
+        order_title: `[일괄 발행 요청] ${clientName} (총 ₩${selectedTotalAmount.toLocaleString()})`,
+        order_type_text: '거래명세서 및 세금계산서 일괄 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n아래 링크를 클릭하시면 공식 양식의 거래명세서를 바로 확인하고 저장하실 수 있습니다.\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${selectedOrderIds.length > 0 ? userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
           return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n') : '선택된 항목 없음 (전체 일괄 발행 요청)'}`,
+        }).join('\n')}`,
         from_name: ordererName,
         contact_number: ordererPhone,
         reply_to: taxEmail,
@@ -315,21 +438,26 @@ export default function OrderPage() {
         throw new Error('EmailJS 설정이 누락되었습니다.');
       }
 
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        emailParams,
-        EMAILJS_PUBLIC_KEY
-      );
-
-      markStatementRequested(selectedOrderIds);
-      alert('거래명세서 발행 요청이 완료되었습니다.');
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+      
+      markInvoiceRequested(selectedOrderIds, 'both');
+      alert('거래명세서와 세금계산서 일괄 요청이 완료되었습니다.');
     } catch (error) {
-      console.error('Statement request error:', error);
+      console.error('Combined request error:', error);
       alert('요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
-      setIsStatementSubmitting(false);
+      setIsCombinedSubmitting(false);
     }
+  };
+
+  // 명세서 기반 계산서 생성 (동기화 기능 - 개별 발행 시 사용)
+  const handleSyncFromStatement = () => {
+    if (lastStatementIds.length === 0) {
+      alert('이전에 요청된 거래명세서 내역이 없습니다.');
+      return;
+    }
+    setSelectedOrderIds(lastStatementIds);
+    alert('이전에 발행된 거래명세서 항목들을 그대로 불러왔습니다.');
   };
 
   // 초기 이메일 설정
@@ -1057,10 +1185,9 @@ export default function OrderPage() {
                                 <>
                                   {order.status === 'order_requested' && (
                                     <>
-                                      {taxRequestedOrderIds.includes(order.id) && statementRequestedOrderIds.includes(order.id) ? (
+                                      {taxRequestedOrderIds.includes(order.id) ? (
                                         <div className="flex flex-col gap-1">
-                                          <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 py-0.5 rounded text-center">계산서요청됨</span>
-                                          <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 py-0.5 rounded text-center">명세서요청됨</span>
+                                          <span className="text-[9px] text-blue-600 font-bold border border-blue-200 bg-blue-50 px-2 py-0.5 rounded text-center">발행요청됨</span>
                                         </div>
                                       ) : (
                                         <div className="flex items-center gap-2">
@@ -1073,10 +1200,6 @@ export default function OrderPage() {
                                             }}
                                             className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                           />
-                                          <div className="flex flex-col gap-0.5">
-                                            {taxRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-orange-500 font-bold border border-orange-200 bg-orange-50 px-1 rounded">계산서요청됨</span>}
-                                            {statementRequestedOrderIds.includes(order.id) && <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 rounded">명세서요청됨</span>}
-                                          </div>
                                         </div>
                                       )}
                                     </>
@@ -1204,70 +1327,130 @@ export default function OrderPage() {
               {/* Tax Invoice Request Section */}
               {isBertis && (
                 <div className="space-y-4">
-                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-black text-slate-800">전자세금계산서 발행 요청</h3>
-                        <p className="text-[10px] text-slate-400 font-bold">계산서를 받으실 이메일 주소를 확인해주세요.</p>
-                      </div>
-                    </div>
+                  {/* Integrated Issuance Modules */}
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Common State Summary */}
+                    {selectedOrderIds.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-5 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center justify-between shadow-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center">
+                            <CheckCircle2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Selected Items</p>
+                            <p className="text-sm font-bold text-slate-700">{selectedOrderIds.length}건 선택됨</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</p>
+                          <p className="text-xl font-black text-emerald-600">₩{selectedTotalAmount.toLocaleString()}</p>
+                        </div>
+                      </motion.div>
+                    )}
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">발행 이메일 주소</label>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <input
-                            type="email"
-                            value={taxEmail}
-                            onChange={(e) => setTaxEmail(e.target.value)}
-                            placeholder="invoice@company.com"
-                            className="flex-1 min-w-0 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
-                          />
+                  {/* Unified Issuance Module */}
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Integrated Issuance Card */}
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100 space-y-6 overflow-hidden relative group">
+                      {/* Background Decoration */}
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                      
+                      <div className="relative flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200">
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-black text-slate-800 tracking-tight">증빙 서류 일괄 발행</h3>
+                          <p className="text-[11px] text-slate-400 font-bold mt-0.5">명세서와 계산서를 한 번의 클릭으로 동시 요청합니다.</p>
+                        </div>
+                      </div>
+
+                      {/* Selection Summary Overlay */}
+                      <div className="p-5 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Items</p>
+                          <p className="text-sm font-bold text-slate-700">{selectedOrderIds.length}건 선택됨</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</p>
+                          <p className="text-xl font-black text-emerald-600">₩{selectedTotalAmount.toLocaleString()}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <button
+                          onClick={handleCombinedRequest}
+                          disabled={isCombinedSubmitting || selectedOrderIds.length === 0}
+                          className="w-full py-4.5 bg-slate-900 text-white rounded-2xl font-black text-base hover:bg-black transition-all active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-slate-200 flex items-center justify-center gap-3"
+                        >
+                          {isCombinedSubmitting ? (
+                            <RefreshCw className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-5 h-5" />
+                          )}
+                          {isCombinedSubmitting ? '발행 요청 중...' : '명세서 + 세금계산서 일괄 발행'}
+                        </button>
+
+                        <div className="flex gap-2">
+                          <button
+                            onClick={handleStatementRequest}
+                            disabled={isStatementSubmitting || selectedOrderIds.length === 0}
+                            className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold text-xs hover:bg-blue-100 transition-all disabled:opacity-30"
+                          >
+                            명세서만 발행
+                          </button>
                           <button
                             onClick={handleTaxInvoiceRequest}
-                            disabled={isTaxSubmitting}
-                            className="sm:px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                            disabled={isTaxSubmitting || selectedOrderIds.length === 0 || (lastStatementIds.length > 0 && !isStatementMatched)}
+                            className="flex-1 py-3 bg-amber-50 text-amber-600 rounded-xl font-bold text-xs hover:bg-amber-100 transition-all disabled:opacity-30"
                           >
-                            {isTaxSubmitting ? '요청 중...' : '발행 요청'}
+                            계산서만 발행
                           </button>
                         </div>
-                      </div>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">
-                        ※ 요청하신 내용은 <strong>{NGS_EMAIL}</strong>으로 즉시 전달되며, 입금 확인 후 순차적으로 발행됩니다.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Transaction Statement Request Section */}
-                  <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-black text-slate-800">거래명세서 발행 요청</h3>
-                        <p className="text-[10px] text-slate-400 font-bold">발행 요청 시 등록된 이메일로 발송됩니다.</p>
+                        
+                        {!isStatementMatched && lastStatementIds.length > 0 && selectedOrderIds.length > 0 && (
+                          <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-between gap-3">
+                            <p className="text-[10px] text-rose-500 font-bold leading-tight">
+                              ⚠️ 명세서와 금액이 일치하지 않습니다.
+                            </p>
+                            <button 
+                              onClick={handleSyncFromStatement}
+                              className="text-[10px] font-black text-rose-600 underline underline-offset-2"
+                            >
+                              명세서 기준 동기화
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="flex-1 min-w-0 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold text-slate-500 truncate">
-                          {taxEmail || '이메일을 먼저 입력해주세요'}
-                        </div>
+                    {/* Email Input Field (Shared) */}
+                    <div className="bg-slate-50/80 backdrop-blur-sm p-5 rounded-3xl border border-slate-100 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                          <Mail className="w-3 h-3" /> 발행 이메일 주소
+                        </label>
                         <button
-                          onClick={handleStatementRequest}
-                          disabled={isStatementSubmitting || !taxEmail}
-                          className="sm:px-6 py-3 bg-slate-800 text-white rounded-xl font-bold text-sm hover:bg-slate-900 transition-all active:scale-95 disabled:opacity-50 shrink-0"
+                          onClick={handleResetPractice}
+                          className="text-[9px] font-bold text-rose-400 hover:text-rose-600 flex items-center gap-1 transition-colors"
                         >
-                          {isStatementSubmitting ? '요청 중...' : '발행 요청'}
+                          <RefreshCw className="w-2.5 h-2.5" />
+                          연습 데이터 초기화
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">
-                        ※ 거래명세서는 입금 전에도 발행 가능하며, 요청 즉시 담당자에게 전달됩니다.
+                      <input
+                        type="email"
+                        value={taxEmail}
+                        onChange={(e) => setTaxEmail(e.target.value)}
+                        placeholder="invoice@company.com"
+                        className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                      />
+                      <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-1">
+                        ※ 요청하신 서류는 입력하신 이메일로 영업일 기준 1~2일 내에 발송됩니다. <strong>{NGS_EMAIL}</strong>으로도 사본이 전달됩니다.
                       </p>
                     </div>
                   </div>
