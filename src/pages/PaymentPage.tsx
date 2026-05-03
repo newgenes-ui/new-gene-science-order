@@ -13,6 +13,7 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState(false);
   const [depositName, setDepositName] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const orders = getOrders();
   const order = orders.find(o => o.id === orderId);
@@ -21,7 +22,10 @@ export default function PaymentPage() {
     if (!order) {
       navigate('/');
     } else if (!confirmed) {
-      // 주문 완료(결제 대기) 진입 시 양옆에서 꽃가루 효과
+      // 주문 완료(결제 대기) 진입 시 꽃가루 및 문구 효과
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3500);
+      
       confetti({
         particleCount: 80,
         angle: 60,
@@ -55,6 +59,8 @@ export default function PaymentPage() {
     }
     updateOrderStatus(orderId, 'paid');
     setConfirmed(true);
+    setShowCelebration(true);
+    setTimeout(() => setShowCelebration(false), 3500);
     
     // 입금 확인 성공 시 화려한 꽃가루
     const end = Date.now() + (3 * 1000);
@@ -265,6 +271,22 @@ export default function PaymentPage() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.5 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
+          >
+            <div className="bg-white/80 backdrop-blur-2xl px-16 py-10 rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4">
+              <h2 className="text-7xl font-black text-primary tracking-tighter drop-shadow-sm">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-xl">정상적으로 처리되었습니다.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

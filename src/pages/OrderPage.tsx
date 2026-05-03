@@ -138,6 +138,8 @@ export default function OrderPage() {
       }
       
       alert('발주 요청이 완료되었습니다. 감사합니다!');
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3500);
       confetti({
         particleCount: 100,
         spread: 70,
@@ -198,6 +200,7 @@ export default function OrderPage() {
   const [isStatementSubmitting, setIsStatementSubmitting] = useState(false);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [historyTab, setHistoryTab] = useState<'order' | 'quote'>('order');
   const [dateRange, setDateRange] = useState({
     start: (() => {
@@ -502,6 +505,8 @@ export default function OrderPage() {
 
     if (order.orderType === 'quote') {
       setIsQuoteSuccess(true);
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3500);
       // 폼 초기화
       setOtherRequest('');
       setQuantities({});
@@ -515,12 +520,10 @@ export default function OrderPage() {
 
   // 견적 문의 성공 시 꽃가루 효과
   useEffect(() => {
-    if (isQuoteSuccess) {
-      const duration = 3 * 1000;
+    if (showCelebration) {
+      const duration = 3.5 * 1000;
       const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
 
       const interval: any = setInterval(function() {
         const timeLeft = animationEnd - Date.now();
@@ -550,7 +553,7 @@ export default function OrderPage() {
 
       return () => clearInterval(interval);
     }
-  }, [isQuoteSuccess]);
+  }, [showCelebration]);
 
   if (isQuoteSuccess) {
     return (
@@ -1400,6 +1403,20 @@ export default function OrderPage() {
                 <p className="text-xs text-slate-400 mt-1">이메일 발송 및 내역 등록 중입니다...</p>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.5 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
+          >
+            <div className="bg-white/80 backdrop-blur-2xl px-16 py-10 rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4">
+              <h2 className="text-7xl font-black text-primary tracking-tighter drop-shadow-sm">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-xl">요청이 정상적으로 완료되었습니다.</p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
