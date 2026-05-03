@@ -13,6 +13,8 @@ import emailjs from '@emailjs/browser';
 const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
 const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
+// ─── 백업용 Google Apps Script 설정 ───────────────────────────
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJULS6NUUGQIjlwXxhzld9LfwMo_22evJbjwrDtE697Oze5iV1rog/exec";
 // ─────────────────────────────────────────────────────────────────
 
 export default function OrderPage() {
@@ -523,6 +525,26 @@ export default function OrderPage() {
         console.error('❌ EmailJS 발송 프로세스 오류:', eGlobal);
       }
     }
+
+    // ─── 백업: Google Apps Script로 발송 (EmailJS 실패 대비) ───────────
+    try {
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          ...order,
+          type: activeTab === 'quote' ? 'quote_request' : 'new_order',
+          client_name: clientName,
+          orderer_name: ordererName,
+          items_text: finalItemsText,
+        }),
+      }).then(() => console.log('✅ Google Apps Script 백업 발송 완료'))
+        .catch(err => console.error('❌ Google Apps Script 발송 실패:', err));
+    } catch (err) {
+      console.error('❌ Google Apps Script 호출 오류:', err);
+    }
+    // ─────────────────────────────────────────────────────────────────
 
     saveOrder(order);
     setIsSubmitting(false);
