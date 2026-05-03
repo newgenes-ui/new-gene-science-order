@@ -479,65 +479,18 @@ export default function OrderPage() {
     };
 
 
-    // ─── 이메일 발송 로직 (EmailJS 주력, Google Script 백업) ───
-    const sendWithBackup = async () => {
-      let isEmailJSSuccess = false;
-
-      if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        try {
-          console.log('📧 EmailJS(유료) 발송 시도...');
-          // 본사 발송
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            to_email: NGS_EMAIL,
-            reply_to: ordererEmail || clientData.email || NGS_EMAIL,
-          }, EMAILJS_PUBLIC_KEY);
-
-          // 고객사 발송
-          const targetClientEmail = (ordererEmail || clientData.email || '').trim();
-          if (targetClientEmail && targetClientEmail.includes('@')) {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-              ...emailParams,
-              order_title: `[뉴진사이언스 ${activeTab === 'quote' ? '견적' : '주문'} 접수 완료]`,
-              to_email: targetClientEmail,
-              reply_to: NGS_EMAIL,
-            }, EMAILJS_PUBLIC_KEY);
-          }
-          isEmailJSSuccess = true;
-          console.log('✅ EmailJS 발송 성공');
-        } catch (err) {
-          console.error('❌ EmailJS 발송 실패:', err);
-        }
+    // ─── EmailJS 발송 (사용자 설정 기반 단일 호출) ───
+    if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+      try {
+        console.log('📧 EmailJS(유료) 발송 시작...');
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+        console.log('✅ EmailJS 발송 완료');
+      } catch (err) {
+        console.error('❌ EmailJS 발송 실패:', err);
       }
+    }
+    // ───────────────────────────────────────────────
 
-      // EmailJS 실패 시에만 구글 스크립트로 백업 발송
-      if (!isEmailJSSuccess) {
-        console.warn('⚠️ EmailJS 실패로 백업(Google Script) 발송을 시도합니다.');
-        try {
-          await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-              ...order,
-              type: activeTab === 'quote' ? 'quote_request' : 'new_order',
-              client_name: clientName,
-              orderer_name: ordererName,
-              items_text: finalItemsText,
-              // 추가: 백업 스크립트가 수신자를 식별할 수 있도록 주소 추가
-              client_email: clientData.email,
-              orderer_email: ordererEmail,
-              to_email: `${NGS_EMAIL}, ${ordererEmail || clientData.email}`,
-            }),
-          });
-          console.log('✅ Google Apps Script 백업 발송 완료 (수신자 포함)');
-        } catch (err) {
-          console.error('❌ 백업 발송도 실패:', err);
-        }
-      }
-    };
-
-    sendWithBackup();
     saveOrder(order);
     setIsSubmitting(false);
 
