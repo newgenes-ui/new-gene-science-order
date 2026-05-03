@@ -20,7 +20,7 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
-  const clientId = searchParams.get('client') || 'demo';
+  const clientId = (searchParams.get('client') || 'demo').toLowerCase();
   const shouldReset = searchParams.get('reset') === 'true';
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function OrderPage() {
       setStatementRequestedOrderIds([]);
       setSelectedOrderIds([]);
       alert('연습용 발행 요청 기록이 모두 초기화되었습니다!');
-      window.location.href = '/?client=bertis'; 
+      window.location.href = `/?client=${clientId}`; 
     }
   }, [shouldReset]);
 
@@ -55,7 +55,9 @@ export default function OrderPage() {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
   }, [clientId]);
 
-  const isBertis = clientId === 'bertis';
+  // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용
+  const isSpecialClient = clientId !== 'demo';
+  const isBertis = isSpecialClient; 
 
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
@@ -315,12 +317,12 @@ export default function OrderPage() {
 
   // 발주 내역 로드 (베르티스 전용)
   const loadUserOrders = async () => {
-    if (!isBertis) return;
+    // 모든 업체에 대해 내역 로드 허용
     setIsOrdersLoading(true);
     try {
       const all = await getOrdersFromSupabase();
       // 베르티스 주문만 필터링
-      const bertisOrders = all.filter(o => o.clientId === 'bertis');
+      const bertisOrders = all.filter(o => o.clientId === clientId);
       setUserOrders(bertisOrders);
     } catch (e) {
       console.error('Failed to load orders:', e);
@@ -330,10 +332,10 @@ export default function OrderPage() {
   };
 
   useEffect(() => {
-    if (activeTab === 'payment' && isBertis) {
+    if (activeTab === 'payment') {
       loadUserOrders();
     }
-  }, [activeTab, isBertis]);
+  }, [activeTab]);
 
   const filteredUserOrders = useMemo(() => {
     return userOrders
@@ -363,7 +365,7 @@ export default function OrderPage() {
 
   const cartItems = PRODUCTS.filter(p => (quantities[p.id] || 0) > 0);
   const cartCount = Object.values(quantities).reduce((s, v) => s + v, 0);
-  const subtotalAmount = cartItems.reduce((s, p) => s + p.price * (quantities[p.id] || 0), 0);
+  const subtotalAmount = cartItems.reduce((s, p) => s + (p.price as number) * (quantities[p.id] || 0), 0);
   const vatAmount = Math.floor(subtotalAmount * 0.1);
   const totalAmount = subtotalAmount + vatAmount;
 
@@ -606,7 +608,7 @@ export default function OrderPage() {
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative z-10">
-            <h1 className="text-xl font-black">{clientName}님 반갑습니다! 👋</h1>
+            <h1 className="text-xl font-black">{clientData.name}님 반갑습니다! 👋</h1>
             <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 {activeTab === 'quote' ? '문의' : '주문'}하세요</p>
             <div className="flex flex-wrap gap-x-6 gap-y-1.5 mt-2.5 pt-2.5 border-t border-white/10">
               <p className="text-xs font-bold opacity-60 flex items-center gap-1.5">
@@ -640,7 +642,7 @@ export default function OrderPage() {
             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <CreditCard className="w-4 h-4" />
-            {isBertis ? '내역/결제' : '결제하기'}
+            {isSpecialClient ? '내역/결제' : '결제하기'}
           </button>
         </div>
 
@@ -657,7 +659,7 @@ export default function OrderPage() {
               {/* Orderer Info */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                 <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                  <User className="w-4 h-4" /> 주문자 정보 {isBertis && '(베르티스)'}
+                  <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {!isBertis && (
@@ -728,10 +730,10 @@ export default function OrderPage() {
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                    <User className="w-4 h-4" /> 주문자 정보 {isBertis && '(베르티스)'}
+                    <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {!isBertis && (
+                    {!isSpecialClient && (
                       <div>
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
                         <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -739,8 +741,8 @@ export default function OrderPage() {
                     )}
                   <div className={`flex flex-wrap items-end gap-x-12 gap-y-6 ${isBertis ? 'sm:col-span-2' : ''}`}>
                     <div className="min-w-[140px]">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">주문자 성함 *</label>
-                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
+                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
                     {(!isBertis || isBertis) && (
                       <div className="flex-1 min-w-[280px]">
@@ -1026,7 +1028,7 @@ export default function OrderPage() {
                                 <>
                                   {order.status === 'order_requested' && (
                                     <>
-                                      {taxRequestedOrderIds.includes(order.id) ? (
+                                      {statementRequestedOrderIds.includes(order.id) ? (
                                         <div className="flex flex-col gap-1">
                                           <span className="text-[9px] text-blue-600 font-bold border border-blue-200 bg-blue-50 px-2 py-0.5 rounded text-center">발행요청됨</span>
                                         </div>

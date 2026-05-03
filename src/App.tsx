@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { QrCode, BarChart3, ShoppingBag } from 'lucide-react';
+import { CLIENTS } from './data/products';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
 import AdminDashboard from './pages/AdminDashboard';
@@ -25,12 +26,14 @@ function AdminNav() {
         <QrCode className="w-5 h-5" />
         <span className="text-[10px] font-bold">QR 관리</span>
       </NavLink>
-      <NavLink to="/?client=bertis" className={
-        `flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl transition-all text-slate-400`
-      }>
-        <ShoppingBag className="w-5 h-5" />
-        <span className="text-[10px] font-bold">베르티스 미리보기</span>
-      </NavLink>
+      {CLIENTS.filter(c => c.id !== 'demo').map(client => (
+        <NavLink key={client.id} to={`/?client=${client.id}`} className={
+          `flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all text-slate-400`
+        }>
+          <ShoppingBag className="w-5 h-5" />
+          <span className="text-[9px] font-bold truncate max-w-[60px]">{client.name.replace('(주)', '')}</span>
+        </NavLink>
+      ))}
     </nav>
   );
 }

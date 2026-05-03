@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
@@ -207,46 +207,7 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Practice Hub Banner */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden"
-        >
-          <div className="absolute right-0 top-0 p-8 opacity-10">
-            <RefreshCw className="w-32 h-32 rotate-12" />
-          </div>
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="bg-blue-500 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-wider">Practice Mode</span>
-              <span className="text-slate-400 text-xs font-bold">최신 배포 연습용 환경</span>
-            </div>
-            <h2 className="text-2xl font-black mb-4">뉴진사이언스 배포 연습 및 데이터 관리</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <p className="text-[10px] font-black text-blue-300 uppercase mb-1">Step 1. 빌드 확인</p>
-                <p className="text-sm font-bold">npm run build 완료</p>
-                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 w-full" />
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <p className="text-[10px] font-black text-emerald-300 uppercase mb-1">Step 2. DB 동기화</p>
-                <p className="text-sm font-bold">Supabase Realtime 연결됨</p>
-                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 w-full" />
-                </div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <p className="text-[10px] font-black text-emerald-300 uppercase mb-1">Step 3. 배포 진행</p>
-                <p className="text-sm font-bold">최신 배포 완료 (v1.3.0)</p>
-                <div className="mt-2 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 w-full" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        {/* Practice Mode Banner 제거됨 */}
         {/* Filters */}
         <div className="bg-white rounded-2xl p-4 border border-[#E2E8E4] flex flex-wrap gap-3 items-end">
           <div>
@@ -510,7 +471,7 @@ export default function AdminDashboard() {
                           <p className="text-sm font-bold text-slate-700 truncate">{order.clientName}</p>
                         </div>
                         <div className="col-span-1">
-                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">주문자</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">문의자</p>
                           <p className="text-sm font-bold text-slate-700 truncate">{order.ordererName}</p>
                         </div>
                         <div className="hidden md:block col-span-3">
