@@ -524,8 +524,13 @@ export default function OrderPage() {
               client_name: clientName,
               orderer_name: ordererName,
               items_text: finalItemsText,
+              // 추가: 백업 스크립트가 수신자를 식별할 수 있도록 주소 추가
+              client_email: clientData.email,
+              orderer_email: ordererEmail,
+              to_email: `${NGS_EMAIL}, ${ordererEmail || clientData.email}`,
             }),
           });
+          console.log('✅ Google Apps Script 백업 발송 완료 (수신자 포함)');
         } catch (err) {
           console.error('❌ 백업 발송도 실패:', err);
         }
