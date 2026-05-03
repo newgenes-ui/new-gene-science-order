@@ -280,9 +280,9 @@ export default function PaymentPage() {
             exit={{ opacity: 0, scale: 1.5 }}
             className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
           >
-            <div className="bg-white/80 backdrop-blur-2xl px-16 py-10 rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4">
-              <h2 className="text-7xl font-black text-primary tracking-tighter drop-shadow-sm">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-xl">정상적으로 처리되었습니다.</p>
+            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-16 md:py-10 rounded-[40px] md:rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 md:gap-4 mx-6">
+              <h2 className="text-4xl md:text-7xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-sm md:text-xl whitespace-nowrap">정상적으로 처리되었습니다.</p>
             </div>
           </motion.div>
         )}
