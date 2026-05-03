@@ -49,17 +49,17 @@ export default function PaymentPage() {
   // 3번의 꽃가루 연출 및 문구 제어
   const triggerCelebration = () => {
     const burst = () => {
-      confetti({ 
-        particleCount: 150, 
-        scalar: 1.6, 
+      confetti({
+        particleCount: 150,
+        scalar: 1.6,
         angle: 60,
         spread: 70,
         origin: { x: 0, y: 0.8 },
         zIndex: 10000
       });
-      confetti({ 
-        particleCount: 150, 
-        scalar: 1.6, 
+      confetti({
+        particleCount: 150,
+        scalar: 1.6,
         angle: 120,
         spread: 70,
         origin: { x: 1, y: 0.8 },
