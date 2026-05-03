@@ -491,14 +491,15 @@ export default function OrderPage() {
         }, EMAILJS_PUBLIC_KEY);
         console.log('✅ 뉴진사이언스 발송 완료:', resNGS.status);
 
-        // 2. 고객(베르티스 등)에게 발송 (고객용)
-        const targetClientEmail = ordererEmail || clientData.email;
+        // 2. 고객(보령제약 등)에게 발송 (고객용)
+        const targetClientEmail = (ordererEmail || clientData.email || '').trim();
         if (targetClientEmail && targetClientEmail.includes('@')) {
+          console.log(`📧 고객사(${targetClientEmail}) 메일 발송 시도...`);
           const resClient = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            order_title: `[뉴진사이언스 ${activeTab === 'quote' ? '견적' : '주문'} 접수]`,
+            order_title: `[뉴진사이언스 ${activeTab === 'quote' ? '견적' : '주문'} 접수 완료]`,
             info_label: '공급자 정보',
-            greeting: '담당자님, 안녕하세요.',
+            greeting: '담당자님, 안녕하세요. 요청하신 내역이 정상 접수되었습니다.',
             // 고객 메일에는 공급자(뉴진사이언스) 정보를 표시
             orderer_name: '나혜원',
             orderer_phone: '010-9915-5974',
@@ -508,6 +509,8 @@ export default function OrderPage() {
           }, EMAILJS_PUBLIC_KEY);
           console.log('✅ 고객사 발송 완료:', resClient.status);
         } else {
+          console.warn('⚠️ 유효한 고객 이메일 주소가 없어 본사에만 발송했습니다.');
+        }
           console.log('ℹ️ 고객 이메일이 없어 본사에만 발송했습니다.');
         }
       } catch (e) {
