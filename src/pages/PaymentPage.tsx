@@ -23,25 +23,7 @@ export default function PaymentPage() {
       navigate('/');
     } else if (!confirmed) {
       // 주문 완료(결제 대기) 진입 시 꽃가루 및 문구 효과
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3500);
-      
-      confetti({
-        particleCount: 150, // 80에서 150으로 대폭 증가
-        scalar: 1.5, // 입자 크기 증가
-        angle: 60,
-        spread: 65,
-        origin: { x: 0, y: 0.8 },
-        zIndex: 1000
-      });
-      confetti({
-        particleCount: 150, // 80에서 150으로 대폭 증가
-        scalar: 1.5, // 입자 크기 증가
-        angle: 120,
-        spread: 65,
-        origin: { x: 1, y: 0.8 },
-        zIndex: 1000
-      });
+      triggerCelebration();
     }
   }, [order, navigate, confirmed]);
 
@@ -61,37 +43,44 @@ export default function PaymentPage() {
     }
     updateOrderStatus(orderId, 'paid');
     setConfirmed(true);
-    setShowCelebration(true);
-    setTimeout(() => setShowCelebration(false), 3500);
-    
-    // 입금 확인 성공 시 화려한 꽃가루
-    const end = Date.now() + (3 * 1000);
-    const colors = ['#22c55e', '#15803d', '#ffffff'];
+    triggerCelebration();
+  };
 
-    (function frame() {
-      confetti({
-        particleCount: 6, // 4에서 6으로 증가
-        scalar: 1.3,
+  // 3번의 꽃가루 연출 및 문구 제어
+  const triggerCelebration = () => {
+    const burst = () => {
+      confetti({ 
+        particleCount: 150, 
+        scalar: 1.6, 
         angle: 60,
-        spread: 65,
+        spread: 70,
         origin: { x: 0, y: 0.8 },
-        colors: colors,
-        zIndex: 1000
+        zIndex: 10000
       });
-      confetti({
-        particleCount: 6, // 4에서 6으로 증가
-        scalar: 1.3,
+      confetti({ 
+        particleCount: 150, 
+        scalar: 1.6, 
         angle: 120,
-        spread: 65,
+        spread: 70,
         origin: { x: 1, y: 0.8 },
-        colors: colors,
-        zIndex: 1000
+        zIndex: 10000
       });
+    };
 
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    }());
+    // 1회차: 문구 표시 + 꽃가루
+    setShowCelebration(true);
+    burst();
+
+    // 2회차: 1초 후 꽃가루 + 문구 제거 시작
+    setTimeout(() => {
+      burst();
+      setShowCelebration(false); // 2회차 발사 시 문구 사라짐
+    }, 1000);
+
+    // 3회차: 2초 후 마지막 꽃가루
+    setTimeout(() => {
+      burst();
+    }, 2000);
   };
 
   const handleCancelOrder = () => {

@@ -138,8 +138,7 @@ export default function OrderPage() {
       }
       
       alert('발주 요청이 완료되었습니다. 감사합니다!');
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3500);
+      triggerCelebration();
       confetti({
         particleCount: 100,
         spread: 70,
@@ -505,8 +504,7 @@ export default function OrderPage() {
 
     if (order.orderType === 'quote') {
       setIsQuoteSuccess(true);
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3500);
+      triggerCelebration();
       // 폼 초기화
       setOtherRequest('');
       setQuantities({});
@@ -518,44 +516,46 @@ export default function OrderPage() {
   const productsByCategory = (cat: string) =>
     filteredProducts.filter(p => p.category === cat);
 
-  // 견적 문의 성공 시 꽃가루 효과
+  // 3번의 꽃가루 연출 및 문구 제어
+  const triggerCelebration = () => {
+    const burst = () => {
+      confetti({ 
+        particleCount: 150, 
+        scalar: 1.6, 
+        angle: 60,
+        spread: 70,
+        origin: { x: 0, y: 0.8 },
+        zIndex: 10000
+      });
+      confetti({ 
+        particleCount: 150, 
+        scalar: 1.6, 
+        angle: 120,
+        spread: 70,
+        origin: { x: 1, y: 0.8 },
+        zIndex: 10000
+      });
+    };
+
+    // 1회차: 문구 표시 + 꽃가루
+    setShowCelebration(true);
+    burst();
+
+    // 2회차: 1초 후 꽃가루 + 문구 제거 시작
+    setTimeout(() => {
+      burst();
+      setShowCelebration(false); // 2회차 발사 시 문구 사라짐
+    }, 1000);
+
+    // 3회차: 2초 후 마지막 꽃가루
+    setTimeout(() => {
+      burst();
+    }, 2000);
+  };
+
   useEffect(() => {
-    if (showCelebration) {
-      const duration = 3.5 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
-
-      const interval: any = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
-        }
-
-        const particleCount = 70 * (timeLeft / duration); // 40에서 70으로 증가 (약 75% 증가)
-        // 좌측 하단에서 대각선 위로
-        confetti({ 
-          ...defaults, 
-          particleCount, 
-          scalar: 1.5, // 입자 크기 증가
-          angle: 60,
-          spread: 65,
-          origin: { x: 0, y: 0.8 } 
-        });
-        // 우측 하단에서 대각선 위로
-        confetti({ 
-          ...defaults, 
-          particleCount, 
-          scalar: 1.5, // 입자 크기 증가
-          angle: 120,
-          spread: 65,
-          origin: { x: 1, y: 0.8 } 
-        });
-      }, 250);
-
-      return () => clearInterval(interval);
-    }
-  }, [showCelebration]);
+    // 기존 useEffect 제거 (triggerCelebration 함수로 대체됨)
+  }, []);
 
   if (isQuoteSuccess) {
     return (
