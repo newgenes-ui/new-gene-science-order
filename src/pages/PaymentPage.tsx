@@ -145,11 +145,10 @@ export default function PaymentPage() {
           <p className="text-slate-500 text-sm mt-1">아래 계좌로 입금해 주세요</p>
           <button
             onClick={() => navigate(`/?client=${order.clientId}`)}
-            className="mt-4 px-4 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition-colors inline-flex items-center gap-1.5"
+            className="mt-6 w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
           >
-            ← 주문 페이지로 돌아가기
+            추가 주문하러 가기 (메인으로)
           </button>
-        </motion.div>
         </motion.div>
 
         {/* Order Summary */}
