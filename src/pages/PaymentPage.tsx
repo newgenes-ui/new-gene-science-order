@@ -135,7 +135,7 @@ export default function PaymentPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          <h1 className="text-2xl font-black text-primary">무통장 입금 결제</h1>
+          <h1 className="text-2xl font-black text-primary">발주 완료</h1>
           <p className="text-slate-500 text-sm mt-1">아래 계좌로 입금해 주세요</p>
         </motion.div>
 
