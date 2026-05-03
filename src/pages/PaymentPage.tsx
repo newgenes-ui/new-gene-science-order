@@ -27,16 +27,18 @@ export default function PaymentPage() {
       setTimeout(() => setShowCelebration(false), 3500);
       
       confetti({
-        particleCount: 80,
+        particleCount: 150, // 80에서 150으로 대폭 증가
+        scalar: 1.5, // 입자 크기 증가
         angle: 60,
-        spread: 55,
+        spread: 65,
         origin: { x: 0, y: 0.8 },
         zIndex: 1000
       });
       confetti({
-        particleCount: 80,
+        particleCount: 150, // 80에서 150으로 대폭 증가
+        scalar: 1.5, // 입자 크기 증가
         angle: 120,
-        spread: 55,
+        spread: 65,
         origin: { x: 1, y: 0.8 },
         zIndex: 1000
       });
@@ -68,17 +70,19 @@ export default function PaymentPage() {
 
     (function frame() {
       confetti({
-        particleCount: 4,
+        particleCount: 6, // 4에서 6으로 증가
+        scalar: 1.3,
         angle: 60,
-        spread: 55,
+        spread: 65,
         origin: { x: 0, y: 0.8 },
         colors: colors,
         zIndex: 1000
       });
       confetti({
-        particleCount: 4,
+        particleCount: 6, // 4에서 6으로 증가
+        scalar: 1.3,
         angle: 120,
-        spread: 55,
+        spread: 65,
         origin: { x: 1, y: 0.8 },
         colors: colors,
         zIndex: 1000
@@ -292,9 +296,9 @@ export default function PaymentPage() {
             exit={{ opacity: 0, scale: 1.5 }}
             className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
           >
-            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-16 md:py-10 rounded-[40px] md:rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 md:gap-4 mx-6">
-              <h2 className="text-4xl md:text-7xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-sm md:text-xl whitespace-nowrap">정상적으로 처리되었습니다.</p>
+            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-8 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 mx-6">
+              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-xs md:text-sm whitespace-nowrap">정상적으로 처리되었습니다.</p>
             </div>
           </motion.div>
         )}

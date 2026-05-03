@@ -532,21 +532,23 @@ export default function OrderPage() {
           return clearInterval(interval);
         }
 
-        const particleCount = 40 * (timeLeft / duration);
+        const particleCount = 70 * (timeLeft / duration); // 40에서 70으로 증가 (약 75% 증가)
         // 좌측 하단에서 대각선 위로
         confetti({ 
           ...defaults, 
           particleCount, 
+          scalar: 1.5, // 입자 크기 증가
           angle: 60,
-          spread: 55,
+          spread: 65,
           origin: { x: 0, y: 0.8 } 
         });
         // 우측 하단에서 대각선 위로
         confetti({ 
           ...defaults, 
           particleCount, 
+          scalar: 1.5, // 입자 크기 증가
           angle: 120,
-          spread: 55,
+          spread: 65,
           origin: { x: 1, y: 0.8 } 
         });
       }, 250);
@@ -1430,9 +1432,9 @@ export default function OrderPage() {
             exit={{ opacity: 0, scale: 1.5 }}
             className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
           >
-            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-16 md:py-10 rounded-[40px] md:rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 md:gap-4 mx-6">
-              <h2 className="text-4xl md:text-7xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-sm md:text-xl whitespace-nowrap">요청이 정상적으로 완료되었습니다.</p>
+            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-8 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 mx-6">
+              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-xs md:text-sm whitespace-nowrap">요청이 정상적으로 완료되었습니다.</p>
             </div>
           </motion.div>
         )}
