@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { CheckCircle2, Copy, MessageSquare, CreditCard, Clock, XCircle } from 'lucide-react';
@@ -19,8 +20,24 @@ export default function PaymentPage() {
   useEffect(() => {
     if (!order) {
       navigate('/');
+    } else if (!confirmed) {
+      // 주문 완료(결제 대기) 진입 시 양옆에서 꽃가루 효과
+      confetti({
+        particleCount: 80,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.8 },
+        zIndex: 1000
+      });
+      confetti({
+        particleCount: 80,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.8 },
+        zIndex: 1000
+      });
     }
-  }, [order, navigate]);
+  }, [order, navigate, confirmed]);
 
   if (!order) return null;
 
@@ -38,6 +55,33 @@ export default function PaymentPage() {
     }
     updateOrderStatus(orderId, 'paid');
     setConfirmed(true);
+    
+    // 입금 확인 성공 시 화려한 꽃가루
+    const end = Date.now() + (3 * 1000);
+    const colors = ['#22c55e', '#15803d', '#ffffff'];
+
+    (function frame() {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.8 },
+        colors: colors,
+        zIndex: 1000
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.8 },
+        colors: colors,
+        zIndex: 1000
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
   };
 
   const handleCancelOrder = () => {
@@ -54,22 +98,22 @@ export default function PaymentPage() {
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
+          className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
         >
-          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 text-primary" />
+          <div className="w-24 h-24 bg-primary/10 rounded-[40px] flex items-center justify-center mx-auto mb-2">
+            <CheckCircle2 className="w-12 h-12 text-primary" />
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-800">입금 완료!</h2>
-            <p className="text-slate-500 text-sm mt-2">
+          <div className="space-y-2">
+            <p className="text-primary font-extrabold text-2xl tracking-tight">입금 확인 요청 완료</p>
+            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
               입금 확인 후 빠르게 처리해 드리겠습니다.<br />
               주문번호: <span className="font-bold text-primary">{orderId}</span>
             </p>
           </div>
-          <div className="bg-slate-50 rounded-2xl p-4 text-left space-y-1">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">주문 요약</p>
+          <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-1.5 border border-slate-100">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">주문 요약</p>
             <p className="text-sm font-semibold text-slate-700">{order.clientName} | {order.ordererName}</p>
-            <p className="text-lg font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
+            <p className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
           </div>
         </motion.div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, FormEvent } from 'react';
+import confetti from 'canvas-confetti';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -136,7 +137,12 @@ export default function OrderPage() {
         }
       }
       
-      alert('발주 요청이 완료되었습니다. 담당자가 확인 후 연락드리겠습니다.');
+      alert('발주 요청이 완료되었습니다. 감사합니다!');
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
@@ -507,6 +513,45 @@ export default function OrderPage() {
   const productsByCategory = (cat: string) =>
     filteredProducts.filter(p => p.category === cat);
 
+  // 견적 문의 성공 시 꽃가루 효과
+  useEffect(() => {
+    if (isQuoteSuccess) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval: any = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 40 * (timeLeft / duration);
+        // 좌측 하단에서 대각선 위로
+        confetti({ 
+          ...defaults, 
+          particleCount, 
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.8 } 
+        });
+        // 우측 하단에서 대각선 위로
+        confetti({ 
+          ...defaults, 
+          particleCount, 
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.8 } 
+        });
+      }, 250);
+
+      return () => clearInterval(interval);
+    }
+  }, [isQuoteSuccess]);
+
   if (isQuoteSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA] flex items-center justify-center p-4">
@@ -515,14 +560,14 @@ export default function OrderPage() {
           animate={{ scale: 1, opacity: 1 }}
           className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
         >
-          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 text-primary" />
+          <div className="w-24 h-24 bg-primary/10 rounded-[40px] flex items-center justify-center mx-auto mb-2">
+            <CheckCircle2 className="w-12 h-12 text-primary" />
           </div>
-          <div>
-            <h2 className="text-2xl font-black text-slate-800">문의 접수 완료!</h2>
-            <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-              견적 문의가 담당자에게 전달되었습니다.<br />
-              확인 후 빠르게 연락드리겠습니다.
+          <div className="space-y-2">
+            <p className="text-primary font-extrabold text-2xl tracking-tight">견적 문의 접수 완료</p>
+            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
+              담당자가 확인 후 빠르게 연락드리겠습니다.<br />
+              잠시만 기다려 주세요! 👋
             </p>
           </div>
           <button
