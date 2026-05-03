@@ -477,48 +477,51 @@ export default function OrderPage() {
     };
 
 
-    if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+    // EmailJS 설정값 확인 및 경고
+    if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
+      console.error('❌ EmailJS 설정값이 누락되었습니다. Vercel 환경변수 또는 .env.local을 확인하세요.');
+      alert('⚠️ 시스템 설정 문제로 이메일이 발송되지 않았습니다. (환경변수 누락)\n주문 내역은 데이터베이스에 정상 저장되었습니다.');
+    } else {
       try {
-        console.log('📧 이메일 발송 시작...');
+        console.log('📧 이메일 발송 시퀀스 시작...');
         
         // 1. 뉴진사이언스 본사로 발송 (관리자용)
-        const resNGS = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          ...emailParams,
-          info_label: '주문자 정보',
-          greeting: '관리자님, 안녕하세요.',
-          to_email: NGS_EMAIL,
-          reply_to: ordererEmail || clientData.email || NGS_EMAIL,
-        }, EMAILJS_PUBLIC_KEY);
-        console.log('✅ 뉴진사이언스 발송 완료:', resNGS.status);
+        try {
+          const resNGS = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            ...emailParams,
+            info_label: '주문자 정보',
+            greeting: '관리자님, 안녕하세요.',
+            to_email: NGS_EMAIL,
+            reply_to: ordererEmail || clientData.email || NGS_EMAIL,
+          }, EMAILJS_PUBLIC_KEY);
+          console.log('✅ 본사 메일 발송 성공:', resNGS.status);
+        } catch (e1) {
+          console.error('❌ 본사 메일 발송 실패:', e1);
+        }
 
         // 2. 고객(보령제약 등)에게 발송 (고객용)
         const targetClientEmail = (ordererEmail || clientData.email || '').trim();
         if (targetClientEmail && targetClientEmail.includes('@')) {
-          console.log(`📧 고객사(${targetClientEmail}) 메일 발송 시도...`);
-          const resClient = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            order_title: `[뉴진사이언스 ${activeTab === 'quote' ? '견적' : '주문'} 접수 완료]`,
-            info_label: '공급자 정보',
-            greeting: '담당자님, 안녕하세요. 요청하신 내역이 정상 접수되었습니다.',
-            // 고객 메일에는 공급자(뉴진사이언스) 정보를 표시
-            orderer_name: '나혜원',
-            orderer_phone: '010-9915-5974',
-            orderer_email: 'newgenes@newgenesci.com',
-            to_email: targetClientEmail,
-            reply_to: NGS_EMAIL,
-          }, EMAILJS_PUBLIC_KEY);
-          console.log('✅ 고객사 발송 완료:', resClient.status);
-        } else {
-          console.warn('⚠️ 유효한 고객 이메일 주소가 없어 본사에만 발송했습니다.');
+          try {
+            const resClient = await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+              ...emailParams,
+              order_title: `[뉴진사이언스 ${activeTab === 'quote' ? '견적' : '주문'} 접수 완료]`,
+              info_label: '공급자 정보',
+              greeting: '담당자님, 안녕하세요. 요청하신 내역이 정상 접수되었습니다.',
+              orderer_name: '나혜원',
+              orderer_phone: '010-9915-5974',
+              orderer_email: 'newgenes@newgenesci.com',
+              to_email: targetClientEmail,
+              reply_to: NGS_EMAIL,
+            }, EMAILJS_PUBLIC_KEY);
+            console.log(`✅ 고객사(${targetClientEmail}) 메일 발송 성공:`, resClient.status);
+          } catch (e2) {
+            console.error('❌ 고객사 메일 발송 실패:', e2);
+          }
         }
-          console.log('ℹ️ 고객 이메일이 없어 본사에만 발송했습니다.');
-        }
-      } catch (e) {
-        console.error('❌ EmailJS 발송 오류:', e);
-        alert('이메일 발송 중 오류가 발생했습니다. 하지만 주문은 시스템에 등록되었습니다.');
+      } catch (eGlobal) {
+        console.error('❌ EmailJS 발송 프로세스 오류:', eGlobal);
       }
-    } else {
-      console.warn('⚠️ EmailJS 설정값이 누락되었습니다. Vercel 환경변수를 확인하세요.');
     }
 
     saveOrder(order);
