@@ -121,6 +121,12 @@ export default function PaymentPage() {
             <p className="text-sm font-semibold text-slate-700">{order.clientName} | {order.ordererName}</p>
             <p className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
           </div>
+          <button
+            onClick={() => navigate(`/?client=${order.clientId}`)}
+            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg hover:bg-primary-dark transition-all"
+          >
+            메인으로 돌아가기
+          </button>
         </motion.div>
       </div>
     );
@@ -137,6 +143,13 @@ export default function PaymentPage() {
         >
           <h1 className="text-2xl font-black text-primary">발주 완료</h1>
           <p className="text-slate-500 text-sm mt-1">아래 계좌로 입금해 주세요</p>
+          <button
+            onClick={() => navigate(`/?client=${order.clientId}`)}
+            className="mt-4 px-4 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-300 transition-colors inline-flex items-center gap-1.5"
+          >
+            ← 주문 페이지로 돌아가기
+          </button>
+        </motion.div>
         </motion.div>
 
         {/* Order Summary */}

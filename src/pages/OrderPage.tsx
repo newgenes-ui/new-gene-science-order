@@ -583,6 +583,22 @@ export default function OrderPage() {
             메인으로 돌아가기
           </button>
         </motion.div>
+
+        <AnimatePresence>
+          {showCelebration && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.5 }}
+              className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
+            >
+              <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-16 md:py-10 rounded-[40px] md:rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 md:gap-4 mx-6">
+                <h2 className="text-4xl md:text-7xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+                <p className="text-slate-500 font-bold text-sm md:text-xl whitespace-nowrap">요청이 정상적으로 완료되었습니다.</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
