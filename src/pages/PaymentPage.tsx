@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Copy, MessageSquare, CreditCard, Clock, XCircle } from 'lucide-react';
 import { getOrders, updateOrderStatus } from '../store/orderStore';
 import { NGS_BANK } from '../data/products';

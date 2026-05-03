@@ -1405,6 +1405,7 @@ export default function OrderPage() {
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>
       <AnimatePresence>
         {showCelebration && (
           <motion.div
