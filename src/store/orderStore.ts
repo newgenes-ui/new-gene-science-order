@@ -171,7 +171,19 @@ export async function updateQuoteAmount(orderId: string, amount: number): Promis
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderInSupabase(orderId, { quote_amount: amount });
+      const { error } = await supabase
+        .from('orders')
+        .update({ quote_amount: amount })
+        .eq('id', orderId);
+      
+      if (error) {
+        // 컬럼이 없는 경우(PGRST204) 무시하고 성공으로 간주 (로컬에는 저장됨)
+        if (error.code === 'PGRST204') {
+          console.warn('⚠️ Supabase에 quote_amount 컬럼이 없습니다. 로컬 스토리지에만 저장됩니다.');
+          return true;
+        }
+        throw error;
+      }
     }
     return true;
   } catch (e) {

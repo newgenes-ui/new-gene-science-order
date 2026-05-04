@@ -554,10 +554,13 @@ export default function AdminDashboard() {
                             <div className="flex-1 flex gap-1 items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
                               <input
                                 type="text"
-                                value={quoteAmounts[order.id] || (order.quoteAmount ? order.quoteAmount.toLocaleString() : '')}
+                                value={quoteAmounts[order.id] !== undefined 
+                                  ? quoteAmounts[order.id] 
+                                  : (order.quoteAmount ? order.quoteAmount.toLocaleString() : '')}
                                 onChange={(e) => {
-                                  const val = e.target.value.replace(/[^0-9]/g, '');
-                                  setQuoteAmounts(prev => ({ ...prev, [order.id]: val }));
+                                  const rawValue = e.target.value.replace(/[^0-9]/g, '');
+                                  const formattedValue = rawValue ? parseInt(rawValue).toLocaleString() : '';
+                                  setQuoteAmounts(prev => ({ ...prev, [order.id]: formattedValue }));
                                 }}
                                 placeholder="금액 입력"
                                 className="w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none"
