@@ -29,6 +29,7 @@ export interface Order {
   paymentMethod: 'bank_transfer';
   depositName?: string;
   orderType: 'order' | 'quote';
+  quoteAmount?: number;
 }
 
 const STORAGE_KEY = 'ngs_orders';
@@ -158,6 +159,27 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   }
 }
 
+export async function updateQuoteAmount(orderId: string, amount: number): Promise<boolean> {
+  // 1) localStorage 업데이트
+  const orders = getOrders();
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx !== -1) {
+    orders[idx].quoteAmount = amount;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
+  }
+  
+  // 2) Supabase 업데이트
+  try {
+    if (isSupabaseConfigured && supabase) {
+      await updateOrderInSupabase(orderId, { quote_amount: amount });
+    }
+    return true;
+  } catch (e) {
+    console.error('Supabase quote amount update failed:', e);
+    throw e;
+  }
+}
+
 export function deleteOrder(orderId: string): void {
   // 1) localStorage에서 제거
   const orders = getOrders();
@@ -192,23 +214,23 @@ export function generateOrderId(): string {
 }
 
 export const STATUS_LABELS: Record<Order['status'], string> = {
-  pending: '주문완료',
-  payment_waiting: '입금대기',
+  pending: '접수완료',
+  payment_waiting: '미수금',
   paid: '입금확인',
-  processing: '처리중',
+  processing: '주문완료',
   shipped: '납품완료',
   cancelled: '주문취소',
-  order_requested: '주문요청',
+  order_requested: '주문',
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
-  pending: '#3b82f6',        // 파란색 (주문완료 - 오렌지색과 겹쳐서 변경)
-  payment_waiting: '#f97316', // 오렌지 (입금대기/미수금)
+  pending: '#3b82f6',        // 파란색 (접수완료)
+  payment_waiting: '#f97316', // 오렌지 (미수금)
   paid: '#10b981',           // 녹색 (입금확인)
-  processing: '#8b5cf6',      // 보라 (처리중)
-  shipped: '#3b82f6',        // 파란색 (납품완료)
+  processing: '#6366f1',      // 인디고 (주문완료)
+  shipped: '#2563eb',        // 진한 파란색 (납품완료)
   cancelled: '#ef4444',       // 빨간색 (주문취소)
-  order_requested: '#2563eb', // 파랑 (발주완료)
+  order_requested: '#10b981', // 녹색 (주문)
 };
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────
@@ -237,6 +259,7 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
     status: order.status,
     payment_method: order.paymentMethod,
     order_type: order.orderType,
+    quote_amount: order.quoteAmount,
   };
 
   try {
@@ -263,6 +286,8 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
           total_amount: order.totalAmount,
           status: order.status,
           payment_method: order.paymentMethod,
+          order_type: order.orderType,
+          quote_amount: order.quoteAmount,
         };
         
         const { error: fallbackError } = await supabase.from('orders').insert(fallbackData);
@@ -350,6 +375,7 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
         : (row.order_type === 'quote' 
             ? 'quote' 
             : (row.items && Array.isArray(row.items) && row.items.length > 0 ? 'order' : 'quote')),
+      quoteAmount: row.quote_amount,
     }));
   } catch (e) {
     console.error('Supabase 조회 실패:', e);

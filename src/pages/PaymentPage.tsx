@@ -155,9 +155,17 @@ export default function PaymentPage() {
           <p className="text-xs font-bold uppercase tracking-widest opacity-60 mb-1">주문 번호</p>
           <p className="font-bold text-sm font-mono">{orderId}</p>
           <div className="mt-4 pt-4 border-t border-white/10">
-            <p className="text-xs opacity-60 mb-1">결제 금액</p>
-            <p className="text-3xl font-black">₩{order.totalAmount.toLocaleString()}</p>
-            <p className="text-xs opacity-50 mt-1">부가세 포함</p>
+            <p className="text-xs opacity-60 mb-1">{order.orderType === 'quote' ? '견적 문의 금액' : '결제 금액'}</p>
+            <p className="text-3xl font-black">
+              ₩{(order.orderType === 'quote' && order.quoteAmount) 
+                ? order.quoteAmount.toLocaleString() 
+                : order.totalAmount.toLocaleString()}
+            </p>
+            <p className="text-xs opacity-50 mt-1">
+              {order.orderType === 'quote' 
+                ? (order.quoteAmount ? '관리자 확인 금액' : '제출된 예상 금액') 
+                : '부가세 포함'}
+            </p>
           </div>
         </motion.div>
 

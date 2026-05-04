@@ -4,7 +4,13 @@ import {
   BarChart3, Calendar, Download, TrendingUp, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder, updateOrderStatus } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder, updateOrderStatus, updateQuoteAmount } from '../store/orderStore';
+import { NGS_EMAIL } from '../data/products';
+import emailjs from '@emailjs/browser';
+
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
 
 function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: string; value: string; sub?: string }) {
   return (
@@ -98,6 +104,8 @@ export default function AdminDashboard() {
     }
   };
 
+  const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
+
   const handleStatusUpdate = async (id: string, newStatus: Order['status']) => {
     try {
       const success = await updateOrderStatus(id, newStatus);
@@ -108,6 +116,53 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       alert('상태 업데이트 중 오류가 발생했습니다:\n' + err.message);
+    }
+  };
+
+  const handleQuoteAmountUpdate = async (id: string) => {
+    const amountStr = quoteAmounts[id];
+    if (!amountStr) { alert('금액을 입력해주세요.'); return; }
+    const amount = parseInt(amountStr.replace(/[^0-9]/g, ''));
+    if (isNaN(amount)) { alert('숫자만 입력해주세요.'); return; }
+
+    const order = allOrders.find(o => o.id === id);
+    if (!order) return;
+
+    try {
+      const success = await updateQuoteAmount(id, amount);
+      if (success) {
+        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount } : o));
+        
+        // 이메일 알림 발송 (주문자에게)
+        if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && order.ordererEmail) {
+          const emailParams = {
+            order_title: `[뉴진사이언스 견적 안내] ${order.clientName}`,
+            order_type_text: '견적 안내',
+            detail_label: '견적 확인 내역',
+            order_id: order.id,
+            order_date: order.orderDate,
+            client_name: order.clientName,
+            orderer_name: order.ordererName,
+            orderer_phone: order.ordererPhone,
+            orderer_email: order.ordererEmail,
+            items_text: `[관리자 견적 안내]\n요청하신 견적에 대한 금액이 산출되었습니다.\n\n▶ 확정 견적 금액: ₩${amount.toLocaleString()}\n\n전용 주문 페이지에서 '발주요청' 버튼을 누르시면 바로 주문이 접수됩니다.`,
+            total_amount: `₩${amount.toLocaleString()}`,
+            to_email: order.ordererEmail,
+            reply_to: NGS_EMAIL,
+            from_name: '나혜원',
+            contact_number: '010-9915-5974',
+            greeting: `안녕하세요 ${order.ordererName}님, 요청하신 견적 금액이 산출되어 안내드립니다.`,
+            info_label: '공급자 정보',
+          };
+
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+          alert('견적 금액이 업데이트되었으며, 주문자에게 이메일 알림이 발송되었습니다.');
+        } else {
+          alert('견적 금액이 전송되었습니다.');
+        }
+      }
+    } catch (err: any) {
+      alert('견적 금액 업데이트 중 오류가 발생했습니다:\n' + err.message);
     }
   };
 
@@ -335,8 +390,9 @@ export default function AdminDashboard() {
                         ) : (
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
-                              { id: 'pending', label: '발주확인' },
-                              { id: 'order_requested', label: '주문확인' },
+                              { id: 'pending', label: '접수완료' },
+                              { id: 'order_requested', label: '주문' },
+                              { id: 'processing', label: '주문완료' },
                               { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
@@ -482,9 +538,8 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* 상태 관리 영역 */}
-                      {/* 상태 관리 영역 */}
-                      <div className="flex items-center justify-start md:justify-end gap-2 w-full md:w-[290px] shrink-0 overflow-x-auto pb-1 md:pb-0">
+                      {/* 상태 및 금액 입력 영역 */}
+                      <div className="flex items-center justify-start md:justify-end gap-3 w-full md:w-[350px] shrink-0">
                         {order.status === 'cancelled' ? (
                           <div className="w-full md:text-right md:pr-2">
                             <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200 inline-block">
@@ -492,24 +547,29 @@ export default function AdminDashboard() {
                             </span>
                           </div>
                         ) : (
-                          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
-                            {[
-                              { id: 'pending', label: '발주확인' },
-                              { id: 'order_requested', label: '주문' },
-                              { id: 'shipped', label: '납품완료' }
-                            ].map((s) => (
+                          <div className="flex items-center gap-2 w-full">
+                            <div className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 text-[11px] font-black shrink-0">
+                              {STATUS_LABELS[order.status] || '접수완료'}
+                            </div>
+                            <div className="flex-1 flex gap-1 items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                              <input
+                                type="text"
+                                value={quoteAmounts[order.id] || (order.quoteAmount ? order.quoteAmount.toLocaleString() : '')}
+                                onChange={(e) => {
+                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                  setQuoteAmounts(prev => ({ ...prev, [order.id]: val }));
+                                }}
+                                placeholder="금액 입력"
+                                className="w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none"
+                                onClick={(e) => e.stopPropagation()}
+                              />
                               <button
-                                key={s.id}
-                                onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
-                                    ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
-                                    : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
-                                  }`}
-                                style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                onClick={(e) => { e.stopPropagation(); handleQuoteAmountUpdate(order.id); }}
+                                className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-black hover:bg-primary-dark transition-all shrink-0"
                               >
-                                {s.label}
+                                전송
                               </button>
-                            ))}
+                            </div>
                           </div>
                         )}
                       </div>

@@ -1095,24 +1095,31 @@ export default function OrderPage() {
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-orange-500 text-white border-orange-600 shadow-sm">
                                           미수금
                                         </span>
+                                      ) : order.status === 'processing' ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-indigo-500 text-white border-indigo-600 shadow-sm">
+                                          주문완료
+                                        </span>
                                       ) : order.status === 'order_requested' ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
-                                          주문접수
+                                          주문
                                         </span>
-                                      ) : (order.status === 'pending' || (order.orderType === 'order' && (!order.items || order.items.length === 0))) ? (
-                                        <button 
-                                          onClick={() => handlePlaceOrderFromQuote(order)}
-                                          className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
-                                        >
-                                          발주요청
-                                        </button>
+                                      ) : (order.orderType === 'quote' && order.status === 'pending') ? (
+                                        order.quoteAmount ? (
+                                          <button 
+                                            onClick={() => handlePlaceOrderFromQuote(order)}
+                                            className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm animate-pulse"
+                                          >
+                                            👉 발주요청
+                                          </button>
+                                        ) : (
+                                          <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-slate-100 text-slate-400 border-slate-200">
+                                            접수완료
+                                          </span>
+                                        )
                                       ) : (
-                                        <button 
-                                          onClick={() => handlePlaceOrderFromQuote(order)}
-                                          className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm"
-                                        >
-                                          발주요청
-                                        </button>
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-slate-100 text-slate-400 border-slate-200">
+                                          {STATUS_LABELS[order.status] || '접수완료'}
+                                        </span>
                                       )}
                                     </div>
                                 </>
@@ -1137,10 +1144,22 @@ export default function OrderPage() {
                             )}
                             
                             {order.orderType === 'quote' && (
-                              <div className="bg-slate-50 rounded-2xl p-4">
-                                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                                  {order.otherRequest || '상세 요청 내역 없음'}
-                                </p>
+                              <div className="space-y-3">
+                                <div className="bg-slate-50 rounded-2xl p-4">
+                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">문의 내용</p>
+                                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                    {order.otherRequest || '상세 요청 내역 없음'}
+                                  </p>
+                                </div>
+                                {order.quoteAmount && (
+                                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-blue-600">
+                                      <CreditCard className="w-4 h-4" />
+                                      <span className="text-xs font-black">견적 금액 안내</span>
+                                    </div>
+                                    <span className="text-base font-black text-blue-700">₩{order.quoteAmount.toLocaleString()}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
 
