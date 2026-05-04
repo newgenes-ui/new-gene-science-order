@@ -1124,7 +1124,7 @@ export default function OrderPage() {
                           </div>
                           
                           <div className="px-5 py-4 space-y-3">
-                            {order.orderType === 'order' && order.items.length > 0 && (
+                            {order.items && order.items.length > 0 ? (
                               <div className="space-y-2">
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="flex justify-between items-center text-xs">
@@ -1137,29 +1137,29 @@ export default function OrderPage() {
                                   <span className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
                                 </div>
                               </div>
-                            )}
-                            
-                            {order.orderType === 'quote' && (
+                            ) : (
                               <div className="space-y-3">
                                 <div className="bg-slate-50 rounded-2xl p-4">
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">문의 내용</p>
+                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">문의 및 요청 내용</p>
                                   <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                                    {order.otherRequest || '상세 요청 내역 없음'}
+                                    {order.otherRequest || '상세 내역 없음'}
                                   </p>
                                 </div>
-                                {(order.quoteAmount || (order.totalAmount > 0)) && (
+                                {order.totalAmount > 0 && (
                                   <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-blue-600">
                                       <CreditCard className="w-4 h-4" />
-                                      <span className="text-xs font-black">견적 금액 안내</span>
+                                      <span className="text-xs font-black">최종 견적 금액</span>
                                     </div>
-                                    <span className="text-base font-black text-blue-700">₩{(order.quoteAmount || order.totalAmount).toLocaleString()}</span>
+                                    <span className="text-base font-black text-blue-700">
+                                      ₩{order.totalAmount.toLocaleString()}
+                                    </span>
                                   </div>
                                 )}
                               </div>
                             )}
 
-                            {order.orderType === 'order' && order.otherRequest && (
+                            {order.items && order.items.length > 0 && order.otherRequest && (
                               <div className="bg-amber-50/50 rounded-xl p-3 border border-amber-100/50">
                                 <p className="text-[11px] text-amber-700 italic">기타 요청: {order.otherRequest}</p>
                               </div>
