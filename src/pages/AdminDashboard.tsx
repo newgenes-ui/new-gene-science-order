@@ -532,7 +532,7 @@ export default function AdminDashboard() {
                                     }`}
                                   style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                                 >
-                                  {s.label}
+                                  {(s.id === 'processing' && order.status === 'processing') ? '납품완료' : s.label}
                                 </button>
                               ))}
                             </div>
