@@ -558,8 +558,14 @@ export default function AdminDashboard() {
                                   ? quoteAmounts[order.id] 
                                   : (order.quoteAmount ? order.quoteAmount.toLocaleString() : '')}
                                 onChange={(e) => {
+                                  // 숫자만 추출
                                   const rawValue = e.target.value.replace(/[^0-9]/g, '');
-                                  const formattedValue = rawValue ? parseInt(rawValue).toLocaleString() : '';
+                                  if (rawValue === '') {
+                                    setQuoteAmounts(prev => ({ ...prev, [order.id]: '' }));
+                                    return;
+                                  }
+                                  // 세 자리마다 콤마 추가
+                                  const formattedValue = Number(rawValue).toLocaleString();
                                   setQuoteAmounts(prev => ({ ...prev, [order.id]: formattedValue }));
                                 }}
                                 placeholder="금액 입력"
