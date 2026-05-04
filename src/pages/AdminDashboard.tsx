@@ -526,7 +526,7 @@ export default function AdminDashboard() {
                                 type="text"
                                 value={quoteAmounts[order.id] !== undefined 
                                   ? quoteAmounts[order.id] 
-                                  : (order.quoteAmount ? order.quoteAmount.toLocaleString() : '')}
+                                  : ((order.quoteAmount || order.totalAmount) ? (order.quoteAmount || order.totalAmount).toLocaleString() : '')}
                                 onChange={(e) => {
                                   // 숫자만 추출
                                   const rawValue = e.target.value.replace(/[^0-9]/g, '');
@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                                 }}
                                 placeholder="금액 입력"
                                 disabled={order.status !== 'pending'}
-                                className={`w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none ${order.status !== 'pending' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
+                                className={`w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none ${order.status !== 'pending' ? 'opacity-70 cursor-not-allowed bg-slate-50' : ''}`}
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <button
