@@ -361,7 +361,9 @@ export default function AdminDashboard() {
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
                               { id: 'pending', label: '접수완료' },
-                              { id: 'processing', label: '주문' }
+                              { id: 'order_requested', label: '주문' },
+                              { id: 'processing', label: '주문완료' },
+                              { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
@@ -516,8 +518,23 @@ export default function AdminDashboard() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 w-full">
-                            <div className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl border border-blue-100 text-[11px] font-black shrink-0">
-                              {STATUS_LABELS[order.status] || '접수완료'}
+                            <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
+                              {[
+                                { id: 'pending', label: '접수완료' },
+                                { id: 'processing', label: '주문' }
+                              ].map((s) => (
+                                <button
+                                  key={s.id}
+                                  onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
+                                  className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                      ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
+                                      : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
+                                    }`}
+                                  style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                >
+                                  {s.label}
+                                </button>
+                              ))}
                             </div>
                             <div className="flex-1 flex gap-1 items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
                               <input

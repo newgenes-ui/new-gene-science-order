@@ -1095,13 +1095,21 @@ export default function OrderPage() {
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-orange-500 text-white border-orange-600 shadow-sm">
                                           미수금
                                         </span>
-                                      ) : (order.status === 'processing' || order.status === 'shipped') ? (
+                                      ) : (order.status === 'shipped' || (order.orderType === 'quote' && order.status === 'processing')) ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-600 text-white border-blue-700 shadow-sm">
                                           납품완료
                                         </span>
-                                      ) : order.status === 'order_requested' ? (
+                                      ) : (order.orderType === 'order' && order.status === 'processing') ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-indigo-500 text-white border-indigo-600 shadow-sm">
+                                          주문완료
+                                        </span>
+                                      ) : (order.orderType === 'quote' && order.status === 'order_requested') ? (
                                         <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
                                           주문완료
+                                        </span>
+                                      ) : (order.orderType === 'order' && order.status === 'order_requested') ? (
+                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
+                                          주문
                                         </span>
                                       ) : (order.orderType === 'quote' && order.status === 'pending') ? (
                                         (order.quoteAmount || order.totalAmount > 0) ? (
