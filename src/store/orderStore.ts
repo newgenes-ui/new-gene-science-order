@@ -236,7 +236,7 @@ export const STATUS_LABELS: Record<Order['status'], string> = {
   processing: '납품완료',
   shipped: '납품완료',
   cancelled: '주문취소',
-  order_requested: '납품완료',
+  order_requested: '주문',
 };
 
 export const STATUS_COLORS: Record<Order['status'], string> = {
@@ -246,7 +246,7 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
   processing: '#2563eb',      // 진한 파란색 (납품완료)
   shipped: '#2563eb',        // 진한 파란색 (납품완료)
   cancelled: '#ef4444',       // 빨간색 (주문취소)
-  order_requested: '#2563eb', // 진한 파란색 (납품완료)
+  order_requested: '#10b981', // 녹색 (주문)
 };
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────

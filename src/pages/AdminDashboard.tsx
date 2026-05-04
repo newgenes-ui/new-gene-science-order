@@ -362,8 +362,7 @@ export default function AdminDashboard() {
                             {[
                               { id: 'pending', label: '접수완료' },
                               { id: 'order_requested', label: '주문' },
-                              { id: 'processing', label: '주문완료' },
-                              { id: 'shipped', label: '납품완료' }
+                              { id: 'processing', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
