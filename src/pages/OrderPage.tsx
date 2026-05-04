@@ -1035,7 +1035,7 @@ export default function OrderPage() {
                             <div className="shrink-0 flex items-center gap-3">
                               {order.orderType === 'order' ? (
                                 <>
-                                  {order.status !== 'paid' && order.status !== 'cancelled' && (
+                                  {order.status === 'shipped' && (
                                     <>
                                       {statementRequestedOrderIds.includes(order.id) ? (
                                         <div className="flex flex-col gap-1">
@@ -1072,7 +1072,7 @@ export default function OrderPage() {
                                 </>
                               ) : (
                                 <>
-                                  {order.status === 'order_requested' && (
+                                  {(order.status === 'processing' || order.status === 'shipped') && (
                                     <>
                                       {statementRequestedOrderIds.includes(order.id) ? (
                                         <div className="flex flex-col gap-1">
