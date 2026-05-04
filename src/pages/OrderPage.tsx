@@ -147,8 +147,8 @@ export default function OrderPage() {
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
-        // 로컬 상태 업데이트
-        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested', orderType: 'order' } : o));
+        // 로컬 상태 업데이트 - 성격(quote)을 유지해야 납품완료 로직이 작동함
+        setUserOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'order_requested' } : o));
       }
     } catch (error: any) {
       console.error('Place order from quote error:', error);
