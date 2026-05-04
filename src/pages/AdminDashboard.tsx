@@ -539,7 +539,8 @@ export default function AdminDashboard() {
                                   setQuoteAmounts(prev => ({ ...prev, [order.id]: formattedValue }));
                                 }}
                                 placeholder="금액 입력"
-                                className="w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none"
+                                disabled={order.status !== 'pending'}
+                                className={`w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none ${order.status !== 'pending' ? 'opacity-50 cursor-not-allowed bg-slate-50' : ''}`}
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <button
