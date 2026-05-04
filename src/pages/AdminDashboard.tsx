@@ -361,8 +361,7 @@ export default function AdminDashboard() {
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
                               { id: 'pending', label: '접수완료' },
-                              { id: 'order_requested', label: '주문' },
-                              { id: 'processing', label: '납품완료' }
+                              { id: 'processing', label: '주문' }
                             ].map((s) => (
                               <button
                                 key={s.id}
