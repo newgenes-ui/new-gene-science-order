@@ -125,41 +125,11 @@ export default function AdminDashboard() {
     const amount = parseInt(amountStr.replace(/[^0-9]/g, ''));
     if (isNaN(amount)) { alert('숫자만 입력해주세요.'); return; }
 
-    const order = allOrders.find(o => o.id === id);
-    if (!order) return;
-
     try {
       const success = await updateQuoteAmount(id, amount);
       if (success) {
-        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount } : o));
-        
-        // 이메일 알림 발송 (주문자에게)
-        if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && order.ordererEmail) {
-          const emailParams = {
-            order_title: `[뉴진사이언스 견적 안내] ${order.clientName}`,
-            order_type_text: '견적 안내',
-            detail_label: '견적 확인 내역',
-            order_id: order.id,
-            order_date: order.orderDate,
-            client_name: order.clientName,
-            orderer_name: order.ordererName,
-            orderer_phone: order.ordererPhone,
-            orderer_email: order.ordererEmail,
-            items_text: `[관리자 견적 안내]\n요청하신 견적에 대한 금액이 산출되었습니다.\n\n▶ 확정 견적 금액: ₩${amount.toLocaleString()}\n\n전용 주문 페이지에서 '발주요청' 버튼을 누르시면 바로 주문이 접수됩니다.`,
-            total_amount: `₩${amount.toLocaleString()}`,
-            to_email: order.ordererEmail,
-            reply_to: NGS_EMAIL,
-            from_name: '나혜원',
-            contact_number: '010-9915-5974',
-            greeting: `안녕하세요 ${order.ordererName}님, 요청하신 견적 금액이 산출되어 안내드립니다.`,
-            info_label: '공급자 정보',
-          };
-
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-          alert('견적 금액이 업데이트되었으며, 주문자에게 이메일 알림이 발송되었습니다.');
-        } else {
-          alert('견적 금액이 전송되었습니다.');
-        }
+        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount, totalAmount: amount } : o));
+        alert('견적 금액이 전송되었습니다.');
       }
     } catch (err: any) {
       alert('견적 금액 업데이트 중 오류가 발생했습니다:\n' + err.message);

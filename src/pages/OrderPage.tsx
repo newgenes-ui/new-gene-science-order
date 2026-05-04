@@ -1104,7 +1104,7 @@ export default function OrderPage() {
                                           주문
                                         </span>
                                       ) : (order.orderType === 'quote' && order.status === 'pending') ? (
-                                        order.quoteAmount ? (
+                                        (order.quoteAmount || order.totalAmount > 0) ? (
                                           <button 
                                             onClick={() => handlePlaceOrderFromQuote(order)}
                                             className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm animate-pulse"
@@ -1151,13 +1151,13 @@ export default function OrderPage() {
                                     {order.otherRequest || '상세 요청 내역 없음'}
                                   </p>
                                 </div>
-                                {order.quoteAmount && (
+                                {(order.quoteAmount || (order.totalAmount > 0)) && (
                                   <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
                                     <div className="flex items-center gap-2 text-blue-600">
                                       <CreditCard className="w-4 h-4" />
                                       <span className="text-xs font-black">견적 금액 안내</span>
                                     </div>
-                                    <span className="text-base font-black text-blue-700">₩{order.quoteAmount.toLocaleString()}</span>
+                                    <span className="text-base font-black text-blue-700">₩{(order.quoteAmount || order.totalAmount).toLocaleString()}</span>
                                   </div>
                                 )}
                               </div>
