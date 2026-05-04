@@ -344,6 +344,13 @@ export default function OrderPage() {
   useEffect(() => {
     if (activeTab === 'payment') {
       loadUserOrders();
+      
+      // 5초마다 상태 자동 업데이트 (실시간 동기화)
+      const interval = setInterval(() => {
+        loadUserOrders();
+      }, 5000);
+      
+      return () => clearInterval(interval);
     }
   }, [activeTab]);
 
