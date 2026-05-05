@@ -213,13 +213,14 @@ export default function StatementViewer() {
               <th colSpan={7} className="border border-black p-2 text-left bg-[#f4f7f5]">
                 <div className="flex justify-between items-center w-full px-2">
                   <span className="font-bold text-sm tracking-widest">합계 :</span>
-                  <span className="font-bold text-base tracking-widest underline underline-offset-4">{totalAmountKorean} 영 원정</span>
+                  <span className="font-bold text-base tracking-widest underline underline-offset-4">{totalAmountKorean} 원정 (₩{totalAmount.toLocaleString()} 원)</span>
                   <span className="text-[10px] text-gray-600">(VAT포함)</span>
                 </div>
               </th>
             </tr>
             <tr className="bg-[#E4EAF2] text-center font-bold">
               <th className="border border-black p-1.5 w-10">No</th>
+              <th className="border border-black p-1.5 w-24">품목코드</th>
               <th className="border border-black p-1.5">품 명 (제품명 / 규격)</th>
               <th className="border border-black p-1.5 w-12">수량</th>
               <th className="border border-black p-1.5 w-24">단 가</th>
@@ -231,6 +232,7 @@ export default function StatementViewer() {
             {allItems.map((item, idx) => (
               <tr key={idx} className="text-center h-8">
                 <td className="border border-black p-1">{idx + 1}</td>
+                <td className="border border-black p-1 text-center font-mono text-[10px]">{item.productCode}</td>
                 <td className="border border-black p-1 text-left px-2 truncate max-w-[250px] text-[11px]">
                   {item.productName} {item.spec ? `(${item.spec})` : ''}
                 </td>
@@ -250,12 +252,13 @@ export default function StatementViewer() {
                 <td className="border border-black p-1"></td>
                 <td className="border border-black p-1"></td>
                 <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
               </tr>
             ))}
 
             {/* 하단 집계표 */}
             <tr className="font-bold h-8">
-              <td colSpan={4} rowSpan={3} className="border border-black p-3 text-left align-top text-xs font-normal">
+              <td colSpan={5} rowSpan={3} className="border border-black p-3 text-left align-top text-xs font-normal">
                 해외 발주 품목은 배송 사정에 따라 다소 지연 될 수 있음을 양해 바랍니다.
               </td>
               <th className="border border-black p-1 text-center bg-[#f4f7f5] tracking-[0.5em]">금 액</th>
