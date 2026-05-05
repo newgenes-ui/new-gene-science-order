@@ -174,18 +174,38 @@ export async function updateQuoteDetails(orderId: string, items: OrderItem[], su
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
+      const updateData: any = { 
+        items: items,
+        subtotal_amount: subtotal,
+        vat_amount: vat,
+        total_amount: total,
+        quote_amount: total
+      };
+
       const { error } = await supabase
         .from('orders')
-        .update({ 
-          items: items,
-          subtotal_amount: subtotal,
-          vat_amount: vat,
-          total_amount: total,
-          quote_amount: total
-        })
+        .update(updateData)
         .eq('id', orderId);
       
-      if (error) throw error;
+      if (error) {
+        console.warn('1차 업데이트 실패, 컬럼 확인 후 재시도...', error.message);
+        
+        // 컬럼 부재 오류인 경우 필수 컬럼으로만 재시도
+        if (error.message.includes('column') || error.code === 'PGRST204' || error.code === '42703') {
+          const fallbackData = {
+            items: items,
+            total_amount: total
+          };
+          const { error: fallbackError } = await supabase
+            .from('orders')
+            .update(fallbackData)
+            .eq('id', orderId);
+          
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
     }
     return true;
   } catch (e) {
