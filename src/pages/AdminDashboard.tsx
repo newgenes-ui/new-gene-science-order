@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
@@ -48,10 +48,12 @@ export default function AdminDashboard() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [isOrdererInfoCollapsed, setIsOrdererInfoCollapsed] = useState<Record<string, boolean>>({});
   const [isQuoteInputCollapsed, setIsQuoteInputCollapsed] = useState<Record<string, boolean>>({});
+  const [clientFilter, setClientFilter] = useState('전체');
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeListTab, setActiveListTab] = useState<'order' | 'quote'>('order');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Supabase에서 주문 데이터 로드 (없으면 localStorage fallback)
   const loadOrders = async () => {
@@ -146,14 +148,20 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSaveQuoteDetails = async (id: string) => {
-    const items = editingQuoteItems[id] || [];
-    if (items.length === 0) { alert('최소 하나 이상의 품목을 입력해주세요.'); return; }
-    
+  const calculateOrderTotals = (id: string) => {
+    const items = editingQuoteItems[id] || allOrders.find(o => o.id === id)?.items || [];
     const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
     const vat = Math.floor(subtotal * 0.1);
     const total = subtotal + vat;
+    return { subtotal, vat, total };
+  };
 
+  const handleSaveQuoteDetails = async (id: string) => {
+    const { subtotal, vat, total } = calculateOrderTotals(id);
+    const items = editingQuoteItems[id] || [];
+    if (items.length === 0) { alert('최소 하나 이상의 품목을 입력해주세요.'); return; }
+    
+    setIsSaving(true);
     try {
       const success = await updateQuoteDetails(id, items, subtotal, vat, total);
       if (success) {
@@ -169,6 +177,8 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       alert('저장 중 오류가 발생했습니다:\n' + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
