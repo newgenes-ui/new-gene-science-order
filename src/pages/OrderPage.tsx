@@ -1142,18 +1142,38 @@ export default function OrderPage() {
                             </div>
                           </div>
                           
-                          <div className="px-5 py-4 space-y-3">
+                          <div className="px-5 py-4 space-y-4">
                             {order.items && order.items.length > 0 ? (
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 {order.items.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-500 truncate flex-1 mr-4">• {item.productName} ({item.spec})</span>
-                                    <span className="font-bold text-slate-400 shrink-0">{item.quantity}개 / ₩{item.subtotal.toLocaleString()}</span>
+                                  <div key={idx} className="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 space-y-1">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[10px] font-mono text-slate-400">{item.productCode || '-'}</p>
+                                        <p className="text-xs font-bold text-slate-700 leading-tight truncate">{item.productName}</p>
+                                      </div>
+                                      <p className="text-xs font-black text-slate-400 shrink-0 ml-2">×{item.quantity}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-1 border-t border-slate-100/50">
+                                      <span className="text-[10px] text-slate-400">단가: ₩{(item.unitPrice || 0).toLocaleString()}</span>
+                                      <span className="text-xs font-black text-slate-600">₩{(item.subtotal || 0).toLocaleString()}</span>
+                                    </div>
                                   </div>
                                 ))}
-                                <div className="pt-2 border-t border-dashed border-slate-100 flex justify-between items-center">
-                                  <span className="text-xs font-bold text-slate-400">총 합계(VAT 포함)</span>
-                                  <span className="text-sm font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+                                
+                                <div className="pt-3 border-t border-slate-200 space-y-1.5">
+                                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                    <span>공급가액</span>
+                                    <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
+                                    <span>부가세 (10%)</span>
+                                    <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                                    <span className="text-xs font-black text-slate-800">최종 합계 (VAT 포함)</span>
+                                    <span className="text-base font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+                                  </div>
                                 </div>
                               </div>
                             ) : (
@@ -1165,14 +1185,23 @@ export default function OrderPage() {
                                   </p>
                                 </div>
                                 {order.totalAmount > 0 && (
-                                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-blue-600">
+                                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 space-y-2">
+                                    <div className="flex items-center gap-2 text-blue-600 mb-1">
                                       <CreditCard className="w-4 h-4" />
-                                      <span className="text-xs font-black">최종 견적 금액</span>
+                                      <span className="text-xs font-black uppercase tracking-wider">최종 견적 금액</span>
                                     </div>
-                                    <span className="text-base font-black text-blue-700">
-                                      ₩{order.totalAmount.toLocaleString()}
-                                    </span>
+                                    <div className="flex justify-between items-center text-[10px] font-bold text-blue-400">
+                                      <span>공급가액</span>
+                                      <span>₩{(order.subtotalAmount || Math.floor(order.totalAmount / 1.1)).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-[10px] font-bold text-blue-400">
+                                      <span>부가세</span>
+                                      <span>₩{(order.vatAmount || (order.totalAmount - Math.floor(order.totalAmount / 1.1))).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-blue-100">
+                                      <span className="text-xs font-black text-blue-800">합계 금액</span>
+                                      <span className="text-base font-black text-blue-700">₩{order.totalAmount.toLocaleString()}</span>
+                                    </div>
                                   </div>
                                 )}
                               </div>

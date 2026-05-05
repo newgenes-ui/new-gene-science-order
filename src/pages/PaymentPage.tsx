@@ -176,40 +176,47 @@ export default function PaymentPage() {
           transition={{ delay: 0.15 }}
           className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]"
         >
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">주문 내역</h3>
-          <div className="space-y-2">
+          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">주문 내역 상세</h3>
+          <div className="space-y-3">
             {order.items.map((item, i) => (
-              <div key={i} className="flex justify-between items-start gap-2 py-2 border-b border-dashed border-slate-100 last:border-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-mono text-slate-400">{item.productCode}</p>
-                  <p className="text-sm font-semibold text-slate-700 leading-tight">{item.productName}</p>
-                  <p className="text-xs text-slate-400">{item.spec}</p>
+              <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50 space-y-2">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-mono text-slate-400">{item.productCode || '-'}</p>
+                    <p className="text-sm font-bold text-slate-700 leading-tight">{item.productName}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{item.spec}</p>
+                  </div>
+                  <div className="text-right ml-4">
+                    <p className="text-xs font-black text-slate-400">×{item.quantity}</p>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs text-slate-400">×{item.quantity}</p>
-                  <p className="text-sm font-bold text-slate-800">₩{item.subtotal.toLocaleString()}</p>
+                <div className="flex justify-between items-center pt-2 border-t border-slate-100/50">
+                  <span className="text-[10px] text-slate-400">품목별 합계</span>
+                  <span className="text-sm font-black text-slate-600">₩{(item.subtotal || 0).toLocaleString()}</span>
                 </div>
               </div>
             ))}
+            
             {order.otherRequest && (
-              <div className="pt-2">
-                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">기타 요청</p>
-                <p className="text-sm text-slate-600 mt-0.5">{order.otherRequest}</p>
+              <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider mb-1">기타 요청사항</p>
+                <p className="text-xs text-amber-600 leading-relaxed">{order.otherRequest}</p>
               </div>
             )}
           </div>
-          <div className="mt-4 pt-4 border-t border-slate-200 space-y-2">
+          
+          <div className="mt-6 pt-6 border-t border-slate-200 space-y-3">
             <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-              <span>공급가액</span>
-              <span>₩{order.subtotalAmount.toLocaleString()}</span>
+              <span>총 공급가액</span>
+              <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-              <span>부가세 (10%)</span>
-              <span>₩{order.vatAmount.toLocaleString()}</span>
+              <span>총 부가세 (10%)</span>
+              <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-              <span className="font-bold text-slate-800">합계 (VAT 포함)</span>
-              <span className="text-xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+              <span className="font-bold text-slate-800">최종 결제/견적 합계</span>
+              <span className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
             </div>
           </div>
         </motion.div>
