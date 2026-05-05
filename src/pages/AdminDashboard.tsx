@@ -4,7 +4,7 @@ import {
   BarChart3, Calendar, Download, TrendingUp, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, deleteOrder, updateOrderStatus, updateQuoteAmount } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 
@@ -105,6 +105,7 @@ export default function AdminDashboard() {
   };
 
   const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
+  const [editingQuoteItems, setEditingQuoteItems] = useState<Record<string, OrderItem[]>>({});
 
   const handleStatusUpdate = async (id: string, newStatus: Order['status']) => {
     try {
@@ -126,14 +127,89 @@ export default function AdminDashboard() {
     if (isNaN(amount)) { alert('숫자만 입력해주세요.'); return; }
 
     try {
-      const success = await updateQuoteAmount(id, amount);
+      // 상세 품목 없이 금액만 업데이트할 때도 updateQuoteDetails 사용 가능하도록 하거나 기존 유지
+      // 여기서는 기존 로직을 상세 입력 폼으로 대체할 것이므로 이 함수는 보조적으로 남겨둠
+      const order = allOrders.find(o => o.id === id);
+      if (!order) return;
+      
+      const subtotal = Math.floor(amount / 1.1);
+      const vat = amount - subtotal;
+      
+      const success = await updateQuoteDetails(id, order.items, subtotal, vat, amount);
       if (success) {
-        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount, totalAmount: amount } : o));
+        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount, totalAmount: amount, subtotalAmount: subtotal, vatAmount: vat } : o));
         alert('견적 금액이 전송되었습니다.');
       }
     } catch (err: any) {
       alert('견적 금액 업데이트 중 오류가 발생했습니다:\n' + err.message);
     }
+  };
+
+  const handleSaveQuoteDetails = async (id: string) => {
+    const items = editingQuoteItems[id] || [];
+    if (items.length === 0) { alert('최소 하나 이상의 품목을 입력해주세요.'); return; }
+    
+    const subtotal = items.reduce((sum, item) => sum + (item.subtotal || 0), 0);
+    const vat = Math.floor(subtotal * 0.1);
+    const total = subtotal + vat;
+
+    try {
+      const success = await updateQuoteDetails(id, items, subtotal, vat, total);
+      if (success) {
+        setAllOrders(prev => prev.map(o => o.id === id ? { 
+          ...o, 
+          items, 
+          subtotalAmount: subtotal, 
+          vatAmount: vat, 
+          totalAmount: total,
+          quoteAmount: total 
+        } : o));
+        alert('견적 상세 내용이 저장되었습니다.');
+      }
+    } catch (err: any) {
+      alert('저장 중 오류가 발생했습니다:\n' + err.message);
+    }
+  };
+
+  const addQuoteItem = (orderId: string) => {
+    const currentItems = editingQuoteItems[orderId] || allOrders.find(o => o.id === orderId)?.items || [];
+    const newItem: OrderItem = {
+      productId: `custom-${Date.now()}`,
+      productCode: '',
+      productName: '',
+      spec: '',
+      unitPrice: 0,
+      quantity: 1,
+      subtotal: 0
+    };
+    setEditingQuoteItems(prev => ({
+      ...prev,
+      [orderId]: [...currentItems, newItem]
+    }));
+  };
+
+  const updateQuoteItemField = (orderId: string, index: number, field: keyof OrderItem, value: any) => {
+    const currentItems = [...(editingQuoteItems[orderId] || allOrders.find(o => o.id === orderId)?.items || [])];
+    const item = { ...currentItems[index], [field]: value };
+    
+    if (field === 'unitPrice' || field === 'quantity') {
+      item.subtotal = (item.unitPrice || 0) * (item.quantity || 0);
+    }
+    
+    currentItems[index] = item;
+    setEditingQuoteItems(prev => ({
+      ...prev,
+      [orderId]: currentItems
+    }));
+  };
+
+  const removeQuoteItem = (orderId: string, index: number) => {
+    const currentItems = [...(editingQuoteItems[orderId] || allOrders.find(o => o.id === orderId)?.items || [])];
+    currentItems.splice(index, 1);
+    setEditingQuoteItems(prev => ({
+      ...prev,
+      [orderId]: currentItems
+    }));
   };
 
   const downloadCSV = () => {
@@ -606,21 +682,121 @@ export default function AdminDashboard() {
                       exit={{ height: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-6 pb-5 bg-slate-50/50 space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                      <div className="px-6 pb-5 bg-slate-50/50 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                           <div>
-                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">주문자 정보</p>
-                            <p className="text-sm text-slate-600">📞 {order.ordererPhone}</p>
-                            <p className="text-sm text-slate-600">✉️ {order.ordererEmail || '-'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-2">
-                              견적 요청 내용
-                            </p>
-                            <div className="space-y-1">
-                              <p className="text-sm text-slate-800 bg-white p-3 rounded-xl border border-slate-100 whitespace-pre-wrap">
-                                {order.otherRequest || '요청 내용 없음'}
+                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3">주문자 정보</p>
+                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <span className="w-5 text-center">📞</span> {order.ordererPhone}
                               </p>
+                              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                <span className="w-5 text-center">✉️</span> {order.ordererEmail || '-'}
+                              </p>
+                              <div className="mt-3 pt-3 border-t border-slate-50">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">문의 내용 (고객 입력)</p>
+                                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                                  {order.otherRequest || '요청 내용 없음'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">견적 품목 상세 입력</p>
+                              <button 
+                                onClick={() => addQuoteItem(order.id)}
+                                className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg hover:bg-primary/20 transition-all"
+                              >
+                                + 품목 추가
+                              </button>
+                            </div>
+
+                            <div className="space-y-3">
+                              {(editingQuoteItems[order.id] || order.items).map((item, idx) => (
+                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 relative group">
+                                  <button 
+                                    onClick={() => removeQuoteItem(order.id, idx)}
+                                    className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="col-span-1">
+                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목코드</label>
+                                      <input 
+                                        type="text" 
+                                        value={item.productCode} 
+                                        onChange={(e) => updateQuoteItemField(order.id, idx, 'productCode', e.target.value)}
+                                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                        placeholder="코드 입력"
+                                      />
+                                    </div>
+                                    <div className="col-span-1">
+                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목명</label>
+                                      <input 
+                                        type="text" 
+                                        value={item.productName} 
+                                        onChange={(e) => updateQuoteItemField(order.id, idx, 'productName', e.target.value)}
+                                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                        placeholder="이름 입력"
+                                      />
+                                    </div>
+                                    <div className="col-span-1 grid grid-cols-2 gap-2">
+                                      <div>
+                                        <label className="text-[9px] font-bold text-slate-400 mb-1 block">수량</label>
+                                        <input 
+                                          type="number" 
+                                          value={item.quantity} 
+                                          onChange={(e) => updateQuoteItemField(order.id, idx, 'quantity', parseInt(e.target.value) || 0)}
+                                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액</label>
+                                        <input 
+                                          type="number" 
+                                          value={item.unitPrice} 
+                                          onChange={(e) => updateQuoteItemField(order.id, idx, 'unitPrice', parseInt(e.target.value) || 0)}
+                                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="col-span-1">
+                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">소계 (자동계산)</label>
+                                      <div className="px-3 py-1.5 bg-slate-100 border border-slate-100 rounded-lg text-xs font-black text-slate-500">
+                                        ₩{(item.subtotal || 0).toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {((editingQuoteItems[order.id] || order.items).length > 0) && (
+                                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-2 mt-4">
+                                  <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                                    <span>총 공급가액</span>
+                                    <span>₩{(editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                                    <span>총 부가세 (10%)</span>
+                                    <span>₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 0.1).toLocaleString()}</span>
+                                  </div>
+                                  <div className="flex justify-between text-sm font-black text-primary pt-2 border-t border-primary/10">
+                                    <span>최종 합계 금액</span>
+                                    <span>₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 1.1).toLocaleString()}</span>
+                                  </div>
+                                  
+                                  <button 
+                                    onClick={() => handleSaveQuoteDetails(order.id)}
+                                    className="w-full mt-4 py-3 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                  >
+                                    견적서 상세 내용 저장 및 확정
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

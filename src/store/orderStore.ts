@@ -158,39 +158,38 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   }
 }
 
-export async function updateQuoteAmount(orderId: string, amount: number): Promise<boolean> {
+export async function updateQuoteDetails(orderId: string, items: OrderItem[], subtotal: number, vat: number, total: number): Promise<boolean> {
   // 1) localStorage 업데이트
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
-    orders[idx].quoteAmount = amount;
+    orders[idx].items = items;
+    orders[idx].subtotalAmount = subtotal;
+    orders[idx].vatAmount = vat;
+    orders[idx].totalAmount = total;
+    orders[idx].quoteAmount = total;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }
   
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      // quote_amount 컬럼이 없을 수 있으므로 total_amount도 함께 업데이트하여 데이터 보존
       const { error } = await supabase
         .from('orders')
         .update({ 
-          quote_amount: amount,
-          total_amount: amount 
+          items: items,
+          subtotal_amount: subtotal,
+          vat_amount: vat,
+          total_amount: total,
+          quote_amount: total
         })
         .eq('id', orderId);
       
-      if (error) {
-        // 만약 quote_amount 때문에 실패한 경우 total_amount만이라도 업데이트 시도
-        if (error.code === 'PGRST204') {
-          await supabase.from('orders').update({ total_amount: amount }).eq('id', orderId);
-          return true;
-        }
-        throw error;
-      }
+      if (error) throw error;
     }
     return true;
   } catch (e) {
-    console.error('Supabase quote amount update failed:', e);
+    console.error('Supabase quote details update failed:', e);
     throw e;
   }
 }
