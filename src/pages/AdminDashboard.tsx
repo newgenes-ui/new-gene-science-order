@@ -46,7 +46,8 @@ export default function AdminDashboard() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [clientFilter, setClientFilter] = useState('전체');
+  const [isOrdererInfoCollapsed, setIsOrdererInfoCollapsed] = useState<Record<string, boolean>>({});
+  const [isQuoteInputCollapsed, setIsQuoteInputCollapsed] = useState<Record<string, boolean>>({});
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -684,120 +685,171 @@ export default function AdminDashboard() {
                     >
                       <div className="px-6 pb-5 bg-slate-50/50 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                          {/* 주문자 정보 섹션 */}
                           <div>
-                            <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-3">주문자 정보</p>
-                            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
-                              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <span className="w-5 text-center">📞</span> {order.ordererPhone}
-                              </p>
-                              <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                                <span className="w-5 text-center">✉️</span> {order.ordererEmail || '-'}
-                              </p>
-                              <div className="mt-3 pt-3 border-t border-slate-50">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">문의 내용 (고객 입력)</p>
-                                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
-                                  {order.otherRequest || '요청 내용 없음'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">견적 품목 상세 입력</p>
+                            <div className="flex items-center justify-between mb-3">
+                              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">주문자 정보</p>
                               <button 
-                                onClick={() => addQuoteItem(order.id)}
-                                className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg hover:bg-primary/20 transition-all"
+                                onClick={() => setIsOrdererInfoCollapsed(prev => ({ ...prev, [order.id]: !prev[order.id] }))}
+                                className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                               >
-                                + 품목 추가
+                                {isOrdererInfoCollapsed[order.id] ? (
+                                  <>펴기 <ChevronDown className="w-3 h-3" /></>
+                                ) : (
+                                  <>접기 <ChevronUp className="w-3 h-3" /></>
+                                )}
                               </button>
                             </div>
-
-                            <div className="space-y-3">
-                              {(editingQuoteItems[order.id] || order.items).map((item, idx) => (
-                                <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 relative group">
-                                  <button 
-                                    onClick={() => removeQuoteItem(order.id, idx)}
-                                    className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
-                                  
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div className="col-span-1">
-                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목코드</label>
-                                      <input 
-                                        type="text" 
-                                        value={item.productCode} 
-                                        onChange={(e) => updateQuoteItemField(order.id, idx, 'productCode', e.target.value)}
-                                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                        placeholder="코드 입력"
-                                      />
-                                    </div>
-                                    <div className="col-span-1">
-                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목명</label>
-                                      <input 
-                                        type="text" 
-                                        value={item.productName} 
-                                        onChange={(e) => updateQuoteItemField(order.id, idx, 'productName', e.target.value)}
-                                        className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                        placeholder="이름 입력"
-                                      />
-                                    </div>
-                                    <div className="col-span-1 grid grid-cols-2 gap-2">
-                                      <div>
-                                        <label className="text-[9px] font-bold text-slate-400 mb-1 block">수량</label>
-                                        <input 
-                                          type="number" 
-                                          value={item.quantity} 
-                                          onChange={(e) => updateQuoteItemField(order.id, idx, 'quantity', parseInt(e.target.value) || 0)}
-                                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                        />
-                                      </div>
-                                      <div>
-                                        <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액</label>
-                                        <input 
-                                          type="number" 
-                                          value={item.unitPrice} 
-                                          onChange={(e) => updateQuoteItemField(order.id, idx, 'unitPrice', parseInt(e.target.value) || 0)}
-                                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="col-span-1">
-                                      <label className="text-[9px] font-bold text-slate-400 mb-1 block">소계 (자동계산)</label>
-                                      <div className="px-3 py-1.5 bg-slate-100 border border-slate-100 rounded-lg text-xs font-black text-slate-500">
-                                        ₩{(item.subtotal || 0).toLocaleString()}
-                                      </div>
+                            
+                            <AnimatePresence>
+                              {!isOrdererInfoCollapsed[order.id] && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-2">
+                                    <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                      <span className="w-5 text-center">📞</span> {order.ordererPhone}
+                                    </p>
+                                    <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                                      <span className="w-5 text-center">✉️</span> {order.ordererEmail || '-'}
+                                    </p>
+                                    <div className="mt-3 pt-3 border-t border-slate-50">
+                                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">문의 내용 (고객 입력)</p>
+                                      <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">
+                                        {order.otherRequest || '요청 내용 없음'}
+                                      </p>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-
-                              {((editingQuoteItems[order.id] || order.items).length > 0) && (
-                                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-2 mt-4">
-                                  <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                                    <span>총 공급가액</span>
-                                    <span>₩{(editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0).toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                                    <span>총 부가세 (10%)</span>
-                                    <span>₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 0.1).toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between text-sm font-black text-primary pt-2 border-t border-primary/10">
-                                    <span>최종 합계 금액</span>
-                                    <span>₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 1.1).toLocaleString()}</span>
-                                  </div>
-                                  
-                                  <button 
-                                    onClick={() => handleSaveQuoteDetails(order.id)}
-                                    className="w-full mt-4 py-3 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                                  >
-                                    견적서 상세 내용 저장 및 확정
-                                  </button>
-                                </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          
+                          {/* 견적 품목 상세 입력 섹션 */}
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">견적 품목 상세 입력</p>
+                                <button 
+                                  onClick={() => setIsQuoteInputCollapsed(prev => ({ ...prev, [order.id]: !prev[order.id] }))}
+                                  className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                                >
+                                  {isQuoteInputCollapsed[order.id] ? (
+                                    <>펴기 <ChevronDown className="w-3 h-3" /></>
+                                  ) : (
+                                    <>접기 <ChevronUp className="w-3 h-3" /></>
+                                  )}
+                                </button>
+                              </div>
+                              {!isQuoteInputCollapsed[order.id] && (
+                                <button 
+                                  onClick={() => addQuoteItem(order.id)}
+                                  className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg hover:bg-primary/20 transition-all"
+                                >
+                                  + 품목 추가
+                                </button>
                               )}
                             </div>
+
+                            <AnimatePresence>
+                              {!isQuoteInputCollapsed[order.id] && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden space-y-4"
+                                >
+                                  <div className="space-y-3">
+                                    {(editingQuoteItems[order.id] || order.items).map((item, idx) => (
+                                      <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3 relative group">
+                                        <button 
+                                          onClick={() => removeQuoteItem(order.id, idx)}
+                                          className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                        
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="col-span-1">
+                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목코드</label>
+                                            <input 
+                                              type="text" 
+                                              value={item.productCode} 
+                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'productCode', e.target.value)}
+                                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                              placeholder="코드 입력"
+                                            />
+                                          </div>
+                                          <div className="col-span-1">
+                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목명</label>
+                                            <input 
+                                              type="text" 
+                                              value={item.productName} 
+                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'productName', e.target.value)}
+                                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                              placeholder="이름 입력"
+                                            />
+                                          </div>
+                                          <div className="col-span-1 grid grid-cols-2 gap-2">
+                                            <div>
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">수량</label>
+                                              <input 
+                                                type="number" 
+                                                value={item.quantity} 
+                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'quantity', parseInt(e.target.value) || 0)}
+                                                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액</label>
+                                              <input 
+                                                type="number" 
+                                                value={item.unitPrice} 
+                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'unitPrice', parseInt(e.target.value) || 0)}
+                                                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="col-span-1">
+                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">소계 (자동계산)</label>
+                                            <div className="w-full px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-black text-slate-500">
+                                              ₩{(item.subtotal || 0).toLocaleString()}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+                                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                      <span>총 공급가액</span>
+                                      <span>₩{(editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0).toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+                                      <span>총 부가세 (10%)</span>
+                                      <span>₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 0.1).toLocaleString()}</span>
+                                    </div>
+                                    <div className="pt-3 border-t border-slate-100">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-sm font-black text-primary">최종 합계 금액</span>
+                                        <span className="text-lg font-black text-primary">₩{Math.floor((editingQuoteItems[order.id] || order.items).reduce((s, i) => s + (i.subtotal || 0), 0) * 1.1).toLocaleString()}</span>
+                                      </div>
+                                    </div>
+                                    <button 
+                                      onClick={() => handleSaveQuoteDetails(order.id)}
+                                      disabled={isSaving}
+                                      className="w-full py-3 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-50 mt-2"
+                                    >
+                                      {isSaving ? '저장 중...' : '견적서 상세 내용 저장 및 확정'}
+                                    </button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
                         </div>
                       </div>
