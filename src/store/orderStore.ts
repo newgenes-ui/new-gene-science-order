@@ -41,9 +41,9 @@ export function getOrders(): Order[] {
     if (raw && raw !== '[]') {
       const parsed = JSON.parse(raw) as Order[];
       return parsed.map(o => {
-        let totalAmount = o.totalAmount || 0;
-        let subtotalAmount = o.subtotalAmount || 0;
-        let vatAmount = o.vatAmount || 0;
+        const totalAmount = Number(o.totalAmount || 0);
+        let subtotalAmount = Number(o.subtotalAmount || 0);
+        let vatAmount = Number(o.vatAmount || 0);
 
         // 공급가액이 합계와 같고 부가세가 0이면 잘못된 데이터로 간주하고 역산
         if (totalAmount > 0 && vatAmount === 0 && (subtotalAmount === totalAmount || subtotalAmount === 0)) {
@@ -51,7 +51,12 @@ export function getOrders(): Order[] {
           vatAmount = totalAmount - subtotalAmount;
         }
         
-        return { ...o, subtotalAmount, vatAmount };
+        return { 
+          ...o, 
+          subtotalAmount: subtotalAmount || 0, 
+          vatAmount: vatAmount || 0,
+          totalAmount: totalAmount || 0
+        };
       });
     }
     
@@ -414,13 +419,15 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       ordererEmail: row.orderer_email,
       items: row.items || [],
       otherRequest: row.other_request || '',
-      subtotalAmount: (row.subtotal_amount === row.total_amount && (row.vat_amount || 0) === 0) 
-        ? Math.round(row.total_amount / 1.1) 
-        : (row.subtotal_amount || Math.round(row.total_amount / 1.1)),
-      vatAmount: (row.subtotal_amount === row.total_amount && (row.vat_amount || 0) === 0)
-        ? (row.total_amount - Math.round(row.total_amount / 1.1))
-        : (row.vat_amount || (row.total_amount - (row.subtotal_amount || Math.round(row.total_amount / 1.1)))),
-      totalAmount: row.total_amount,
+      items: row.items || [],
+      otherRequest: row.other_request || '',
+      subtotalAmount: (Number(row.total_amount || 0) > 0 && Number(row.subtotal_amount || 0) === Number(row.total_amount || 0) && Number(row.vat_amount || 0) === 0) 
+        ? Math.round(Number(row.total_amount || 0) / 1.1) 
+        : (Number(row.subtotal_amount || 0) || Math.round(Number(row.total_amount || 0) / 1.1)),
+      vatAmount: (Number(row.total_amount || 0) > 0 && Number(row.subtotal_amount || 0) === Number(row.total_amount || 0) && Number(row.vat_amount || 0) === 0)
+        ? (Number(row.total_amount || 0) - Math.round(Number(row.total_amount || 0) / 1.1))
+        : (Number(row.vat_amount || 0) || (Number(row.total_amount || 0) - (Number(row.subtotal_amount || 0) || Math.round(Number(row.total_amount || 0) / 1.1)))),
+      totalAmount: Number(row.total_amount || 0),
       status: row.status,
       paymentMethod: row.payment_method,
       orderType: row.order_type === 'order' 
