@@ -590,7 +590,18 @@ export default function AdminDashboard() {
                 <div key={order.id}>
                   <div
                     className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                    onClick={() => {
+                      const isExpanding = expandedOrder !== order.id;
+                      setExpandedOrder(isExpanding ? order.id : null);
+                      // 펼칠 때 자동으로 품목 입력 영역도 열기
+                      if (isExpanding) {
+                        setIsQuoteInputCollapsed(prev => ({ ...prev, [order.id]: false }));
+                        const currentItems = editingQuoteItems[order.id] || order.items || [];
+                        if (currentItems.length === 0) {
+                          addQuoteItem(order.id);
+                        }
+                      }
+                    }}
                   >
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
@@ -803,28 +814,40 @@ export default function AdminDashboard() {
                                           <Trash2 className="w-3 h-3" />
                                         </button>
                                         
-                                        <div className="grid grid-cols-2 gap-3">
-                                          <div className="col-span-1">
-                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목코드</label>
+                                        <div className="space-y-3">
+                                          <div className="grid grid-cols-2 gap-3">
+                                            <div className="col-span-1">
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목코드</label>
+                                              <input 
+                                                type="text" 
+                                                value={item.productCode} 
+                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'productCode', e.target.value)}
+                                                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                                placeholder="예: INC-2000"
+                                              />
+                                            </div>
+                                            <div className="col-span-1">
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목명</label>
+                                              <input 
+                                                type="text" 
+                                                value={item.productName} 
+                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'productName', e.target.value)}
+                                                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                                placeholder="예: 인큐베이터"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">규격</label>
                                             <input 
                                               type="text" 
-                                              value={item.productCode} 
-                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'productCode', e.target.value)}
+                                              value={item.spec} 
+                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'spec', e.target.value)}
                                               className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                              placeholder="코드 입력"
+                                              placeholder="예: 150L, 디지털 제어, RT+5~70°C"
                                             />
                                           </div>
-                                          <div className="col-span-1">
-                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">품목명</label>
-                                            <input 
-                                              type="text" 
-                                              value={item.productName} 
-                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'productName', e.target.value)}
-                                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
-                                              placeholder="이름 입력"
-                                            />
-                                          </div>
-                                          <div className="col-span-1 grid grid-cols-2 gap-2">
+                                          <div className="grid grid-cols-3 gap-3">
                                             <div>
                                               <label className="text-[9px] font-bold text-slate-400 mb-1 block">수량</label>
                                               <input 
@@ -835,7 +858,7 @@ export default function AdminDashboard() {
                                               />
                                             </div>
                                             <div>
-                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액</label>
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액 (단가)</label>
                                               <input 
                                                 type="number" 
                                                 value={item.unitPrice} 
@@ -843,11 +866,11 @@ export default function AdminDashboard() {
                                                 className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
                                               />
                                             </div>
-                                          </div>
-                                          <div className="col-span-1">
-                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">소계 (자동계산)</label>
-                                            <div className="w-full px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-black text-slate-500">
-                                              ₩{(item.subtotal || 0).toLocaleString()}
+                                            <div>
+                                              <label className="text-[9px] font-bold text-slate-400 mb-1 block">소계 (자동계산)</label>
+                                              <div className="w-full px-3 py-1.5 bg-slate-100 rounded-lg text-xs font-black text-slate-500">
+                                                ₩{(item.subtotal || 0).toLocaleString()}
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
