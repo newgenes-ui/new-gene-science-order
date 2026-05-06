@@ -146,7 +146,16 @@ export default function AdminDashboard() {
       
       const success = await updateQuoteDetails(id, order.items, subtotal, vat, amount);
       if (success) {
-        setAllOrders(prev => prev.map(o => o.id === id ? { ...o, quoteAmount: amount, totalAmount: amount, subtotalAmount: subtotal, vatAmount: vat } : o));
+        // 금액 업데이트와 동시에 상태를 'processing'(견적전송)으로 변경
+        await updateOrderStatus(id, 'processing');
+        setAllOrders(prev => prev.map(o => o.id === id ? { 
+          ...o, 
+          status: 'processing',
+          quoteAmount: amount, 
+          totalAmount: amount, 
+          subtotalAmount: subtotal, 
+          vatAmount: vat 
+        } : o));
         alert('견적 금액이 전송되었습니다.');
       }
     } catch (err: any) {
@@ -468,19 +477,18 @@ export default function AdminDashboard() {
                         ) : (
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
-                              { id: 'pending', label: '접수완료' },
-                              { id: 'order_requested', label: '주문' },
+                              { id: 'pending', label: '주문' },
                               { id: 'processing', label: '주문완료' },
                               { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase() || (s.id === 'processing' && order.status === 'order_requested')
                                     ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                   }`}
-                                style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                style={(String(order.status).toLowerCase() === String(s.id).toLowerCase() || (s.id === 'processing' && order.status === 'order_requested')) ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
                               </button>
@@ -639,14 +647,15 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2 w-full">
                               <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                                 {[
-                                                                      { id: 'pending', label: '주문' },
-                                                                      { id: 'order_requested', label: '주문완료' },
+                                  { id: 'pending', label: '접수확인' },
+                                  { id: 'processing', label: '견적전송' },
+                                  { id: 'order_requested', label: '주문확인' },
                                   { id: 'shipped', label: '납품완료' }
                                 ].map((s) => (
                                   <button
                                     key={s.id}
                                     onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
+                                    className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase()
                                         ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                         : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                       }`}
@@ -663,13 +672,11 @@ export default function AdminDashboard() {
                                   ? quoteAmounts[order.id] 
                                   : ((order.quoteAmount || order.totalAmount) ? (order.quoteAmount || order.totalAmount).toLocaleString() : '')}
                                 onChange={(e) => {
-                                  // 숫자만 추출
                                   const rawValue = e.target.value.replace(/[^0-9]/g, '');
                                   if (rawValue === '') {
                                     setQuoteAmounts(prev => ({ ...prev, [order.id]: '' }));
                                     return;
                                   }
-                                  // 세 자리마다 콤마 추가
                                   const formattedValue = Number(rawValue).toLocaleString();
                                   setQuoteAmounts(prev => ({ ...prev, [order.id]: formattedValue }));
                                 }}
@@ -678,12 +685,21 @@ export default function AdminDashboard() {
                                 className={`w-full bg-white px-2 py-1.5 rounded-lg text-xs font-bold focus:outline-none ${order.status !== 'pending' ? 'opacity-70 cursor-not-allowed bg-slate-50' : ''}`}
                                 onClick={(e) => e.stopPropagation()}
                               />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleQuoteAmountUpdate(order.id); }}
-                                className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-black hover:bg-primary-dark transition-all shrink-0"
-                              >
-                                전송
-                              </button>
+                              {order.status === 'pending' ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleQuoteAmountUpdate(order.id); }}
+                                  className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-black hover:bg-primary-dark transition-all shrink-0"
+                                >
+                                  전송
+                                </button>
+                              ) : order.status === 'order_requested' ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, 'shipped'); }}
+                                  className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-[10px] font-black hover:bg-emerald-600 transition-all shrink-0 shadow-sm"
+                                >
+                                  납품완료 처리
+                                </button>
+                              ) : null}
                             </div>
                           </div>
                         )}

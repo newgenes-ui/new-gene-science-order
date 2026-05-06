@@ -1053,6 +1053,15 @@ export default function OrderPage() {
                           ? `${order.items[0].productName.slice(0, 15)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                           : (order.otherRequest ? order.otherRequest.slice(0, 15) : (order.orderType === 'order' ? '발주 내역' : '견적 문의 내역'));
 
+                        // 견적 전용 상태 라벨 정의
+                        const quoteStatusLabels: Record<string, string> = {
+                          pending: '접수완료',
+                          processing: '발주요청',
+                          order_requested: '준비중',
+                          shipped: '납품완료',
+                          cancelled: '주문취소'
+                        };
+
                         // 부가세 강제 역산 로직 (데이터 오류 대응)
                         let dTotal = Number(order.totalAmount || 0);
                         let dSubtotal = Number(order.subtotalAmount || 0);
@@ -1195,15 +1204,34 @@ export default function OrderPage() {
                                     className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                   />
                                 )}
-
-                                <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
-                                  order.status === 'pending' ? 'bg-blue-500 text-white' :
-                                  order.status === 'order_requested' ? 'bg-indigo-500 text-white' :
-                                  order.status === 'shipped' ? 'bg-emerald-500 text-white' :
-                                  order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-400 text-white'
-                                }`}>
-                                  {STATUS_LABELS[order.status] || order.status}
-                                </span>
+                                {order.orderType === 'quote' && order.status === 'processing' ? (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
+                                        const success = await updateOrderStatus(order.id, 'order_requested');
+                                        if (success) {
+                                          alert('발주 요청이 완료되었습니다.');
+                                          loadUserOrders(); // 목록 새로고침
+                                        }
+                                      }
+                                    }}
+                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
+                                  >
+                                    발주요청
+                                  </button>
+                                ) : (
+                                  <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
+                                    order.status === 'pending' ? 'bg-blue-500 text-white' :
+                                    (order.status === 'order_requested' || order.status === 'processing') ? 'bg-indigo-500 text-white' :
+                                    order.status === 'shipped' ? 'bg-emerald-500 text-white' :
+                                    order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-400 text-white'
+                                  }`}>
+                                    {order.orderType === 'quote' 
+                                      ? (quoteStatusLabels[order.status] || STATUS_LABELS[order.status] || order.status)
+                                      : (STATUS_LABELS[order.status] || order.status)}
+                                  </span>
+                                )}
                                 <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                               </div>
                             </div>
