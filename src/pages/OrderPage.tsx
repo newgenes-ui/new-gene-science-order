@@ -1174,6 +1174,28 @@ export default function OrderPage() {
                               </div>
 
                               <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
+                                {/* 접기 모드에서 수량/총금액 표시 */}
+                                {(order.items && order.items.length > 0 && dTotal > 0) && (
+                                  <div className="flex items-center gap-2 mr-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
+                                    <span className="text-[11px] font-bold text-slate-400">{totalQty}개</span>
+                                    <span className="text-[11px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
+                                  </div>
+                                )}
+
+                                {/* 체크박스 (거래명세서 발행용) */}
+                                {order.status !== 'paid' && order.status !== 'cancelled' && (order.items && order.items.length > 0) && (
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selectedOrderIds.includes(order.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
+                                      else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                  />
+                                )}
+
                                 <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
                                   (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
                                   order.status === 'processing' ? 'bg-indigo-500 text-white' :
@@ -1208,16 +1230,18 @@ export default function OrderPage() {
                                   ))}
                                 </div>
                                 
-                                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                  <div className="text-right flex-1">
-                                    <div className="flex justify-end gap-4 text-[10px] font-bold text-slate-400 mb-1">
-                                      <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
-                                      <span>부가세: ₩{dVat.toLocaleString()}</span>
+                                {dTotal > 0 && (
+                                  <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                    <div className="text-right flex-1">
+                                      <div className="flex justify-end gap-4 text-[10px] font-bold text-slate-400 mb-1">
+                                        <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
+                                        <span>부가세: ₩{dVat.toLocaleString()}</span>
+                                      </div>
+                                      <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
+                                      <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
                                     </div>
-                                    <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
-                                    <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
                                   </div>
-                                </div>
+                                )}
                                 
                                 {order.items && order.items.length > 0 && order.otherRequest && (
                                   <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-dashed border-amber-200 text-xs text-amber-800 font-medium">
