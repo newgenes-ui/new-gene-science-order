@@ -1037,8 +1037,11 @@ export default function OrderPage() {
                   ) : (
                     filteredUserOrders.map(order => {
                       const isCollapsed = isItemCollapsed[order.id] !== false;
+                      const totalQty = order.items?.reduce((sum, i) => sum + (i.quantity || 0), 0) || 0;
                       const summaryText = order.orderType === 'quote' 
-                        ? (order.otherRequest ? order.otherRequest.slice(0, 15) + '...' : '견적 문의')
+                        ? (order.items && order.items.length > 0 
+                            ? `${order.items[0].productName.slice(0, 12)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                            : (order.otherRequest ? order.otherRequest.slice(0, 15) + '...' : '견적 문의'))
                         : (order.items && order.items.length > 0 
                             ? `${order.items[0].productName.slice(0, 12)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                             : '주문 내역');
@@ -1058,10 +1061,14 @@ export default function OrderPage() {
                             </div>
 
                             <div className="flex items-center justify-between sm:justify-end gap-3 flex-1">
-                              {/* 2. 헤더 요약: 납품완료 왼쪽 옆에 위치 */}
+                              {/* 2. 헤더 요약: 품목명, 수량, 총금액 표시 */}
                               <div className="flex items-center gap-2 bg-white/50 px-3 py-1.5 rounded-xl border border-slate-100 overflow-hidden">
                                 <span className="text-[11px] font-black text-slate-700 truncate max-w-[100px] sm:max-w-none">
                                   {summaryText}
+                                </span>
+                                <span className="text-slate-300 text-[10px]">|</span>
+                                <span className="text-[11px] font-bold text-slate-500 shrink-0">
+                                  {totalQty}개
                                 </span>
                                 <span className="text-slate-300 text-[10px]">|</span>
                                 <span className="text-[11px] font-black text-primary shrink-0">
