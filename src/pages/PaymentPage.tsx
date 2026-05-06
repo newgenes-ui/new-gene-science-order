@@ -236,14 +236,26 @@ export default function PaymentPage() {
               transition={{ delay: 0.3 }}
               className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4"
             >
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-slate-600">총 공급가액</span>
-                <span className="text-sm font-black text-slate-800">₩{(order.subtotalAmount || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-bold text-slate-600">총 부가세 (10%)</span>
-                <span className="text-sm font-black text-slate-800">₩{(order.vatAmount || 0).toLocaleString()}</span>
-              </div>
+              {(() => {
+                let dSubtotal = order.subtotalAmount || 0;
+                let dVat = order.vatAmount || 0;
+                if (dVat === 0 && (dSubtotal === order.totalAmount || dSubtotal === 0) && order.totalAmount > 0) {
+                  dSubtotal = Math.round(order.totalAmount / 1.1);
+                  dVat = order.totalAmount - dSubtotal;
+                }
+                return (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-slate-600">총 공급가액</span>
+                      <span className="text-sm font-black text-slate-800">₩{dSubtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-slate-600">총 부가세 (10%)</span>
+                      <span className="text-sm font-black text-slate-800">₩{dVat.toLocaleString()}</span>
+                    </div>
+                  </>
+                );
+              })()}
               <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
                 <span className="text-base font-black text-slate-800">최종 합계 금액</span>
                 <span className="text-2xl font-black text-blue-600">₩{order.totalAmount.toLocaleString()}</span>
