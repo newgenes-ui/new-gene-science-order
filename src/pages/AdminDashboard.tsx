@@ -55,17 +55,20 @@ export default function AdminDashboard() {
   const [activeListTab, setActiveListTab] = useState<'order' | 'quote'>('order');
   const [isSaving, setIsSaving] = useState(false);
 
-  // Supabase에서 주문 데이터 로드 (없으면 localStorage fallback)
+  // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
   const loadOrders = async () => {
     setIsLoading(true);
     try {
       const supabaseOrders = await getOrdersFromSupabase();
-      if (supabaseOrders.length > 0) {
-        setAllOrders(supabaseOrders);
-      } else {
-        // Supabase에 데이터가 없으면 localStorage에서 로드
-        setAllOrders(getOrders());
-      }
+      const localOrders = getOrders();
+
+      // ID 기준으로 병합 (로컬 데이터가 더 최신이면 우선)
+      const mergedMap = new Map<string, Order>();
+      supabaseOrders.forEach(o => mergedMap.set(o.id, o));
+      localOrders.forEach(o => mergedMap.set(o.id, o));
+
+      const merged = Array.from(mergedMap.values());
+      setAllOrders(merged.length > 0 ? merged : []);
     } catch {
       setAllOrders(getOrders());
     }
@@ -74,6 +77,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadOrders();
+    // 60초마다 자동 갱신 (신규 주문/견적 자동 반영)
+    const interval = setInterval(loadOrders, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredOrders = useMemo(() => {
