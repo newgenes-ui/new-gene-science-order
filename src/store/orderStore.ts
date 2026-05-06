@@ -41,9 +41,16 @@ export function getOrders(): Order[] {
     if (raw && raw !== '[]') {
       const parsed = JSON.parse(raw) as Order[];
       return parsed.map(o => {
-        const totalAmount = o.totalAmount || 0;
-        const vatAmount = o.vatAmount || (o.subtotalAmount ? 0 : Math.round(totalAmount - (totalAmount / 1.1)));
-        const subtotalAmount = o.subtotalAmount || (totalAmount - vatAmount);
+        let totalAmount = o.totalAmount || 0;
+        let subtotalAmount = o.subtotalAmount || 0;
+        let vatAmount = o.vatAmount || 0;
+
+        // 공급가액이 합계와 같고 부가세가 0이면 잘못된 데이터로 간주하고 역산
+        if (totalAmount > 0 && vatAmount === 0 && (subtotalAmount === totalAmount || subtotalAmount === 0)) {
+          subtotalAmount = Math.round(totalAmount / 1.1);
+          vatAmount = totalAmount - subtotalAmount;
+        }
+        
         return { ...o, subtotalAmount, vatAmount };
       });
     }
@@ -407,8 +414,12 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       ordererEmail: row.orderer_email,
       items: row.items || [],
       otherRequest: row.other_request || '',
-      subtotalAmount: row.subtotal_amount || (row.vat_amount ? (row.total_amount - row.vat_amount) : Math.round(row.total_amount / 1.1)),
-      vatAmount: row.vat_amount || (row.total_amount - (row.subtotal_amount || Math.round(row.total_amount / 1.1))),
+      subtotalAmount: (row.subtotal_amount === row.total_amount && (row.vat_amount || 0) === 0) 
+        ? Math.round(row.total_amount / 1.1) 
+        : (row.subtotal_amount || Math.round(row.total_amount / 1.1)),
+      vatAmount: (row.subtotal_amount === row.total_amount && (row.vat_amount || 0) === 0)
+        ? (row.total_amount - Math.round(row.total_amount / 1.1))
+        : (row.vat_amount || (row.total_amount - (row.subtotal_amount || Math.round(row.total_amount / 1.1)))),
       totalAmount: row.total_amount,
       status: row.status,
       paymentMethod: row.payment_method,
