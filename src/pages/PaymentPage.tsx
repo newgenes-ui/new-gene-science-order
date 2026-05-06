@@ -169,57 +169,88 @@ export default function PaymentPage() {
           </div>
         </motion.div>
 
-        {/* Order Items */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]"
-        >
-          <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">주문 내역 상세</h3>
-          <div className="space-y-3">
+        {/* Order Items - Updated to Admin Style */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">주문 내역 상세</h3>
+            <span className="text-[10px] font-bold text-primary bg-primary/5 px-2 py-1 rounded-lg">총 {order.items.length}건</span>
+          </div>
+
+          <div className="space-y-4">
             {order.items.map((item, i) => (
-              <div key={i} className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-mono text-slate-400">{item.productCode || '-'}</p>
-                    <p className="text-sm font-bold text-slate-700 leading-tight">{item.productName}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{item.spec}</p>
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + (i * 0.05) }}
+                className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">품목코드</label>
+                    <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-bold text-slate-700">
+                      {item.productCode || '-'}
+                    </div>
                   </div>
-                  <div className="text-right ml-4">
-                    <p className="text-xs font-black text-slate-400">×{item.quantity}</p>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">품목명</label>
+                    <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-bold text-slate-700">
+                      {item.productName}
+                    </div>
                   </div>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-slate-100/50">
-                  <span className="text-[10px] text-slate-400">품목별 합계</span>
-                  <span className="text-sm font-black text-slate-600">₩{(item.subtotal || 0).toLocaleString()}</span>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">수량</label>
+                    <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-bold text-slate-700 text-center">
+                      {item.quantity}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">공급가액</label>
+                    <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-bold text-slate-700 text-right">
+                      ₩{(item.unitPrice || 0).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">소계 (자동계산)</label>
+                    <div className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-black text-blue-600 text-right">
+                      ₩{(item.subtotal || 0).toLocaleString()}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
             
             {order.otherRequest && (
-              <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50">
-                <p className="text-[10px] text-amber-700 font-bold uppercase tracking-wider mb-1">기타 요청사항</p>
-                <p className="text-xs text-amber-600 leading-relaxed">{order.otherRequest}</p>
+              <div className="p-5 bg-amber-50/50 rounded-2xl border border-amber-100/50">
+                <p className="text-[10px] text-amber-700 font-black uppercase tracking-wider mb-2">기타 요청사항</p>
+                <p className="text-sm text-amber-800 leading-relaxed whitespace-pre-wrap">{order.otherRequest}</p>
               </div>
             )}
+
+            {/* Admin Style Summary Card */}
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-bold text-slate-600">총 공급가액</span>
+                <span className="text-sm font-black text-slate-800">₩{(order.subtotalAmount || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-bold text-slate-600">총 부가세 (10%)</span>
+                <span className="text-sm font-black text-slate-800">₩{(order.vatAmount || 0).toLocaleString()}</span>
+              </div>
+              <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                <span className="text-base font-black text-slate-800">최종 합계 금액</span>
+                <span className="text-2xl font-black text-blue-600">₩{order.totalAmount.toLocaleString()}</span>
+              </div>
+            </motion.div>
           </div>
-          
-          <div className="mt-6 pt-6 border-t border-slate-200 space-y-3">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-              <span>총 공급가액</span>
-              <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center text-xs font-bold text-slate-400">
-              <span>총 부가세 (10%)</span>
-              <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-              <span className="font-bold text-slate-800">최종 결제/견적 합계</span>
-              <span className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
-            </div>
-          </div>
-        </motion.div>
+        </div>
 
         {/* Bank Account Info */}
         <motion.div

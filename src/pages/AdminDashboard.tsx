@@ -183,7 +183,8 @@ export default function AdminDashboard() {
   };
 
   const addQuoteItem = (orderId: string) => {
-    const currentItems = editingQuoteItems[orderId] || allOrders.find(o => o.id === orderId)?.items || [];
+    const order = allOrders.find(o => o.id === orderId);
+    const currentItems = editingQuoteItems[orderId] || order?.items || [];
     const newItem: OrderItem = {
       productId: `custom-${Date.now()}`,
       productCode: '',
@@ -197,6 +198,20 @@ export default function AdminDashboard() {
       ...prev,
       [orderId]: [...currentItems, newItem]
     }));
+  };
+
+  // 상세 입력창을 열 때 품목이 없으면 자동으로 하나 추가
+  const toggleQuoteInput = (orderId: string) => {
+    const isNowExpanded = !isQuoteInputCollapsed[orderId];
+    setIsQuoteInputCollapsed(prev => ({ ...prev, [orderId]: isNowExpanded }));
+    
+    if (isNowExpanded) {
+      const order = allOrders.find(o => o.id === orderId);
+      const currentItems = editingQuoteItems[orderId] || order?.items || [];
+      if (currentItems.length === 0) {
+        addQuoteItem(orderId);
+      }
+    }
   };
 
   const updateQuoteItemField = (orderId: string, index: number, field: keyof OrderItem, value: any) => {
@@ -744,7 +759,7 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-3">
                                 <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">견적 품목 상세 입력</p>
                                 <button 
-                                  onClick={() => setIsQuoteInputCollapsed(prev => ({ ...prev, [order.id]: !prev[order.id] }))}
+                                  onClick={() => toggleQuoteInput(order.id)}
                                   className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                   {isQuoteInputCollapsed[order.id] ? (

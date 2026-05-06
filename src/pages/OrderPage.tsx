@@ -24,6 +24,8 @@ export default function OrderPage() {
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
   const clientId = (searchParams.get('client') || 'demo').toLowerCase();
+  const isSpecialClient = clientId !== 'demo';
+  const isBertis = isSpecialClient;
   const shouldReset = searchParams.get('reset') === 'true';
 
   useEffect(() => {
@@ -205,7 +207,7 @@ export default function OrderPage() {
     start: (() => {
       const now = new Date();
       const kst = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-      kst.setDate(kst.getDate() - 30);
+      kst.setDate(kst.getDate() - 90);
       return kst.toISOString().slice(0, 10);
     })(),
     end: (() => {
@@ -216,6 +218,17 @@ export default function OrderPage() {
   });
   const [appliedRange, setAppliedRange] = useState(dateRange);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [isItemCollapsed, setIsItemCollapsed] = useState<Record<string, boolean>>({});
+
+  const STATUS_LABELS: Record<string, string> = {
+    pending: '접수완료',
+    processing: '발주확인',
+    order_requested: '주문완료',
+    shipped: '납품완료',
+    payment_waiting: '미수금',
+    paid: '결제완료',
+    cancelled: '주문취소'
+  };
   
   // 명세서 발행 요청 방지를 위한 로컬 저장소 상태
 
@@ -327,15 +340,24 @@ export default function OrderPage() {
 
   // 발주 내역 로드 (베르티스 전용)
   const loadUserOrders = async () => {
-    // 모든 업체에 대해 내역 로드 허용
     setIsOrdersLoading(true);
     try {
-      const all = await getOrdersFromSupabase();
-      // 베르티스 주문만 필터링
-      const bertisOrders = all.filter(o => o.clientId === clientId);
-      setUserOrders(bertisOrders);
+      const allSupabase = await getOrdersFromSupabase();
+      const allLocal = getOrders();
+      
+      // 서버 데이터와 로컬 데이터를 합치고 중복 제거
+      const combined = [...allSupabase, ...allLocal];
+      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+      
+      // 대소문자 구분 없이 현재 업체(clientId) 내역만 필터링
+      const filtered = unique.filter(o => 
+        o.clientId?.toLowerCase() === clientId?.toLowerCase()
+      );
+      setUserOrders(filtered);
     } catch (e) {
       console.error('Failed to load orders:', e);
+      const allLocal = getOrders();
+      setUserOrders(allLocal.filter(o => o.clientId?.toLowerCase() === clientId?.toLowerCase()));
     } finally {
       setIsOrdersLoading(false);
     }
@@ -356,15 +378,19 @@ export default function OrderPage() {
 
   const filteredUserOrders = useMemo(() => {
     return userOrders
-      .filter(o => 
-        o.orderDate >= appliedRange.start && 
-        o.orderDate <= appliedRange.end &&
-        (historyTab === 'order' 
-          ? (o.orderType === 'order' && o.items && o.items.length > 0) 
-          : (o.orderType === 'quote' || !o.items || o.items.length === 0)) &&
-        // 'paid' (입금확인) 및 'cancelled' (주문취소) 시 화면 숨기기
-        o.status !== 'paid' && o.status !== 'cancelled'
-      )
+      .filter(o => {
+        // 날짜 필터링
+        const isInRange = o.orderDate >= appliedRange.start && o.orderDate <= appliedRange.end;
+        if (!isInRange) return false;
+
+        // 탭에 따른 분류 (발주 vs 견적)
+        // orderType이 'order'이면 발주 탭, 아니면(quote 또는 없음) 견적 탭
+        if (historyTab === 'order') {
+          return o.orderType === 'order';
+        } else {
+          return o.orderType === 'quote' || !o.orderType;
+        }
+      })
       .sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
   }, [userOrders, appliedRange, historyTab]);
 
@@ -926,382 +952,304 @@ export default function OrderPage() {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              {/* Bertis Order History & Search */}
-              {isBertis && (
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                    <h2 className="text-sm font-extrabold text-primary flex items-center gap-2">
-                      <Clock className="w-4 h-4" /> 내역 조회
-                    </h2>
-                    <button 
-                      onClick={loadUserOrders}
-                      className="text-[10px] font-bold text-slate-400 hover:text-primary flex items-center gap-1"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${isOrdersLoading ? 'animate-spin' : ''}`} />
-                      내역 새로고침
-                    </button>
-                  </div>
+              {/* Order History & Search */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h2 className="text-sm font-extrabold text-primary flex items-center gap-2">
+                    <Clock className="w-4 h-4" /> 내역 조회
+                  </h2>
+                  <button 
+                    onClick={loadUserOrders}
+                    className="text-[10px] font-bold text-slate-400 hover:text-primary flex items-center gap-1"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isOrdersLoading ? 'animate-spin' : ''}`} />
+                    내역 새로고침
+                  </button>
+                </div>
 
-                  {/* Sub Tabs and Refresh */}
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
-                      <button
-                        onClick={() => setHistoryTab('order')}
-                        className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        발주내역 조회
-                      </button>
-                      <button
-                        onClick={() => setHistoryTab('quote')}
-                        className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        견적내용 조회
-                      </button>
-                    </div>
+                {/* Sub Tabs and Refresh */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 flex gap-2 p-1.5 bg-slate-100/80 rounded-2xl">
                     <button
-                      onClick={loadUserOrders}
-                      disabled={isOrdersLoading}
-                      className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-primary transition-all active:scale-95 shadow-sm disabled:opacity-50"
-                      title="내역 새로고침"
+                      onClick={() => setHistoryTab('order')}
+                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                      <RefreshCw className={`w-4 h-4 ${isOrdersLoading ? 'animate-spin' : ''}`} />
+                      발주내역 조회
                     </button>
-                  </div>
-
-                  {/* Date Search */}
-                  <div className="flex flex-wrap gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                    <div className="flex-1 min-w-[120px]">
-                      <label className="text-[10px] font-extrabold text-slate-400 block mb-1">시작일</label>
-                      <input 
-                        type="date" 
-                        value={dateRange.start} 
-                        onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-[120px]">
-                      <label className="text-[10px] font-extrabold text-slate-400 block mb-1">종료일</label>
-                      <input 
-                        type="date" 
-                        value={dateRange.end} 
-                        onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      />
-                    </div>
                     <button
-                      onClick={() => setAppliedRange(dateRange)}
-                      className="px-6 py-2.5 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-green-900/10 hover:bg-primary-dark transition-all active:scale-95 flex items-center gap-2"
+                      onClick={() => setHistoryTab('quote')}
+                      className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'quote' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
-                      <Search className="w-3.5 h-3.5" />
-                      조회
+                      견적내용 조회
                     </button>
                   </div>
+                  <button
+                    onClick={loadUserOrders}
+                    disabled={isOrdersLoading}
+                    className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-primary transition-all active:scale-95 shadow-sm disabled:opacity-50"
+                    title="내역 새로고침"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isOrdersLoading ? 'animate-spin' : ''}`} />
+                  </button>
+                </div>
 
-                  {/* Order List */}
-                  <div className="space-y-4">
-                    {filteredUserOrders.length === 0 ? (
-                      <div className="py-12 text-center text-slate-300">
-                        <Package className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                        <p className="text-xs font-bold">조회된 {historyTab === 'order' ? '발주' : '견적'} 내역이 없습니다.</p>
-                      </div>
-                    ) : (
-                      filteredUserOrders.map(order => (
+                {/* Date Search */}
+                <div className="flex flex-wrap gap-3 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="text-[10px] font-extrabold text-slate-400 block mb-1">시작일</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.start} 
+                      onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[120px]">
+                    <label className="text-[10px] font-extrabold text-slate-400 block mb-1">종료일</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.end} 
+                      onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setAppliedRange(dateRange)}
+                    className="px-6 py-2.5 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-green-900/10 hover:bg-primary-dark transition-all active:scale-95 flex items-center gap-2"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    조회
+                  </button>
+                </div>
+
+                {/* Order List */}
+                <div className="space-y-4">
+                  {isOrdersLoading ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4 text-slate-300">
+                      <RefreshCw className="w-10 h-10 animate-spin" />
+                      <p className="text-sm font-bold">내역을 불러오는 중...</p>
+                    </div>
+                  ) : filteredUserOrders.length === 0 ? (
+                    <div className="py-12 text-center text-slate-300">
+                      <Package className="w-8 h-8 mx-auto mb-2 opacity-20" />
+                      <p className="text-xs font-bold">조회된 {historyTab === 'order' ? '발주' : '견적'} 내역이 없습니다.</p>
+                    </div>
+                  ) : (
+                    filteredUserOrders.map(order => {
+                      const isCollapsed = isItemCollapsed[order.id] !== false;
+                      return (
                         <div key={order.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:border-primary/20 transition-all">
-                          <div className="bg-slate-50/50 px-5 py-4 flex items-center justify-between gap-4 border-b border-slate-50">
+                          {/* Order Header (Always Visible) */}
+                          <div 
+                            onClick={() => setIsItemCollapsed(prev => ({ ...prev, [order.id]: !isCollapsed }))}
+                            className="bg-slate-50/50 px-5 py-4 flex items-center justify-between gap-4 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                          >
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
+                                <span className="text-[10px] font-mono text-slate-300">#{order.id.slice(-6)}</span>
                               </div>
-                              {order.orderType === 'quote' ? (
-                                <>
-                                  <h4 className="text-sm font-black text-slate-800">견적 문의 내역</h4>
-                                  {order.ordererName && (
-                                    <p className="text-xs font-bold text-slate-400 mt-0.5">주문자: {order.ordererName}</p>
-                                  )}
-                                </>
-                              ) : (
-                                <>
-                                  <p className="text-sm font-black text-slate-800 truncate">
-                                    {order.items && order.items.length > 0 
-                                      ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
-                                      : '견적 문의 내역'}
-                                  </p>
-                                  {order.ordererName && (
-                                    <p className="text-xs font-bold text-slate-400 mt-0.5">주문자: {order.ordererName}</p>
-                                  )}
-                                </>
-                              )}
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-black text-slate-800 truncate max-w-[180px] sm:max-w-none">
+                                  {order.orderType === 'quote' 
+                                    ? (order.otherRequest ? order.otherRequest.slice(0, 20) + (order.otherRequest.length > 20 ? '...' : '') : '견적 문의 내역')
+                                    : (order.items && order.items.length > 0 
+                                        ? `${order.items[0].productName}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                                        : '주문 내역')}
+                                </h4>
+                                <span className="text-[11px] font-black text-primary shrink-0">
+                                  ₩{order.totalAmount.toLocaleString()}
+                                </span>
+                              </div>
                             </div>
                             <div className="shrink-0 flex items-center gap-3">
-                              {order.orderType === 'order' ? (
-                                <>
-                                  {order.status === 'shipped' && (
-                                    <>
-                                      {statementRequestedOrderIds.includes(order.id) ? (
-                                        <div className="flex flex-col gap-1">
-                                          <span className="text-[9px] text-blue-500 font-bold border border-blue-200 bg-blue-50 px-1 py-0.5 rounded text-center">명세서요청됨</span>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center gap-2">
-                                          <input 
-                                            type="checkbox" 
-                                            checked={selectedOrderIds.includes(order.id)}
-                                            onChange={(e) => {
-                                              if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                              else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                          />
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
-                                  <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm ${
-                                    order.status === 'shipped'
-                                      ? 'bg-blue-500 text-white'
-                                      : order.status === 'payment_waiting'
-                                        ? 'bg-orange-500 text-white'
-                                        : order.status === 'cancelled'
-                                          ? 'bg-red-50 text-red-500 border border-red-100'
-                                          : 'bg-emerald-500 text-white'
-                                  }`}>
-                                    {order.status === 'shipped' ? '납품완료' : 
-                                     order.status === 'payment_waiting' ? '미수금' : 
-                                     order.status === 'cancelled' ? '주문취소' : '주문완료'}
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  {(order.status === 'processing' || order.status === 'shipped') && (
-                                    <>
-                                      {statementRequestedOrderIds.includes(order.id) ? (
-                                        <div className="flex flex-col gap-1">
-                                          <span className="text-[9px] text-blue-600 font-bold border border-blue-200 bg-blue-50 px-2 py-0.5 rounded text-center">발행요청됨</span>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center gap-2">
-                                          <input 
-                                            type="checkbox" 
-                                            checked={selectedOrderIds.includes(order.id)}
-                                            onChange={(e) => {
-                                              if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                              else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                          />
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
-                                    <div className="flex gap-2">
-                                      {order.status === 'shipped' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-600 text-white border-blue-700 shadow-sm">
-                                          납품완료
-                                        </span>
-                                      ) : order.status === 'payment_waiting' ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-orange-500 text-white border-orange-600 shadow-sm">
-                                          미수금
-                                        </span>
-                                      ) : (order.status === 'shipped' || (order.orderType === 'quote' && order.status === 'processing')) ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-600 text-white border-blue-700 shadow-sm">
-                                          납품완료
-                                        </span>
-                                      ) : (order.orderType === 'order' && order.status === 'processing') ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-indigo-500 text-white border-indigo-600 shadow-sm">
-                                          주문완료
-                                        </span>
-                                      ) : (order.orderType === 'quote' && order.status === 'order_requested') ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
-                                          주문완료
-                                        </span>
-                                      ) : (order.orderType === 'order' && order.status === 'order_requested') ? (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-emerald-500 text-white border-emerald-600 shadow-sm">
-                                          주문
-                                        </span>
-                                      ) : (order.orderType === 'quote' && order.status === 'pending') ? (
-                                        (order.quoteAmount || order.totalAmount > 0) ? (
-                                          <button 
-                                            onClick={() => handlePlaceOrderFromQuote(order)}
-                                            className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-blue-500 text-white border-blue-600 hover:bg-blue-600 transition-colors shadow-sm animate-pulse"
-                                          >
-                                            👉 발주요청
-                                          </button>
-                                        ) : (
-                                          <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-slate-100 text-slate-400 border-slate-200">
-                                            접수완료
-                                          </span>
-                                        )
-                                      ) : (
-                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black border bg-slate-100 text-slate-400 border-slate-200">
-                                          {STATUS_LABELS[order.status] || '접수완료'}
-                                        </span>
-                                      )}
-                                    </div>
-                                </>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {order.status === 'shipped' && !statementRequestedOrderIds.includes(order.id) && (
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selectedOrderIds.includes(order.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
+                                      else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                  />
+                                )}
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm ${
+                                  order.status === 'shipped' ? 'bg-blue-500 text-white' :
+                                  order.status === 'payment_waiting' ? 'bg-orange-500 text-white' :
+                                  order.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-emerald-500 text-white'
+                                }`}>
+                                  {STATUS_LABELS[order.status] || order.status}
+                                </span>
+                              </div>
+                              {isCollapsed ? <ChevronDown className="w-4 h-4 text-slate-300" /> : <ChevronUp className="w-4 h-4 text-slate-300" />}
                             </div>
                           </div>
                           
-                          <div className="px-5 py-4 space-y-4">
-                            {order.items && order.items.length > 0 ? (
-                              <div className="space-y-3">
-                                {order.items.map((item, idx) => (
-                                  <div key={idx} className="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 space-y-1">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-[10px] font-mono text-slate-400">{item.productCode || '-'}</p>
-                                        <p className="text-xs font-bold text-slate-700 leading-tight truncate">{item.productName}</p>
+                          {/* Order Details (Collapsible) */}
+                          <AnimatePresence>
+                            {!isCollapsed && (
+                              <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-5 py-5 space-y-4 bg-white">
+                                  {order.items && order.items.length > 0 ? (
+                                    <div className="space-y-4">
+                                      {/* Admin-Style Grid Header */}
+                                      <div className="hidden sm:grid grid-cols-12 gap-2 px-3 py-2 bg-slate-50 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        <div className="col-span-5">품목 정보</div>
+                                        <div className="col-span-2 text-center">수량</div>
+                                        <div className="col-span-2 text-right">공급가액</div>
+                                        <div className="col-span-3 text-right">합계금액</div>
                                       </div>
-                                      <p className="text-xs font-black text-slate-400 shrink-0 ml-2">×{item.quantity}</p>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-1 border-t border-slate-100/50">
-                                      <span className="text-[10px] text-slate-400">단가: ₩{(item.unitPrice || 0).toLocaleString()}</span>
-                                      <span className="text-xs font-black text-slate-600">₩{(item.subtotal || 0).toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                                
-                                <div className="pt-3 border-t border-slate-200 space-y-1.5">
-                                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                    <span>공급가액</span>
-                                    <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400">
-                                    <span>부가세 (10%)</span>
-                                    <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
-                                    <span className="text-xs font-black text-slate-800">최종 합계 (VAT 포함)</span>
-                                    <span className="text-base font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                <div className="bg-slate-50 rounded-2xl p-4">
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">문의 및 요청 내용</p>
-                                  <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                                    {order.otherRequest || '상세 내역 없음'}
-                                  </p>
-                                </div>
-                                {order.totalAmount > 0 && (
-                                  <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100 space-y-2">
-                                    <div className="flex items-center gap-2 text-blue-600 mb-1">
-                                      <CreditCard className="w-4 h-4" />
-                                      <span className="text-xs font-black uppercase tracking-wider">최종 견적 금액</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-[10px] font-bold text-blue-400">
-                                      <span>공급가액</span>
-                                      <span>₩{(order.subtotalAmount || Math.floor(order.totalAmount / 1.1)).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-[10px] font-bold text-blue-400">
-                                      <span>부가세</span>
-                                      <span>₩{(order.vatAmount || (order.totalAmount - Math.floor(order.totalAmount / 1.1))).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2 border-t border-blue-100">
-                                      <span className="text-xs font-black text-blue-800">합계 금액</span>
-                                      <span className="text-base font-black text-blue-700">₩{order.totalAmount.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
 
-                            {order.items && order.items.length > 0 && order.otherRequest && (
-                              <div className="bg-amber-50/50 rounded-xl p-3 border border-amber-100/50">
-                                <p className="text-[11px] text-amber-700 italic">기타 요청: {order.otherRequest}</p>
-                              </div>
+                                      {order.items.map((item, idx) => (
+                                        <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-2 px-3 py-3 border border-slate-100 rounded-2xl sm:items-center hover:bg-slate-50 transition-colors">
+                                          <div className="col-span-1 sm:col-span-5 min-w-0">
+                                            <p className="text-[10px] font-mono text-slate-400">{item.productCode || '-'}</p>
+                                            <p className="text-sm font-bold text-slate-700 leading-tight truncate">{item.productName}</p>
+                                            <p className="text-[11px] text-slate-400 mt-0.5">{item.spec}</p>
+                                          </div>
+                                          <div className="col-span-1 sm:col-span-2 flex justify-between sm:justify-center items-center">
+                                            <span className="sm:hidden text-[10px] font-bold text-slate-400">수량</span>
+                                            <span className="text-sm font-black text-slate-600">{item.quantity}</span>
+                                          </div>
+                                          <div className="col-span-1 sm:col-span-2 flex justify-between sm:justify-end items-center">
+                                            <span className="sm:hidden text-[10px] font-bold text-slate-400">공급가액</span>
+                                            <span className="text-sm font-bold text-slate-600">₩{(item.unitPrice || 0).toLocaleString()}</span>
+                                          </div>
+                                          <div className="col-span-1 sm:col-span-3 flex justify-between sm:justify-end items-center">
+                                            <span className="sm:hidden text-[10px] font-bold text-slate-400">합계금액(VAT별도)</span>
+                                            <span className="text-sm font-black text-primary">₩{(item.subtotal || 0).toLocaleString()}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      
+                                      <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="bg-slate-50 rounded-2xl p-4">
+                                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">기타 요청사항</p>
+                                          <p className="text-xs text-slate-600 leading-relaxed">
+                                            {order.otherRequest || '요청사항이 없습니다.'}
+                                          </p>
+                                        </div>
+                                        <div className="space-y-2.5">
+                                          <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                            <span>총 공급가액</span>
+                                            <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
+                                          </div>
+                                          <div className="flex justify-between items-center text-xs font-bold text-slate-400">
+                                            <span>부가세 (10%)</span>
+                                            <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
+                                          </div>
+                                          <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                                            <span className="text-sm font-black text-slate-800">최종 합계 (VAT 포함)</span>
+                                            <span className="text-xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</span>
+                                          </div>
+                                          
+                                          {order.orderType === 'quote' && order.status === 'pending' && (
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); handlePlaceOrderFromQuote(order); }}
+                                              className="w-full mt-2 py-3 bg-blue-500 text-white rounded-xl font-black text-xs shadow-lg hover:bg-blue-600 transition-all animate-pulse"
+                                            >
+                                              위 견적으로 발주 진행하기
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-4">
+                                      <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2">문의 상세 내용</p>
+                                        <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                                          {order.otherRequest || '상세 내역 없음'}
+                                        </p>
+                                      </div>
+                                      {order.totalAmount > 0 && (
+                                        <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                          <div>
+                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Estimated Total</p>
+                                            <p className="text-2xl font-black text-blue-700">₩{order.totalAmount.toLocaleString()}</p>
+                                          </div>
+                                          {order.status === 'pending' && (
+                                            <button 
+                                              onClick={(e) => { e.stopPropagation(); handlePlaceOrderFromQuote(order); }}
+                                              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-black text-xs shadow-lg hover:bg-blue-700 transition-all"
+                                            >
+                                              견적 승인 및 발주하기
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
                             )}
-                          </div>
+                          </AnimatePresence>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-
-              <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="font-black text-slate-800">무통장 입금 안내</h2>
-                    <p className="text-[10px] text-slate-400 font-bold">아래 계좌로 입금해 주시면 확인 후 처리됩니다.</p>
-                  </div>
-                </div>
-                
-                <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400 font-black uppercase">은행명</span>
-                    <span className="text-sm font-bold text-slate-800">{NGS_BANK.bank}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] text-slate-400 font-black uppercase">예금주</span>
-                    <span className="text-sm font-bold text-slate-800">{NGS_BANK.holder}</span>
-                  </div>
-                  <div className="pt-2 border-t border-dashed border-slate-200">
-                    <span className="text-[10px] text-slate-400 font-black uppercase block mb-2">계좌번호</span>
-                    <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
-                      <span className="font-black text-slate-800 font-mono text-base">{NGS_BANK.account}</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(NGS_BANK.account);
-                          alert('계좌번호가 복사되었습니다.');
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary-dark transition-all"
-                      >
-                        <Copy className="w-3 h-3" />
-                        복사
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5 text-left">
-                  <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
-                    발주서 제출 후 <strong>3영업일 이내</strong>에 입금해 주세요. <br />
-                    입금 시 <strong>기관명 또는 주문자명</strong>으로 입금 부탁드립니다.
-                  </p>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
-              {/* Tax Invoice Request Section */}
-              {isBertis && (
-                <div className="space-y-4">
-                  {/* Integrated Issuance Modules */}
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* Common State Summary */}
-                    {selectedOrderIds.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-5 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center justify-between shadow-sm"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-emerald-500 text-white rounded-2xl flex items-center justify-center">
-                            <CheckCircle2 className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Selected Items</p>
-                            <p className="text-sm font-bold text-slate-700">{selectedOrderIds.length}건 선택됨</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Amount</p>
-                          <p className="text-xl font-black text-emerald-600">₩{selectedTotalAmount.toLocaleString()}</p>
-                        </div>
-                      </motion.div>
-                    )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-slate-800">무통장 입금 안내</h2>
+                      <p className="text-[10px] text-slate-400 font-bold">아래 계좌로 입금해 주시면 확인 후 처리됩니다.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">은행명</span>
+                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.bank}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">예금주</span>
+                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.holder}</span>
+                    </div>
+                    <div className="pt-2 border-t border-dashed border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-black uppercase block mb-2">계좌번호</span>
+                      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                        <span className="font-black text-slate-800 font-mono text-base">{NGS_BANK.account}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(NGS_BANK.account);
+                            alert('계좌번호가 복사되었습니다.');
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary-dark transition-all"
+                        >
+                          <Copy className="w-3 h-3" />
+                          복사
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-                  {/* Unified Issuance Module */}
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* Statement Issuance Card */}
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5 text-left">
+                    <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                      발주서 제출 후 <strong>3영업일 이내</strong>에 입금해 주세요. <br />
+                      입금 시 <strong>기관명 또는 주문자명</strong>으로 입금 부탁드립니다.
+                    </p>
+                  </div>
+                </div>
+
+                {isBertis && (
+                  <div className="space-y-6">
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100 space-y-6 overflow-hidden relative group">
-                      {/* Background Decoration */}
                       <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
                       
                       <div className="relative flex items-center gap-4">
@@ -1314,7 +1262,6 @@ export default function OrderPage() {
                         </div>
                       </div>
 
-                      {/* Selection Summary Overlay */}
                       <div className="p-5 bg-slate-50/80 backdrop-blur-sm rounded-2xl border border-slate-100 flex items-center justify-between">
                         <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Items</p>
@@ -1326,7 +1273,20 @@ export default function OrderPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-3">
+                      <div className="space-y-4">
+                        <div className="bg-slate-50/80 backdrop-blur-sm p-5 rounded-2xl border border-slate-100 space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                            <Mail className="w-3 h-3" /> 발행 이메일 주소
+                          </label>
+                          <input
+                            type="email"
+                            value={taxEmail}
+                            onChange={(e) => setTaxEmail(e.target.value)}
+                            placeholder="invoice@company.com"
+                            className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
+                          />
+                        </div>
+                        
                         <button
                           onClick={handleStatementRequest}
                           disabled={isStatementSubmitting || selectedOrderIds.length === 0}
@@ -1341,36 +1301,8 @@ export default function OrderPage() {
                         </button>
                       </div>
                     </div>
-
-                    {/* Email Input Field (Shared) */}
-                    <div className="bg-slate-50/80 backdrop-blur-sm p-5 rounded-3xl border border-slate-100 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                          <Mail className="w-3 h-3" /> 발행 이메일 주소
-                        </label>
-                        <button
-                          onClick={handleResetPractice}
-                          className="text-[9px] font-bold text-rose-400 hover:text-rose-600 flex items-center gap-1 transition-colors"
-                        >
-                          <RefreshCw className="w-2.5 h-2.5" />
-                          연습 데이터 초기화
-                        </button>
-                      </div>
-                      <input
-                        type="email"
-                        value={taxEmail}
-                        onChange={(e) => setTaxEmail(e.target.value)}
-                        placeholder="invoice@company.com"
-                        className="w-full px-5 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all shadow-sm"
-                      />
-                      <p className="text-[10px] text-slate-400 font-medium leading-relaxed px-1">
-                        ※ 요청하신 서류는 입력하신 이메일로 영업일 기준 1~2일 내에 발송됩니다. <strong>{NGS_EMAIL}</strong>으로도 사본이 전달됩니다.
-                      </p>
-                    </div> 
                   </div>
-                </div>
-              </div>
-              )}
+                )}
               </div>
             </motion.div>
           )}
