@@ -1183,7 +1183,7 @@ export default function OrderPage() {
                                 )}
 
                                 {/* 체크박스 (거래명세서 발행용) */}
-                                {order.status !== 'paid' && order.status !== 'cancelled' && (order.items && order.items.length > 0) && (
+                                {order.status === 'shipped' && (order.items && order.items.length > 0) && (
                                   <input 
                                     type="checkbox" 
                                     checked={selectedOrderIds.includes(order.id)}
@@ -1197,9 +1197,10 @@ export default function OrderPage() {
                                 )}
 
                                 <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
-                                  (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
-                                  order.status === 'processing' ? 'bg-indigo-500 text-white' :
-                                  order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
+                                  order.status === 'pending' ? 'bg-blue-500 text-white' :
+                                  order.status === 'order_requested' ? 'bg-indigo-500 text-white' :
+                                  order.status === 'shipped' ? 'bg-emerald-500 text-white' :
+                                  order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-400 text-white'
                                 }`}>
                                   {STATUS_LABELS[order.status] || order.status}
                                 </span>

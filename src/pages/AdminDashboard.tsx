@@ -639,8 +639,8 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2 w-full">
                               <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                                 {[
-                                  { id: 'pending', label: '접수완료' },
-                                  { id: 'order_requested', label: '발주요청' },
+                                                                      { id: 'pending', label: '주문' },
+                                                                      { id: 'order_requested', label: '주문완료' },
                                   { id: 'shipped', label: '납품완료' }
                                 ].map((s) => (
                                   <button
