@@ -1064,16 +1064,16 @@ export default function OrderPage() {
                             </div>
 
                             <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
-                              {/* 사용자 요청: 납품완료 시 왼쪽에 요약 정보 표시 */}
+                              {/* 사용자 요청: 납품완료 시 버튼(라벨) 왼쪽에 요약 정보 표시 (모든 화면 표시) */}
                               {order.status === 'shipped' && (
-                                <div className="hidden sm:flex items-center gap-3 mr-2 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
-                                  <span className="text-[11px] font-black text-slate-700 truncate max-w-[120px] md:max-w-none">
+                                <div className="flex items-center gap-2 mr-2 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm shrink-0">
+                                  <span className="text-[11px] font-black text-slate-700 truncate max-w-[80px] md:max-w-none">
                                     {summaryText}
                                   </span>
                                   <span className="text-[11px] font-bold text-slate-400 shrink-0">
                                     {totalQty}개
                                   </span>
-                                  <span className="text-xs font-black text-primary shrink-0">
+                                  <span className="text-[11px] font-black text-blue-600 shrink-0">
                                     ₩{order.totalAmount.toLocaleString()}
                                   </span>
                                 </div>
