@@ -639,7 +639,9 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2 w-full">
                               <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                                 {[
-                                  { id: 'processing', label: '주문' }
+                                  { id: 'pending', label: '접수완료' },
+                                  { id: 'order_requested', label: '발주요청' },
+                                  { id: 'shipped', label: '납품완료' }
                                 ].map((s) => (
                                   <button
                                     key={s.id}
@@ -650,7 +652,7 @@ export default function AdminDashboard() {
                                       }`}
                                     style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                                   >
-                                    {(s.id === 'processing' && order.status === 'processing') ? '납품완료' : s.label}
+                                    {s.label}
                                   </button>
                                 ))}
                               </div>
