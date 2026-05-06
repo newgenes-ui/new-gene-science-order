@@ -21,6 +21,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJUL
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  // FORCE REBUILD: Ensure latest history UI is live
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
   const clientId = (searchParams.get('client') || 'demo').toLowerCase();
