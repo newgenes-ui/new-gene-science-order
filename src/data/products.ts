@@ -40,7 +40,7 @@ export interface Client {
   phone?: string;
 }
 
-export const isBertis = (clientId: string) => clientId !== 'demo';
+export const isBertis = (clientId: string) => clientId && clientId !== '';
 
 export const CLIENTS: Client[] = [
   { id: 'bertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '양유지', phone: '000-0000-0000' },
@@ -48,7 +48,6 @@ export const CLIENTS: Client[] = [
   { id: 'samsung', name: '삼성바이오로직스', email: '', contactPerson: '담당자', phone: '' },
   { id: 'lgchem', name: 'LG화학', email: '', contactPerson: '담당자', phone: '' },
   { id: 'boryung', name: '(주)보령제약', email: 'ngs.202403@gmail.com', contactPerson: '이재명', phone: '000-0000-0000' },
-  { id: 'demo', name: '데모고객사', email: '', contactPerson: '담당자', phone: '' },
 ];
 
 export const NGS_EMAIL = 'newgenes@newgenesci.com';
