@@ -61,9 +61,7 @@ export default function OrderPage() {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
   }, [clientId]);
 
-  // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용
-  const isSpecialClient = clientId !== 'demo';
-  const isBertis = isSpecialClient; 
+
 
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
