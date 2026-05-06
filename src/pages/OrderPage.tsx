@@ -221,7 +221,7 @@ export default function OrderPage() {
 
   const STATUS_LABELS: Record<string, string> = {
     pending: '접수완료',
-    processing: '납품확인',
+    processing: '발주확인',
     order_requested: '주문완료',
     shipped: '납품완료',
     payment_waiting: '미수금',
@@ -1096,7 +1096,9 @@ export default function OrderPage() {
                                   order.status === 'payment_waiting' ? 'bg-orange-500 text-white' :
                                   order.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-emerald-500 text-white'
                                 }`}>
-                                  {STATUS_LABELS[order.status] || order.status}
+                                  {(order.status === 'processing' && order.orderType === 'quote') 
+                                    ? '납품확인' 
+                                    : (STATUS_LABELS[order.status] || order.status)}
                                 </span>
 
                                 <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200/80 text-slate-600 rounded-lg text-[10px] font-black hover:bg-slate-200 transition-all">
