@@ -221,7 +221,7 @@ export default function OrderPage() {
 
   const STATUS_LABELS: Record<string, string> = {
     pending: '접수완료',
-    processing: '발주확인',
+    processing: '납품확인',
     order_requested: '주문완료',
     shipped: '납품완료',
     payment_waiting: '미수금',
