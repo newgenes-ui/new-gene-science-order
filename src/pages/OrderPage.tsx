@@ -1055,24 +1055,29 @@ export default function OrderPage() {
                             onClick={() => setIsItemCollapsed(prev => ({ ...prev, [order.id]: !isCollapsed }))}
                             className="bg-slate-50/50 px-5 py-4 flex items-center justify-between gap-4 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
                           >
-                            <div className="flex flex-col shrink-0">
+                            <div className="flex flex-col shrink-0 min-w-0">
                               <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
-                              <span className="text-[10px] font-mono text-slate-300">#{order.id.slice(-6)}</span>
+                              <h3 className="text-sm font-black text-slate-800 truncate">
+                                {order.orderType === 'quote' ? '견적 문의 내역' : '발주 내역'}
+                              </h3>
+                              <p className="text-[11px] font-bold text-slate-400">주문자: {order.ordererName}</p>
                             </div>
 
-                            <div className="flex items-center gap-4 flex-1 justify-end min-w-0">
-                              {/* 사용자 요청: 납품완료 왼쪽에 품목명, 수량, 총금액 나타나게 */}
-                              <div className="flex items-center gap-3 mr-2 overflow-hidden">
-                                <span className="text-xs font-black text-slate-700 truncate max-w-[120px] md:max-w-none">
-                                  {summaryText}
-                                </span>
-                                <span className="text-xs font-bold text-slate-400 shrink-0">
-                                  {totalQty}개
-                                </span>
-                                <span className="text-xs font-black text-primary shrink-0">
-                                  ₩{order.totalAmount.toLocaleString()}
-                                </span>
-                              </div>
+                            <div className="flex items-center gap-3 flex-1 justify-end min-w-0">
+                              {/* 사용자 요청: 납품완료 시 왼쪽에 요약 정보 표시 */}
+                              {order.status === 'shipped' && (
+                                <div className="hidden sm:flex items-center gap-3 mr-2 bg-blue-50/80 px-3 py-1.5 rounded-xl border border-blue-100 shadow-sm">
+                                  <span className="text-[11px] font-black text-slate-700 truncate max-w-[120px] md:max-w-none">
+                                    {summaryText}
+                                  </span>
+                                  <span className="text-[11px] font-bold text-slate-400 shrink-0">
+                                    {totalQty}개
+                                  </span>
+                                  <span className="text-xs font-black text-primary shrink-0">
+                                    ₩{order.totalAmount.toLocaleString()}
+                                  </span>
+                                </div>
+                              )}
 
                               <div className="flex items-center gap-2 shrink-0">
                                 {order.status === 'shipped' && !statementRequestedOrderIds.includes(order.id) && (
