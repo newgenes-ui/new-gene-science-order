@@ -38,7 +38,15 @@ const STORAGE_KEY = 'ngs_orders';
 export function getOrders(): Order[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw && raw !== '[]') return JSON.parse(raw);
+    if (raw && raw !== '[]') {
+      const parsed = JSON.parse(raw) as Order[];
+      return parsed.map(o => {
+        const totalAmount = o.totalAmount || 0;
+        const vatAmount = o.vatAmount || (o.subtotalAmount ? 0 : Math.round(totalAmount - (totalAmount / 1.1)));
+        const subtotalAmount = o.subtotalAmount || (totalAmount - vatAmount);
+        return { ...o, subtotalAmount, vatAmount };
+      });
+    }
     
     // Seed mock data for local demonstration (matching the live deployed database screenshot)
     const mockData: Order[] = [
