@@ -1152,11 +1152,11 @@ export default function OrderPage() {
                                         <div className="space-y-2.5">
                                           <div className="flex justify-between items-center text-xs font-bold text-slate-400">
                                             <span>총 공급가액</span>
-                                            <span>₩{(order.subtotalAmount || 0).toLocaleString()}</span>
+                                            <span>₩{ (order.vatAmount === 0 && (order.subtotalAmount === order.totalAmount || order.subtotalAmount === 0)) ? Math.round(order.totalAmount / 1.1).toLocaleString() : (order.subtotalAmount || 0).toLocaleString() }</span>
                                           </div>
                                           <div className="flex justify-between items-center text-xs font-bold text-slate-400">
                                             <span>부가세 (10%)</span>
-                                            <span>₩{(order.vatAmount || 0).toLocaleString()}</span>
+                                            <span>₩{ (order.vatAmount === 0 && (order.subtotalAmount === order.totalAmount || order.subtotalAmount === 0)) ? (order.totalAmount - Math.round(order.totalAmount / 1.1)).toLocaleString() : (order.vatAmount || 0).toLocaleString() }</span>
                                           </div>
                                           <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                                             <span className="text-sm font-black text-slate-800">최종 합계 (VAT 포함)</span>
