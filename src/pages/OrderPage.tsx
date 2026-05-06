@@ -1039,13 +1039,12 @@ export default function OrderPage() {
                       const isCollapsed = isItemCollapsed[order.id] !== false;
                       const totalQty = order.items?.reduce((sum, i) => sum + (i.quantity || 0), 0) || 0;
                       
-                      // 견적일 경우 품목이 없으면 '견적 문의'로 표시
                       const summaryText = order.orderType === 'quote' 
                         ? (order.items && order.items.length > 0 
-                            ? `${order.items[0].productName.slice(0, 12)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                            ? `${order.items[0].productName.slice(0, 15)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                             : '견적 문의 내역')
                         : (order.items && order.items.length > 0 
-                            ? `${order.items[0].productName.slice(0, 12)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                            ? `${order.items[0].productName.slice(0, 15)}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                             : '주문 내역');
 
                       return (
@@ -1053,36 +1052,28 @@ export default function OrderPage() {
                           {/* Order Header (Always Visible) */}
                           <div 
                             onClick={() => setIsItemCollapsed(prev => ({ ...prev, [order.id]: !isCollapsed }))}
-                            className="bg-slate-50/50 px-5 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                            className="bg-slate-50/50 px-5 py-4 flex items-center justify-between gap-4 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
                           >
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[11px] font-bold text-slate-400">{order.orderDate}</span>
-                                <span className="text-[11px] font-mono text-slate-300">#{order.id.slice(-6)}</span>
-                              </div>
-                              {order.ordererName && (
-                                <p className="text-xs font-black text-slate-600">주문자: {order.ordererName}</p>
-                              )}
+                            <div className="flex flex-col shrink-0">
+                              <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
+                              <span className="text-[10px] font-mono text-slate-300">#{order.id.slice(-6)}</span>
                             </div>
 
-                            <div className="flex items-center justify-between md:justify-end gap-3 flex-1">
-                              {/* 2. 헤더 요약: 납품완료 왼쪽 옆에 위치 */}
-                              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                                <span className="text-xs font-black text-slate-800 truncate max-w-[140px] md:max-w-none">
+                            <div className="flex items-center gap-4 flex-1 justify-end min-w-0">
+                              {/* 사용자 요청: 납품완료 왼쪽에 품목명, 수량, 총금액 나타나게 */}
+                              <div className="flex items-center gap-3 mr-2 overflow-hidden">
+                                <span className="text-xs font-black text-slate-700 truncate max-w-[120px] md:max-w-none">
                                   {summaryText}
                                 </span>
-                                <div className="w-[1px] h-3 bg-slate-200" />
-                                <span className="text-xs font-bold text-slate-500 shrink-0">
-                                  {totalQty > 0 ? `${totalQty}개` : '-'}
+                                <span className="text-xs font-bold text-slate-400 shrink-0">
+                                  {totalQty}개
                                 </span>
-                                <div className="w-[1px] h-3 bg-slate-200" />
                                 <span className="text-xs font-black text-primary shrink-0">
                                   ₩{order.totalAmount.toLocaleString()}
                                 </span>
                               </div>
 
                               <div className="flex items-center gap-2 shrink-0">
-                                {/* 거래명세서 선택 체크박스 */}
                                 {order.status === 'shipped' && !statementRequestedOrderIds.includes(order.id) && (
                                   <input 
                                     type="checkbox" 
@@ -1092,11 +1083,11 @@ export default function OrderPage() {
                                       if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
                                       else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                     }}
-                                    className="w-5 h-5 rounded-lg border-slate-200 text-primary focus:ring-primary cursor-pointer mr-1"
+                                    className="w-4 h-4 rounded border-slate-200 text-primary focus:ring-primary cursor-pointer"
                                   />
                                 )}
 
-                                <span className={`px-3 py-1.5 rounded-full text-[11px] font-black shadow-sm shrink-0 ${
+                                <span className={`px-2.5 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
                                   order.status === 'shipped' ? 'bg-blue-500 text-white' :
                                   order.status === 'payment_waiting' ? 'bg-orange-500 text-white' :
                                   order.status === 'cancelled' ? 'bg-red-50 text-red-500' : 'bg-emerald-500 text-white'
@@ -1104,11 +1095,9 @@ export default function OrderPage() {
                                   {STATUS_LABELS[order.status] || order.status}
                                 </span>
 
-                                {/* 1. 접기/펴기: 확실하게 보이는 텍스트 버튼 */}
-                                <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-200 text-slate-600 rounded-xl text-[11px] font-black hover:bg-slate-300 transition-all">
+                                <button className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-200/80 text-slate-600 rounded-lg text-[10px] font-black hover:bg-slate-200 transition-all">
                                   {isCollapsed ? '펴기' : '접기'}
-                                  {isCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
-                                </div>
+                                </button>
                               </div>
                             </div>
                           </div>
