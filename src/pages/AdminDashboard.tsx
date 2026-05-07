@@ -636,7 +636,7 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* 상태 및 금액 입력 영역 */}
-                      <div className="flex items-center justify-start md:justify-end gap-3 w-full md:w-[350px] shrink-0">
+                      <div className="flex items-center justify-start md:justify-end gap-3 w-full md:w-[420px] shrink-0">
                         {order.status === 'cancelled' ? (
                           <div className="w-full md:text-right md:pr-2">
                             <span className="px-3 py-1.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-600 border border-rose-200 inline-block">
@@ -647,9 +647,9 @@ export default function AdminDashboard() {
                           <div className="flex items-center gap-2 w-full">
                               <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap">
                                 {[
-                                  { id: 'pending', label: '접수확인' },
-                                  { id: 'processing', label: '견적전송' },
-                                  { id: 'order_requested', label: '주문확인' },
+                                  { id: 'pending', label: '접수' },
+                                  { id: 'processing', label: '전송' },
+                                  { id: 'order_requested', label: '주문' },
                                   { id: 'shipped', label: '납품완료' }
                                 ].map((s) => (
                                   <button
