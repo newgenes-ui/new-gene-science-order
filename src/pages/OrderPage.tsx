@@ -1288,53 +1288,6 @@ export default function OrderPage() {
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                      <CreditCard className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h2 className="font-black text-slate-800">무통장 입금 안내</h2>
-                      <p className="text-[10px] text-slate-400 font-bold">아래 계좌로 입금해 주시면 확인 후 처리됩니다.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-400 font-black uppercase">은행명</span>
-                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.bank}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[10px] text-slate-400 font-black uppercase">예금주</span>
-                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.holder}</span>
-                    </div>
-                    <div className="pt-2 border-t border-dashed border-slate-200">
-                      <span className="text-[10px] text-slate-400 font-black uppercase block mb-2">계좌번호</span>
-                      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
-                        <span className="font-black text-slate-800 font-mono text-base">{NGS_BANK.account}</span>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(NGS_BANK.account);
-                            alert('계좌번호가 복사되었습니다.');
-                          }}
-                          className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary-dark transition-all"
-                        >
-                          <Copy className="w-3 h-3" />
-                          복사
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5 text-left">
-                    <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
-                      발주서 제출 후 <strong>3영업일 이내</strong>에 입금해 주세요. <br />
-                      입금 시 <strong>기관명 또는 주문자명</strong>으로 입금 부탁드립니다.
-                    </p>
-                  </div>
-                </div>
-
                 {/* Tax Invoice Request Section */}
                 {isBertis && (
                   <div className="space-y-4">
@@ -1437,6 +1390,54 @@ export default function OrderPage() {
                     </div>
                   </div>
                 )}
+
+                <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4] space-y-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="font-black text-slate-800">무통장 입금 안내</h2>
+                      <p className="text-[10px] text-slate-400 font-bold">아래 계좌로 입금해 주시면 확인 후 처리됩니다.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">은행명</span>
+                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.bank}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-slate-400 font-black uppercase">예금주</span>
+                      <span className="text-sm font-bold text-slate-800">{NGS_BANK.holder}</span>
+                    </div>
+                    <div className="pt-2 border-t border-dashed border-slate-200">
+                      <span className="text-[10px] text-slate-400 font-black uppercase block mb-2">계좌번호</span>
+                      <div className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-100">
+                        <span className="font-black text-slate-800 font-mono text-base">{NGS_BANK.account}</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(NGS_BANK.account);
+                            alert('계좌번호가 복사되었습니다.');
+                          }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-primary text-white rounded-lg text-[10px] font-bold hover:bg-primary-dark transition-all"
+                        >
+                          <Copy className="w-3 h-3" />
+                          복사
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-2.5 text-left">
+                    <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-amber-700 font-medium leading-relaxed">
+                      발주서 제출 후 <strong>3영업일 이내</strong>에 입금해 주세요. <br />
+                      입금 시 <strong>기관명 또는 주문자명</strong>으로 입금 부탁드립니다.
+                    </p>
+                  </div>
+                </div>
+
               </div>
             </motion.div>
           )}
