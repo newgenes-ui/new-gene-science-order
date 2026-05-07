@@ -206,7 +206,7 @@ export function generateOrderId(): string {
   const d = parts.find(p => p.type === 'day')?.value;
   const ymd = `${y}${m}${d}`;
   
-  const rand = Math.floor(Math.random() * 9000) + 1000;
+  const rand = Math.floor(Math.random() * 9) + 1;
   return `NGS-${ymd}-${rand}`;
 }
 

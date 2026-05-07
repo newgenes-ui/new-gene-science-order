@@ -1097,7 +1097,7 @@ export default function OrderPage() {
                                   </div>
 
                                   <div className="shrink-0 flex items-center gap-3">
-                                    {order.status !== 'paid' && order.status !== 'cancelled' && (
+                                    {order.status === 'shipped' && (
                                       <input 
                                         type="checkbox" 
                                         checked={selectedOrderIds.includes(order.id)}
