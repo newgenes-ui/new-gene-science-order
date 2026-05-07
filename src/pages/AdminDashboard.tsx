@@ -399,14 +399,14 @@ export default function AdminDashboard() {
           <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-[#E2E8E4] shadow-sm w-full md:w-auto">
             <button
               onClick={() => setActiveListTab('order')}
-              className={`px-6 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               발주 내역 ({ordersList.length})
             </button>
             <button
               onClick={() => setActiveListTab('quote')}
-              className={`px-6 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
               견적 문의 ({quotesList.length})
