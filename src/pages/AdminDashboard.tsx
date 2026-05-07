@@ -478,17 +478,17 @@ export default function AdminDashboard() {
                           <div className="flex gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 whitespace-nowrap md:ml-auto">
                             {[
                               { id: 'pending', label: '주문' },
-                              { id: 'processing', label: '주문완료' },
                               { id: 'shipped', label: '납품완료' }
                             ].map((s) => (
                               <button
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
-                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${String(order.status).toLowerCase() === String(s.id).toLowerCase() || (s.id === 'processing' && order.status === 'order_requested')
+                                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
+                                    (s.id === 'pending' && order.status !== 'shipped') || (s.id === 'shipped' && order.status === 'shipped')
                                     ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                   }`}
-                                style={(String(order.status).toLowerCase() === String(s.id).toLowerCase() || (s.id === 'processing' && order.status === 'order_requested')) ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                style={(s.id === 'pending' && order.status !== 'shipped') || (s.id === 'shipped' && order.status === 'shipped') ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
                               </button>
