@@ -225,7 +225,7 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
   payment_waiting: '#f97316', // 오렌지 (미수금)
   paid: '#10b981',           // 녹색 (입금확인)
   processing: '#6366f1',      // 인디고 (견적전송/발주요청)
-  shipped: '#10b981',        // 녹색 (납품완료)
+  shipped: '#3b82f6',        // 파란색 (납품완료)
   cancelled: '#ef4444',       // 빨간색 (주문취소)
   order_requested: '#f59e0b', // 호박색 (준비중)
 };

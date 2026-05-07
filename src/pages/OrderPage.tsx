@@ -1224,7 +1224,7 @@ export default function OrderPage() {
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
                                     order.status === 'pending' ? 'bg-blue-500 text-white' :
                                     (order.status === 'order_requested' || order.status === 'processing') ? 'bg-indigo-500 text-white' :
-                                    order.status === 'shipped' ? 'bg-emerald-500 text-white' :
+                                    order.status === 'shipped' ? 'bg-blue-500 text-white' :
                                     order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-400 text-white'
                                   }`}>
                                     {order.orderType === 'quote' 
