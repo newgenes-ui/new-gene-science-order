@@ -521,9 +521,9 @@ export default function OrderPage() {
       total_amount:   `₩${totalAmount.toLocaleString()}`,
       other_request:  otherRequest || '없음',
       // 수신자 이메일 — 템플릿에서 {{to_email}} 변수로 사용
-      to_email:       `${NGS_EMAIL}, ${clientData.email}`,
+      to_email:       `${NGS_EMAIL}, ${order.ordererEmail}`,
       ngs_email:      NGS_EMAIL,
-      client_email:   clientData.email,
+      client_email:   order.ordererEmail,
     };
 
 
