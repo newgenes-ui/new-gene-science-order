@@ -446,7 +446,7 @@ export default function AdminDashboard() {
               className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
-              발주 내역 ({ordersList.length})(완료)
+              발주 내역 ({ordersList.length})
             </button>
             <button
               onClick={() => setActiveListTab('quote')}

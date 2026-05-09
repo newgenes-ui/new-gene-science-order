@@ -1011,7 +1011,7 @@ export default function OrderPage() {
                         onClick={() => setHistoryTab('order')}
                         className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                       >
-                        발주내역 조회(완료)
+                        발주내역 조회
                       </button>
                       <button
                         onClick={() => setHistoryTab('quote')}
@@ -1118,8 +1118,14 @@ export default function OrderPage() {
                                         checked={selectedOrderIds.includes(order.id)}
                                         onChange={(e) => {
                                           e.stopPropagation(); // 접기 방지
-                                          if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                          else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                          if (e.target.checked) {
+                                            setSelectedOrderIds(prev => [...prev, order.id]);
+                                            if (!taxEmail && order.ordererEmail) {
+                                              setTaxEmail(order.ordererEmail);
+                                            }
+                                          } else {
+                                            setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                          }
                                         }}
                                         className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                       />
@@ -1214,8 +1220,14 @@ export default function OrderPage() {
                                     checked={selectedOrderIds.includes(order.id)}
                                     onChange={(e) => {
                                       e.stopPropagation();
-                                      if (e.target.checked) setSelectedOrderIds(prev => [...prev, order.id]);
-                                      else setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                      if (e.target.checked) {
+                                        setSelectedOrderIds(prev => [...prev, order.id]);
+                                        if (!taxEmail && order.ordererEmail) {
+                                          setTaxEmail(order.ordererEmail);
+                                        }
+                                      } else {
+                                        setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                      }
                                     }}
                                     className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
                                   />
