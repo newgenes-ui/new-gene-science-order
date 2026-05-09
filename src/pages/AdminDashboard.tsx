@@ -91,7 +91,7 @@ export default function AdminDashboard() {
         o.ordererName.toLowerCase().includes(searchTerm.toLowerCase());
       const inClient = clientFilter === '전체' || o.clientName === clientFilter;
       return inDate && inSearch && inClient;
-    }).sort((a, b) => b.orderDate.localeCompare(a.orderDate) || b.id.localeCompare(a.id));
+    }).sort((a, b) => (b.orderDateTime || b.orderDate).localeCompare(a.orderDateTime || a.orderDate));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
   const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order' && o.items && o.items.length > 0), [filteredOrders]);
