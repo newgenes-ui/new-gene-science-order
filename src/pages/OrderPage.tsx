@@ -262,12 +262,13 @@ export default function OrderPage() {
       return;
     }
 
-    // [중복 방지] 이미 명세서가 발행된 항목이 포함되어 있는지 확인
+    /* [중복 방지 잠시 해제] 
     const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
     if (alreadyRequested.length > 0) {
       alert(`⚠️ 선택하신 항목 중 이미 명세서가 발행(요청)된 내역이 포함되어 있습니다.\n(중복 발행 불가)`);
       return;
     }
+    */
 
     // [DEBUG] 전송 결과 추적
     let gasStatus = '대기';
