@@ -70,7 +70,7 @@ export default function OrderPage() {
 
   // 빠른 선택을 위한 주문자 정보 리스트
   const quickSelectOrderers = [
-    { name: '김기환', email: 'jason.kim@newgenesci.com', phone: '010-5882-4997' },
+    { name: '김기환', email: 'khkimjhs@naver.com', phone: '010-5882-4997' },
     { name: '양유지', email: 'stella.yang@newgenesci.com', phone: '010-7169-8805' },
     { name: '나혜원', email: 'ngs.202403@gmail.com', phone: '010-9915-5974' },
   ];
