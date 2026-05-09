@@ -722,7 +722,7 @@ export default function AdminDashboard() {
                                   onClick={(e) => { e.stopPropagation(); handleQuoteAmountUpdate(order.id); }}
                                   className="px-3 py-1.5 bg-primary text-white rounded-lg text-[10px] font-black hover:bg-primary-dark transition-all shrink-0"
                                 >
-                                  전송
+                                  금액입력
                                 </button>
                               ) : order.status === 'order_requested' ? (
                                 <button
