@@ -16,11 +16,16 @@ const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
 // ─── 백업용 Google Apps Script 설정 ───────────────────────────
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJULS6NUUGQIjlwXxhzld9LfwMo_22evJbjwrDtE697Oze5iV1rog/exec";
 // ─────────────────────────────────────────────────────────────────
-
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
+
+  useEffect(() => {
+    if (EMAILJS_PUBLIC_KEY) {
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+  }, []);
 
   const clientId = (searchParams.get('client') || 'boryung').toLowerCase();
   const shouldReset = searchParams.get('reset') === 'true';
@@ -264,26 +269,28 @@ export default function OrderPage() {
       return;
     }
 
+    // [DEBUG] 전송 결과 추적
+    let gasStatus = '대기';
+    let emailjsNgsStatus = '대기';
+    let emailjsCustomerStatus = '대기';
+
     setIsStatementSubmitting(true);
     try {
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       const emailParams = {
-        order_title: `[거래명세서 발행 요청] ${clientName}_${ordererName}`,
+        order_title: `[거래명세서 요청] ${clientName}_${ordererName}`,
         order_type_text: '거래명세서 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n발송 이메일: ${taxEmail}\n\n▶ [명세서 확인]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+          return `- ${o.id} / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
         }).join('\n')}`,
         from_name: ordererName,
         contact_number: ordererPhone,
         ngs_email: NGS_EMAIL,
       };
 
-      // [DEBUG] 전송 정보 확인 알림
-      console.log('Sending statement to:', taxEmail);
-      
-      // ─── 1. GAS 백업/기본 발송 (신뢰도 높음) ───
+      // ─── 1. GAS 발송 ───
       if (SCRIPT_URL) {
         try {
           await fetch(SCRIPT_URL, {
@@ -292,9 +299,10 @@ export default function OrderPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(emailParams)
           });
-          console.log('✅ GAS 발송 시도 완료');
+          gasStatus = '✅ 성공';
         } catch (e) {
-          console.error('❌ GAS 발송 실패:', e);
+          gasStatus = '❌ 실패';
+          console.error('GAS failed:', e);
         }
       }
 
@@ -305,11 +313,15 @@ export default function OrderPage() {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
             info_label: '요청자 정보',
-            greeting: '관리자님, 안녕하세요. 거래명세서 발행 요청이 접수되었습니다.',
+            greeting: '거래명세서 발행 요청이 접수되었습니다.',
             to_email: NGS_EMAIL,
             reply_to: taxEmail,
           }, EMAILJS_PUBLIC_KEY);
-        } catch (e) { console.error('NGS EmailJS failed:', e); }
+          emailjsNgsStatus = '✅ 성공';
+        } catch (e) { 
+          emailjsNgsStatus = '❌ 실패';
+          console.error('NGS EmailJS failed:', e); 
+        }
         
         await new Promise(r => setTimeout(r, 1000));
 
@@ -319,21 +331,26 @@ export default function OrderPage() {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
               ...emailParams,
               info_label: '공급자 정보',
-              greeting: '담당자님, 안녕하세요. 요청하신 거래명세서 내역입니다.',
+              greeting: '요청하신 거래명세서 내역입니다.',
               orderer_name: '나혜원',
               orderer_phone: '010-9915-5974',
               orderer_email: 'newgenes@newgenesci.com',
               to_email: taxEmail,
               reply_to: NGS_EMAIL,
             }, EMAILJS_PUBLIC_KEY);
-          } catch (e) { console.error('Customer EmailJS failed:', e); }
+            emailjsCustomerStatus = '✅ 성공';
+          } catch (e) { 
+            emailjsCustomerStatus = '❌ 실패';
+            console.error('Customer EmailJS failed:', e); 
+          }
         }
       } else {
-        console.warn('⚠️ EmailJS 설정(VITE_...)이 누락되어 GAS로만 전송되었습니다.');
+        emailjsNgsStatus = '⚠️ 설정누락';
+        emailjsCustomerStatus = '⚠️ 설정누락';
       }
 
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 발행 요청이 완료되었습니다!\n받는 메일: ${taxEmail}\n\n※ 1~2분 뒤에도 오지 않는다면 스팸함도 확인해 주세요.`);
+      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n[전송 결과 리포트]\n- 구글서버: ${gasStatus}\n- 본사알림: ${emailjsNgsStatus}\n- 고객발송: ${emailjsCustomerStatus}\n\n받는 메일: ${taxEmail}`);
       setSelectedOrderIds([]); 
     } catch (error) {
       console.error('Statement error:', error);
