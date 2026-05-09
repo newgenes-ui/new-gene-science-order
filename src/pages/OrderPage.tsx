@@ -281,17 +281,24 @@ export default function OrderPage() {
       const emailParams = {
         order_title: `[거래명세서 발행 요청] ${clientName}`,
         order_type_text: '거래명세서 발행 요청',
-        detail_label: '요청 주문/문의 내역',
+        detail_label: '명세서 요청 내역',
+        order_id: selectedOrderIds[0],
+        order_date: new Date().toISOString().split('T')[0],
+        client_name: clientName,
+        orderer_name: ordererName,
+        orderer_phone: ordererPhone,
+        orderer_email: taxEmail,
         items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
+          return `- ${o.id} / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
         }).join('\n')}`,
         from_name: ordererName,
         contact_number: ordererPhone,
+        reply_to: taxEmail,
         ngs_email: NGS_EMAIL,
       };
 
-      // ─── 1. GAS 발송 ───
+      // ─── 1. GAS 발송 (백업용) ───
       if (SCRIPT_URL) {
         try {
           await fetch(SCRIPT_URL, {
@@ -301,51 +308,28 @@ export default function OrderPage() {
             body: JSON.stringify(emailParams)
           });
           gasStatus = '✅ 성공';
-        } catch (e) {
-          gasStatus = '❌ 실패';
-        }
+        } catch (e) { gasStatus = '❌ 실패'; }
       }
 
-      // ─── 2. EmailJS 발송 ───
+      // ─── 2. EmailJS 발송 (고객에게만 전송) ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // 본사 발송 (제목에 [본사알림] 추가)
-        try {
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            order_title: `[본사알림] ${emailParams.order_title}`,
-            info_label: '요청자 정보',
-            greeting: '관리자님, 안녕하세요. 거래명세서 발행 요청이 접수되었습니다.',
-            to_email: NGS_EMAIL,
-            reply_to: taxEmail,
-          }, EMAILJS_PUBLIC_KEY);
-          emailjsNgsStatus = '✅ 성공';
-        } catch (e) { emailjsNgsStatus = '❌ 실패'; }
-        
-        await new Promise(r => setTimeout(r, 1000));
-
-        // 고객 발송
         if (taxEmail && taxEmail.includes('@')) {
           try {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
               ...emailParams,
-              info_label: '공급자 정보',
-              greeting: '담당자님, 안녕하세요. 요청하신 거래명세서 내역입니다.',
-              orderer_name: '나혜원',
-              orderer_phone: '010-9915-5974',
-              orderer_email: 'newgenes@newgenesci.com',
               to_email: taxEmail,
-              reply_to: NGS_EMAIL,
             }, EMAILJS_PUBLIC_KEY);
             emailjsCustomerStatus = '✅ 성공';
           } catch (e) { emailjsCustomerStatus = '❌ 실패'; }
         }
+        emailjsNgsStatus = '➖ 제외'; // 본사 발송은 요청에 따라 제외
       } else {
         emailjsNgsStatus = '⚠️ 설정누락';
         emailjsCustomerStatus = '⚠️ 설정누락';
       }
 
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n[전송 결과 리포트]\n- 구글서버: ${gasStatus}\n- 본사알림: ${emailjsNgsStatus}\n- 고객발송: ${emailjsCustomerStatus}\n\n받는 메일: ${taxEmail}`);
+      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n[전송 결과 리포트]\n- 구글서버: ${gasStatus}\n- 고객발송: ${emailjsCustomerStatus}\n\n받는 메일: ${taxEmail}`);
       setSelectedOrderIds([]); 
     } catch (error) {
       alert('요청 처리 중 오류가 발생했습니다.');
