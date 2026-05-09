@@ -362,10 +362,10 @@ export default function OrderPage() {
       // 2. ID를 기준으로 중복을 제거하며 병합 (로컬 최신 데이터 우선)
       const mergedMap = new Map<string, Order>();
       
-      // 서버 데이터 먼저 담기
-      remoteOrders.forEach(o => mergedMap.set(o.id, o));
-      // 로컬 데이터로 덮어쓰거나 추가 (로컬에만 있는 최신 내역 반영)
+      // 로컬 데이터를 먼저 담기 (오프라인/에러로 서버에 없는 데이터 보존)
       localOrders.forEach(o => mergedMap.set(o.id, o));
+      // 서버 데이터로 덮어쓰기 (관리자가 수정한 최신 정보 우선 반영)
+      remoteOrders.forEach(o => mergedMap.set(o.id, o));
       
       const all = Array.from(mergedMap.values());
 
