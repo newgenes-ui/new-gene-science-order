@@ -705,11 +705,11 @@ export default function OrderPage() {
             >
               {/* Orderer Info */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
                     <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
                   </h2>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 w-full md:w-auto">
                     <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
                     <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                       {quickSelectOrderers.map(person => (
@@ -798,11 +798,11 @@ export default function OrderPage() {
               <section className="space-y-6">
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
+                    <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
                       <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
                     </h2>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
                       <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
                       <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                         {quickSelectOrderers.map(person => (
