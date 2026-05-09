@@ -268,7 +268,7 @@ export default function OrderPage() {
     try {
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       const emailParams = {
-        order_title: `[거래명세서 발행 요청] ${clientName}`,
+        order_title: `[거래명세서 발행 요청] ${clientName}_${ordererName}`,
         order_type_text: '거래명세서 발행 요청',
         detail_label: '요청 주문/문의 내역',
         items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
@@ -280,56 +280,59 @@ export default function OrderPage() {
         ngs_email: NGS_EMAIL,
       };
 
+      // ─── 1. 본사(NGS) 발송 ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // 1. 본사(NGS_EMAIL) 발송
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          ...emailParams,
-          info_label: '요청자 정보',
-          greeting: '관리자님, 안녕하세요. 거래명세서 발행 요청이 접수되었습니다.',
-          to_email: NGS_EMAIL,
-          reply_to: taxEmail,
-        }, EMAILJS_PUBLIC_KEY);
-
-        // EmailJS API 연속 호출 시 누락 방지를 위한 1초 대기
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 2. 고객(taxEmail) 발송
-        if (taxEmail && taxEmail.includes('@')) {
+        try {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            info_label: '공급자 정보',
-            greeting: '담당자님, 안녕하세요. 요청하신 거래명세서 내역입니다.',
-            orderer_name: '나혜원',
-            orderer_phone: '010-9915-5974',
-            orderer_email: 'newgenes@newgenesci.com',
-            to_email: taxEmail,
-            reply_to: NGS_EMAIL,
+            info_label: '요청자 정보',
+            greeting: '관리자님, 안녕하세요. 거래명세서 발행 요청이 접수되었습니다.',
+            to_email: NGS_EMAIL,
+            reply_to: taxEmail,
           }, EMAILJS_PUBLIC_KEY);
+        } catch (e) {
+          console.error('NGS email failed:', e);
+        }
+        
+        await new Promise(r => setTimeout(r, 800));
+
+        // ─── 2. 고객(김기환 님) 발송 ───
+        if (taxEmail && taxEmail.includes('@')) {
+          try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+              ...emailParams,
+              info_label: '공급자 정보',
+              greeting: '담당자님, 안녕하세요. 요청하신 거래명세서 내역입니다.',
+              orderer_name: '나혜원',
+              orderer_phone: '010-9915-5974',
+              orderer_email: 'newgenes@newgenesci.com',
+              to_email: taxEmail,
+              reply_to: NGS_EMAIL,
+            }, EMAILJS_PUBLIC_KEY);
+          } catch (e) {
+            console.error('Customer email failed:', e);
+          }
         }
       }
 
-      // ─── Google Apps Script 백업 발송 ───
+      // ─── 3. GAS 백업 발송 ───
       if (SCRIPT_URL) {
         try {
-          fetch(SCRIPT_URL, {
+          await fetch(SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(emailParams)
           });
-          console.log('✅ GAS 백업 발송 요청 완료');
-        } catch (e) {
-          console.error('❌ GAS 백업 발송 실패:', e);
-        }
+        } catch (e) {}
       }
-      // ───────────────────────────────────────────────
 
       markInvoiceRequested(selectedOrderIds);
-      alert('거래명세서 발행 요청이 완료되었습니다.');
-      setSelectedOrderIds([]); // 요청 완료 후 빈 체크박스로 초기화
+      alert('거래명세서 발행 요청이 완료되었습니다.\n잠시 후 이메일을 확인해 주세요.');
+      setSelectedOrderIds([]); 
     } catch (error) {
-      console.error('Statement request error:', error);
-      alert('요청 중 오류가 발생했습니다.');
+      console.error('Statement error:', error);
+      alert('요청 처리 중 오류가 발생했습니다.');
     } finally {
       setIsStatementSubmitting(false);
     }
