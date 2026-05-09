@@ -362,7 +362,8 @@ export default function OrderPage() {
   };
 
 
-  // 주문자 성함에 따른 거래명세서 이메일 자동 매칭 (직원 전용 우선순위)
+  // [자동 채우기 해제] 사용자 요청에 따라 초기에는 비워두고 체크박스 클릭 시에만 채웁니다.
+  /*
   useEffect(() => {
     const staff = quickSelectOrderers.find(s => s.name === ordererName);
     if (staff) {
@@ -370,12 +371,12 @@ export default function OrderPage() {
     }
   }, [ordererName]);
 
-  // 초기 이메일 설정
   useEffect(() => {
     if (ordererEmail && !taxEmail) {
       setTaxEmail(ordererEmail);
     }
   }, [ordererEmail]);
+  */
 
   // 발주 내역 로드 (베르티스 전용)
   const loadUserOrders = async () => {
