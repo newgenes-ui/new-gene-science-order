@@ -277,12 +277,11 @@ export default function OrderPage() {
 
     setIsStatementSubmitting(true);
     try {
-      const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       const emailParams = {
         order_title: `[거래명세서 발행 요청] ${clientName}`,
         order_type_text: '거래명세서 발행 요청',
         detail_label: '요청 주문/문의 내역',
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄하기 (PDF 저장)]\n🔗 ${viewerUrl}\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n※ 거래명세서 상세 내역은 공식 주문 시스템의 [주문내역] 탭에서 확인 및 인쇄하실 수 있습니다.\n\n--------------------------\n[요약 내역]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
           return `- ${o.id} (${o.orderDate}) / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
         }).join('\n')}`,
