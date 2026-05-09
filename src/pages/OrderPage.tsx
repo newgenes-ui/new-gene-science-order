@@ -22,7 +22,7 @@ export default function OrderPage() {
   const navigate = useNavigate();
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
-  const clientId = (searchParams.get('client') || 'demo').toLowerCase();
+  const clientId = (searchParams.get('client') || 'boryung').toLowerCase();
   const shouldReset = searchParams.get('reset') === 'true';
 
   useEffect(() => {
@@ -54,9 +54,9 @@ export default function OrderPage() {
     }
   };
 
-  // clientData를 찾되, 없을 경우 마지막(데모) 데이터 사용
+  // clientData를 찾되, 없을 경우 (주)보령제약을 기본으로 사용
   const clientData = useMemo(() => {
-    return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
+    return CLIENTS.find(c => c.id === clientId) || CLIENTS.find(c => c.id === 'boryung') || CLIENTS[0];
   }, [clientId]);
 
   // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용 (항상 활성화)
@@ -369,10 +369,12 @@ export default function OrderPage() {
       
       const all = Array.from(mergedMap.values());
 
-      // 3. 업체별 필터링
+      // 3. 업체별 필터링 (데모나 보령제약에서는 모든 내역 조회 가능하도록 완화)
       const visibleOrders = all.filter(o => 
-        o.clientId === clientId || 
-        (clientId === 'boryung' && (o.clientId === 'bertis' || o.clientId === 'demo'))
+        clientId === 'demo' || 
+        clientId === 'boryung' ||
+        o.clientId === clientId ||
+        o.clientId === 'demo'
       );
       
       setUserOrders(visibleOrders);

@@ -19,9 +19,6 @@ export default function PaymentPage() {
   useEffect(() => {
     if (!order) {
       navigate('/');
-    } else if (!confirmed) {
-      // 주문 완료(결제 대기) 진입 시 꽃가루 및 문구 효과
-      triggerCelebration();
     }
   }, [order, navigate, confirmed]);
 
@@ -55,29 +52,38 @@ export default function PaymentPage() {
   if (confirmed) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-0 bg-white/20 backdrop-blur-3xl" />
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-[40px] p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
+          className="bg-white/90 backdrop-blur-xl rounded-[40px] p-10 md:p-16 max-w-lg w-full text-center shadow-2xl space-y-8 relative z-10 border border-white/50"
         >
-          <div className="w-24 h-24 bg-primary/10 rounded-[40px] flex items-center justify-center mx-auto mb-2">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="w-24 h-24 bg-primary/10 rounded-[35px] flex items-center justify-center mx-auto mb-2"
+          >
             <CheckCircle2 className="w-12 h-12 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <p className="text-primary font-extrabold text-2xl tracking-tight">입금 확인 요청 완료</p>
-            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
-              입금 확인 후 빠르게 처리해 드리겠습니다.<br />
-              주문번호: <span className="font-bold text-primary">{orderId}</span>
+          </motion.div>
+          <div className="space-y-3">
+            <p className="text-primary font-black text-4xl tracking-tighter drop-shadow-sm">감사합니다!</p>
+            <p className="text-slate-500 text-base md:text-lg mt-4 leading-relaxed font-bold">
+              입금 확인 요청이 정상적으로 완료되었습니다.<br />
+              담당자가 확인 후 빠르게 처리해 드리겠습니다! 👋
             </p>
           </div>
-          <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-1.5 border border-slate-100">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">주문 요약</p>
-            <p className="text-sm font-semibold text-slate-700">{order.clientName} | {order.ordererName}</p>
-            <p className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
+          <div className="bg-slate-50/50 rounded-3xl p-6 text-left space-y-2 border border-slate-100">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">주문 요약</p>
+            <p className="text-sm font-bold text-slate-700">{order.clientName} | {order.ordererName}</p>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-400">주문번호: {orderId}</span>
+              <p className="text-2xl font-black text-primary">₩{order.totalAmount.toLocaleString()}</p>
+            </div>
           </div>
           <button
             onClick={() => navigate(`/?client=${order.clientId}`)}
-            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg hover:bg-primary-dark transition-all"
+            className="w-full py-5 bg-primary text-white rounded-3xl font-black text-lg shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
           >
             메인으로 돌아가기
           </button>
