@@ -1146,7 +1146,7 @@ export default function OrderPage() {
                                           e.stopPropagation(); // 접기 방지
                                           if (e.target.checked) {
                                             setSelectedOrderIds(prev => [...prev, order.id]);
-                                            if (!taxEmail && order.ordererEmail) {
+                                            if (order.ordererEmail) {
                                               setTaxEmail(order.ordererEmail);
                                             }
                                           } else {
@@ -1248,7 +1248,7 @@ export default function OrderPage() {
                                       e.stopPropagation();
                                       if (e.target.checked) {
                                         setSelectedOrderIds(prev => [...prev, order.id]);
-                                        if (!taxEmail && order.ordererEmail) {
+                                        if (order.ordererEmail) {
                                           setTaxEmail(order.ordererEmail);
                                         }
                                       } else {
