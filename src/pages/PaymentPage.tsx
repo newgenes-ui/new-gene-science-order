@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Copy, MessageSquare, CreditCard, Clock, XCircle } from 'lucide-react';
@@ -13,7 +12,6 @@ export default function PaymentPage() {
   const [copied, setCopied] = useState(false);
   const [depositName, setDepositName] = useState('');
   const [confirmed, setConfirmed] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
 
   const orders = getOrders();
   const order = orders.find(o => o.id === orderId);
@@ -43,45 +41,8 @@ export default function PaymentPage() {
     }
     updateOrderStatus(orderId, 'paid');
     setConfirmed(true);
-    triggerCelebration();
   };
 
-  // 3번의 꽃가루 연출 및 문구 제어
-  const triggerCelebration = () => {
-    const burst = () => {
-      confetti({
-        particleCount: 150,
-        scalar: 1.6,
-        angle: 60,
-        spread: 70,
-        origin: { x: 0, y: 0.8 },
-        zIndex: 10000
-      });
-      confetti({
-        particleCount: 150,
-        scalar: 1.6,
-        angle: 120,
-        spread: 70,
-        origin: { x: 1, y: 0.8 },
-        zIndex: 10000
-      });
-    };
-
-    // 1회차: 문구 표시 + 꽃가루
-    setShowCelebration(true);
-    burst();
-
-    // 2회차: 1초 후 꽃가루 + 문구 제거 시작
-    setTimeout(() => {
-      burst();
-      setShowCelebration(false); // 2회차 발사 시 문구 사라짐
-    }, 1000);
-
-    // 3회차: 2초 후 마지막 꽃가루
-    setTimeout(() => {
-      burst();
-    }, 2000);
-  };
 
   const handleCancelOrder = () => {
     if (window.confirm('주문을 취소하시겠습니까?')) {
@@ -335,21 +296,6 @@ export default function PaymentPage() {
         </motion.div>
       </div>
 
-      <AnimatePresence>
-        {showCelebration && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.5 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
-          >
-            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-8 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 mx-6">
-              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-xs md:text-sm whitespace-nowrap">정상적으로 처리되었습니다.</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

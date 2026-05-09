@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, FormEvent } from 'react';
-import confetti from 'canvas-confetti';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -60,9 +59,16 @@ export default function OrderPage() {
     return CLIENTS.find(c => c.id === clientId) || CLIENTS[CLIENTS.length - 1];
   }, [clientId]);
 
-  // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용
-  const isSpecialClient = clientId !== 'demo';
-  const isBertis = isSpecialClient; 
+  // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용 (항상 활성화)
+  const isSpecialClient = true;
+  const isBertis = true; 
+
+  // 빠른 선택을 위한 주문자 정보 리스트
+  const quickSelectOrderers = [
+    { name: '김기환', email: 'jason.kim@newgenesci.com', phone: '010-5882-4997' },
+    { name: '양유지', email: 'stella.yang@newgenesci.com', phone: '010-7169-8805' },
+    { name: '나혜원', email: 'ngs.202403@gmail.com', phone: '010-9915-5974' },
+  ];
 
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
@@ -140,12 +146,6 @@ export default function OrderPage() {
       }
       
       alert('발주 요청이 완료되었습니다. 감사합니다!');
-      triggerCelebration();
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
@@ -201,7 +201,6 @@ export default function OrderPage() {
   const [isStatementSubmitting, setIsStatementSubmitting] = useState(false);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
   const [historyTab, setHistoryTab] = useState<'order' | 'quote'>('order');
   const [dateRange, setDateRange] = useState({
     start: (() => {
@@ -336,6 +335,14 @@ export default function OrderPage() {
     }
   };
 
+
+  // 주문자 성함에 따른 거래명세서 이메일 자동 매칭 (직원 전용 우선순위)
+  useEffect(() => {
+    const staff = quickSelectOrderers.find(s => s.name === ordererName);
+    if (staff) {
+      setTaxEmail(staff.email);
+    }
+  }, [ordererName]);
 
   // 초기 이메일 설정
   useEffect(() => {
@@ -560,7 +567,6 @@ export default function OrderPage() {
 
     if (order.orderType === 'quote') {
       setIsQuoteSuccess(true);
-      triggerCelebration();
       // 폼 초기화
       setOtherRequest('');
       setQuantities({});
@@ -572,63 +578,32 @@ export default function OrderPage() {
   const productsByCategory = (cat: string) =>
     filteredProducts.filter(p => p.category === cat);
 
-  // 3번의 꽃가루 연출 및 문구 제어
-  const triggerCelebration = () => {
-    const burst = () => {
-      confetti({ 
-        particleCount: 150, 
-        scalar: 1.6, 
-        angle: 60,
-        spread: 70,
-        origin: { x: 0, y: 0.8 },
-        zIndex: 10000
-      });
-      confetti({ 
-        particleCount: 150, 
-        scalar: 1.6, 
-        angle: 120,
-        spread: 70,
-        origin: { x: 1, y: 0.8 },
-        zIndex: 10000
-      });
-    };
-
-    // 1회차: 문구 표시 + 꽃가루
-    setShowCelebration(true);
-    burst();
-
-    // 2회차: 1초 후 꽃가루 + 문구 제거 시작
-    setTimeout(() => {
-      burst();
-      setShowCelebration(false); // 2회차 발사 시 문구 사라짐
-    }, 1000);
-
-    // 3회차: 2초 후 마지막 꽃가루
-    setTimeout(() => {
-      burst();
-    }, 2000);
-  };
-
   useEffect(() => {
-    // 기존 useEffect 제거 (triggerCelebration 함수로 대체됨)
+    // 기존 useEffect 제거
   }, []);
 
   if (isQuoteSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-0 bg-white/20 backdrop-blur-3xl" />
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl space-y-6"
+          className="bg-white/90 backdrop-blur-xl rounded-[40px] p-10 md:p-16 max-w-lg w-full text-center shadow-2xl space-y-8 relative z-10 border border-white/50"
         >
-          <div className="w-24 h-24 bg-primary/10 rounded-[40px] flex items-center justify-center mx-auto mb-2">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="w-24 h-24 bg-primary/10 rounded-[35px] flex items-center justify-center mx-auto mb-2"
+          >
             <CheckCircle2 className="w-12 h-12 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <p className="text-primary font-extrabold text-2xl tracking-tight">견적 문의 접수 완료</p>
-            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
-              담당자가 확인 후 빠르게 연락드리겠습니다.<br />
-              잠시만 기다려 주세요! 👋
+          </motion.div>
+          <div className="space-y-3">
+            <p className="text-primary font-black text-4xl tracking-tighter drop-shadow-sm">감사합니다!</p>
+            <p className="text-slate-500 text-base md:text-lg mt-4 leading-relaxed font-bold">
+              견적 문의가 정상적으로 접수되었습니다.<br />
+              담당자가 확인 후 빠르게 연락드리겠습니다! 👋
             </p>
           </div>
           <button
@@ -636,27 +611,12 @@ export default function OrderPage() {
               setIsQuoteSuccess(false);
               setActiveTab('order');
             }}
-            className="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg hover:bg-primary-dark transition-all"
+            className="w-full py-5 bg-primary text-white rounded-3xl font-black text-lg shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
           >
             메인으로 돌아가기
           </button>
         </motion.div>
 
-        <AnimatePresence>
-          {showCelebration && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.5 }}
-              className="fixed inset-0 z-[10000] flex items-center justify-center pointer-events-none"
-            >
-              <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-16 md:py-10 rounded-[40px] md:rounded-[60px] shadow-2xl border border-primary/20 flex flex-col items-center gap-2 md:gap-4 mx-6">
-                <h2 className="text-4xl md:text-7xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-                <p className="text-slate-500 font-bold text-sm md:text-xl whitespace-nowrap">요청이 정상적으로 완료되었습니다.</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   }
@@ -737,7 +697,7 @@ export default function OrderPage() {
             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <CreditCard className="w-4 h-4" />
-            {isSpecialClient ? '내역/결제' : '결제하기'}
+            내역/결제
           </button>
         </div>
 
@@ -753,38 +713,60 @@ export default function OrderPage() {
             >
               {/* Orderer Info */}
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
-                <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                  <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {!isBertis && (
-                    <div>
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
-                      <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary">
+                    <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                      {quickSelectOrderers.map(person => (
+                        <button
+                          key={person.name}
+                          type="button"
+                          onClick={() => {
+                            setOrdererName(person.name);
+                            setOrdererEmail(person.email);
+                            setOrdererPhone(person.phone);
+                          }}
+                          className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                        >
+                          {person.name}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrdererName('');
+                          setOrdererEmail('');
+                          setOrdererPhone('');
+                        }}
+                        className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
+                      >
+                        초기화
+                      </button>
                     </div>
-                  )}
-                  <div className={`flex flex-wrap items-end gap-x-12 gap-y-6 ${isBertis ? 'sm:col-span-2' : ''}`}>
-                    <div className="min-w-[140px]">
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+                    <div className="min-w-[120px]">
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
-                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
-                    {(!isBertis || isBertis) && (
-                      <div className="flex-1 min-w-[280px]">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                        <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                      </div>
-                    )}
-                    {isBertis && (
-                      <div className="min-w-[180px]">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                        <input 
-                          value={ordererPhone} 
-                          onChange={e => setOrdererPhone(e.target.value)} 
-                          placeholder="000-0000-0000" 
-                          className={`w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${ordererPhone === '000-0000-0000' ? 'text-slate-300' : 'text-slate-800'}`} 
-                        />
-                      </div>
-                    )}
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
+                      <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
+                    <div className="min-w-[160px]">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
+                      <input 
+                        value={ordererPhone} 
+                        onChange={e => setOrdererPhone(e.target.value)} 
+                        placeholder="010-0000-0000" 
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-800" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -824,39 +806,61 @@ export default function OrderPage() {
               <section className="space-y-6">
 
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
-                  <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary mb-4">
-                    <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {!isSpecialClient && (
-                      <div>
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">기관명</label>
-                        <input value={clientName} onChange={e => setClientName(e.target.value)} className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary">
+                      <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
+                    </h2>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                        {quickSelectOrderers.map(person => (
+                          <button
+                            key={person.name}
+                            type="button"
+                            onClick={() => {
+                              setOrdererName(person.name);
+                              setOrdererEmail(person.email);
+                              setOrdererPhone(person.phone);
+                            }}
+                            className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                          >
+                            {person.name}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOrdererName('');
+                            setOrdererEmail('');
+                            setOrdererPhone('');
+                          }}
+                          className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
+                        >
+                          초기화
+                        </button>
                       </div>
-                    )}
-                  <div className={`flex flex-wrap items-end gap-x-12 gap-y-6 ${isBertis ? 'sm:col-span-2' : ''}`}>
-                    <div className="min-w-[140px]">
-                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
-                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함을 입력하세요" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                     </div>
-                    {(!isBertis || isBertis) && (
-                      <div className="flex-1 min-w-[280px]">
+                  </div>
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+                      <div className="min-w-[120px]">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
+                        <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                      <div className="flex-1 min-w-[200px]">
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
                         <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
                       </div>
-                    )}
-                    {isBertis && (
-                      <div className="min-w-[180px]">
+                      <div className="min-w-[160px]">
                         <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
                         <input 
                           value={ordererPhone} 
                           onChange={e => setOrdererPhone(e.target.value)} 
-                          placeholder="000-0000-0000" 
-                          className={`w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all ${ordererPhone === '000-0000-0000' ? 'text-slate-300' : 'text-slate-800'}`} 
+                          placeholder="010-0000-0000" 
+                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-800" 
                         />
                       </div>
-                    )}
-                  </div>
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1551,35 +1555,6 @@ export default function OrderPage() {
                 <p className="text-xs text-slate-400 mt-1">이메일 발송 및 내역 등록 중입니다...</p>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
-        {showCelebration && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.5 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/10 backdrop-blur-sm"
-          >
-            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-10 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4 mx-6 text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle2 className="w-10 h-10 text-primary" />
-              </div>
-              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-xs md:text-sm">요청이 정상적으로 완료되었습니다.</p>
-              
-              <button 
-                onClick={() => {
-                  setShowCelebration(false);
-                  setIsQuoteSuccess(false);
-                  setActiveTab('order');
-                }}
-                className="mt-4 px-8 py-3 bg-primary text-white rounded-2xl font-black shadow-lg shadow-green-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
-              >
-                메인으로 돌아가기
-              </button>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
