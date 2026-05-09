@@ -1086,10 +1086,10 @@ export default function OrderPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 justify-end flex-1">
-                                  <div className="flex items-center gap-2 mr-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                                    <span className="text-[11px] font-black text-slate-700">{summaryText}</span>
-                                    <span className="text-[11px] font-bold text-slate-400">{totalQty}개</span>
-                                    <span className="text-[11px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0 max-w-[200px] md:max-w-none">
+                                    <span className="text-[10px] font-black text-slate-700 truncate">{summaryText}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>
+                                    <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
 
                                   <div className="shrink-0 flex items-center gap-3">
@@ -1181,9 +1181,10 @@ export default function OrderPage() {
                               <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
                                 {/* 접기 모드에서 견적 금액 표시 (품목이 없어도 금액만 입력된 경우 표시) */}
                                 {dTotal > 0 && (
-                                  <div className="flex items-center gap-2 mr-2 bg-white px-3 py-1.5 rounded-xl border border-primary/20 shadow-sm shrink-0">
-                                    {totalQty > 0 && <span className="text-[11px] font-bold text-slate-400">{totalQty}개</span>}
-                                    <span className="text-[11px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0 max-w-[200px] md:max-w-none">
+                                    <span className="text-[10px] font-black text-slate-800 truncate">{summaryText}</span>
+                                    {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
+                                    <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
                                 )}
 
