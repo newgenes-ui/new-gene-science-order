@@ -362,10 +362,10 @@ export default function OrderPage() {
       // 2. ID를 기준으로 중복을 제거하며 병합 (로컬 최신 데이터 우선)
       const mergedMap = new Map<string, Order>();
       
-      // 로컬 데이터를 먼저 담기 (오프라인/에러로 서버에 없는 데이터 보존)
-      localOrders.forEach(o => mergedMap.set(o.id, o));
-      // 서버 데이터로 덮어쓰기 (관리자가 수정한 최신 정보 우선 반영)
+      // 서버 데이터를 먼저 담기
       remoteOrders.forEach(o => mergedMap.set(o.id, o));
+      // 로컬 데이터로 덮어쓰기 (같은 브라우저에서의 최신 수정본 우선)
+      localOrders.forEach(o => mergedMap.set(o.id, o));
       
       const all = Array.from(mergedMap.values());
 
@@ -1147,10 +1147,10 @@ export default function OrderPage() {
                               </div>
 
                               <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
-                                {/* 접기 모드에서 수량/총금액 표시 */}
-                                {(order.items && order.items.length > 0 && dTotal > 0) && (
-                                  <div className="flex items-center gap-2 mr-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                                    <span className="text-[11px] font-bold text-slate-400">{totalQty}개</span>
+                                {/* 접기 모드에서 견적 금액 표시 (품목이 없어도 금액만 입력된 경우 표시) */}
+                                {dTotal > 0 && (
+                                  <div className="flex items-center gap-2 mr-2 bg-white px-3 py-1.5 rounded-xl border border-primary/20 shadow-sm shrink-0">
+                                    {totalQty > 0 && <span className="text-[11px] font-bold text-slate-400">{totalQty}개</span>}
                                     <span className="text-[11px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
                                   </div>
                                 )}
@@ -1223,6 +1223,7 @@ export default function OrderPage() {
                                   ))}
                                 </div>
                                 
+                                {/* 펼침 모드에서 견적 금액 표시 */}
                                 {dTotal > 0 && (
                                   <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
                                     <div className="text-right flex-1">
@@ -1230,8 +1231,8 @@ export default function OrderPage() {
                                         <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
                                         <span>부가세: ₩{dVat.toLocaleString()}</span>
                                       </div>
-                                      <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
-                                      <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
+                                      <p className="text-[11px] text-slate-400 font-bold">안내된 견적 금액 (VAT 포함)</p>
+                                      <p className="text-xl font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
                                     </div>
                                   </div>
                                 )}
