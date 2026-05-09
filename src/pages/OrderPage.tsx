@@ -568,15 +568,14 @@ export default function OrderPage() {
     saveOrder(order);
     setIsSubmitting(false);
 
+    // 견적/발주 상관없이 "감사합니다" 화면 표시
+    setShowCelebration(true);
     if (order.orderType === 'quote') {
       setIsQuoteSuccess(true);
-      setShowCelebration(true);
-      // 폼 초기화
-      setOtherRequest('');
-      setQuantities({});
-    } else {
-      navigate(`/payment?orderId=${order.id}`);
     }
+    // 폼 공통 초기화
+    setOtherRequest('');
+    setQuantities({});
   };
 
   const productsByCategory = (cat: string) =>
