@@ -1208,7 +1208,7 @@ export default function OrderPage() {
                                     onClick={async (e) => {
                                       e.stopPropagation();
                                       if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
-                                        const success = await updateOrderStatus(order.id, 'order_requested');
+                                        const success = await convertQuoteToOrder(order.id);
                                         if (success) {
                                           alert('발주 요청이 완료되었습니다.');
                                           loadUserOrders(); // 목록 새로고침

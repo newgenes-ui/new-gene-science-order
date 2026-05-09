@@ -106,13 +106,17 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx !== -1) {
     orders[idx].status = 'order_requested';
+    orders[idx].orderType = 'order'; // 발주 내역으로 이동시키기 위해 orderType 변경
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }
   
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderInSupabase(orderId, { status: 'order_requested' });
+      await updateOrderInSupabase(orderId, { 
+        status: 'order_requested',
+        order_type: 'order' 
+      });
     }
     return true;
   } catch (e) {
