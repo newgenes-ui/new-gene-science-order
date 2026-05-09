@@ -1078,7 +1078,9 @@ export default function OrderPage() {
                                 <div className="flex items-center gap-3">
                                   <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
-                                    <span className="text-sm font-black text-slate-700 tracking-tight">{order.id}</span>
+                                    <span className="text-sm font-black text-slate-700 tracking-tight">
+                                      {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
+                                    </span>
                                     {order.ordererName && (
                                       <p className="text-[11px] font-bold text-slate-400">주문자: {order.ordererName}</p>
                                     )}
