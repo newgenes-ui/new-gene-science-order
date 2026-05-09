@@ -62,12 +62,41 @@ export default function AdminDashboard() {
       const supabaseOrders = await getOrdersFromSupabase();
       const localOrders = getOrders();
 
-      // 로컬 데이터를 먼저 담기 (오프라인/에러로 서버에 없는 데이터 보존)
+      // 로컬 데이터를 먼저 담기
       localOrders.forEach(o => mergedMap.set(o.id, o));
-      // 서버 데이터로 덮어쓰기 (가장 최신의 서버 정보 우선 반영)
-      supabaseOrders.forEach(o => {
-        const existing = mergedMap.get(o.id);
-        mergedMap.set(o.id, { ...existing, ...o });
+      
+      // 서버 데이터를 병합하되, "진행도가 더 높은 상태"와 "더 큰 금액"을 유지하는 스마트 병합
+      const statusRank: Record<string, number> = {
+        'pending': 1,
+        'payment_waiting': 2,
+        'processing': 3,
+        'order_requested': 4,
+        'shipped': 5,
+        'cancelled': 6
+      };
+
+      supabaseOrders.forEach(remote => {
+        const local = mergedMap.get(remote.id);
+        if (!local) {
+          mergedMap.set(remote.id, remote);
+        } else {
+          const rRank = statusRank[remote.status] || 0;
+          const lRank = statusRank[local.status] || 0;
+          
+          const bestStatus = rRank >= lRank ? remote.status : local.status;
+          const bestTotal = (remote.totalAmount || 0) > 0 ? remote.totalAmount : local.totalAmount;
+          const bestQuote = (remote.quoteAmount || 0) > 0 ? remote.quoteAmount : local.quoteAmount;
+          const bestItems = (remote.items && remote.items.length > 0) ? remote.items : local.items;
+
+          mergedMap.set(remote.id, {
+            ...local,
+            ...remote,
+            status: bestStatus,
+            totalAmount: bestTotal,
+            quoteAmount: bestQuote,
+            items: bestItems
+          });
+        }
       });
 
       const merged = Array.from(mergedMap.values());
