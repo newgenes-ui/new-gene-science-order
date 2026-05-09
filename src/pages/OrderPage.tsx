@@ -340,7 +340,7 @@ export default function OrderPage() {
       }
 
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n[전송 결과 리포트]\n- 구글서버: ${gasStatus}\n- 본사알림: ${emailjsNgsStatus}\n- 고객발송: ${emailjsCustomerStatus}\n\n받는 메일: ${taxEmail}`);
+      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n수신 이메일: ${taxEmail}`);
       setSelectedOrderIds([]); 
     } catch (error) {
       alert('요청 처리 중 오류가 발생했습니다.');
