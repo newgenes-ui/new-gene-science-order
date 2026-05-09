@@ -76,9 +76,9 @@ export default function OrderPage() {
   ];
 
   const [clientName, setClientName] = useState(clientData.name);
-  const [ordererName, setOrdererName] = useState(clientData.contactPerson || '');
-  const [ordererPhone, setOrdererPhone] = useState(clientData.phone || '');
-  const [ordererEmail, setOrdererEmail] = useState(clientData.email || '');
+  const [ordererName, setOrdererName] = useState('');
+  const [ordererPhone, setOrdererPhone] = useState('');
+  const [ordererEmail, setOrdererEmail] = useState('');
 
 
 
@@ -1135,7 +1135,9 @@ export default function OrderPage() {
                                           e.stopPropagation(); // 접기 방지
                                           if (e.target.checked) {
                                             setSelectedOrderIds(prev => [...prev, order.id]);
-                                            if (order.ordererName === '김기환') {
+                                            if (order.ordererName === '김기환' || order.ordererName === '이재명') {
+                                              setOrdererName('김기환');
+                                              setOrdererPhone('010-5882-4997');
                                               setTaxEmail('khkimjhs@naver.com');
                                             } else if (order.ordererEmail) {
                                               setTaxEmail(order.ordererEmail);
