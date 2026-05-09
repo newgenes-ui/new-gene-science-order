@@ -98,8 +98,8 @@ export default function OrderPage() {
       }
 
       const emailParams = {
-        order_title:    `[${order.clientName} 발주 요청 (견적전환)]`,
-        order_type_text: '발주 (견적전환)',
+        order_title:    `[(주)뉴진사이언스 발주접수]`,
+        order_type_text: '발주접수 (견적전환)',
         detail_label:   '발주 상세 내역',
         order_id:       order.id,
         order_date:     order.orderDate,
@@ -107,6 +107,7 @@ export default function OrderPage() {
         orderer_name:   order.ordererName,
         orderer_phone:  order.ordererPhone,
         orderer_email:  order.ordererEmail || '(미입력)',
+        customer_name:  order.ordererName, // 템플릿 수신자 필드 대응
         from_name:      order.ordererName,
         contact_number: order.ordererPhone,
         reply_to:       order.ordererEmail || '(미입력)',
@@ -121,9 +122,10 @@ export default function OrderPage() {
       };
 
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // 1. 본사 발송
+        // 1. 본사 발송 (고객사명 제목)
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
           ...emailParams,
+          order_title: `[${order.clientName} 발주접수 (견적전환)]`,
           info_label: '발주자 정보',
           greeting: '관리자님, 안녕하세요 (견적에서 발주로 전환되었습니다).',
           to_email: NGS_EMAIL,
@@ -133,19 +135,13 @@ export default function OrderPage() {
         // EmailJS API 연속 호출 시 누락 방지를 위한 1초 대기
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 2. 고객 발송
+        // 2. 고객 발송 (뉴진사이언스 제목)
         const targetEmail = order.ordererEmail || order.clientEmail;
         if (targetEmail && targetEmail.includes('@')) {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            order_title: `[뉴진사이언스 발주 접수 완료]`,
-            info_label: '공급자 정보',
-            greeting: '담당자님, 안녕하세요. 견적 요청이 발주로 전환되어 접수되었습니다.',
-            orderer_name: '나혜원',
-            orderer_phone: '010-9915-5974',
-            orderer_email: 'newgenes@newgenesci.com',
+            order_title: `[(주)뉴진사이언스 발주접수]`,
             to_email: targetEmail,
-            reply_to: NGS_EMAIL,
           }, EMAILJS_PUBLIC_KEY);
         }
       }
@@ -584,8 +580,8 @@ export default function OrderPage() {
     }
 
     const emailParams = {
-      order_title:    `[${clientName} ${activeTab === 'quote' ? '견적' : '주문'} 접수]`,
-      order_type_text: activeTab === 'quote' ? '견적' : '주문',
+      order_title:    `[(주)뉴진사이언스 ${activeTab === 'quote' ? '견적접수' : '주문접수'}]`,
+      order_type_text: activeTab === 'quote' ? '견적접수' : '주문접수',
       detail_label:   `${activeTab === 'quote' ? '견적' : '주문'} 상세 내역`,
       order_id:       order.id,
       order_date:     order.orderDate,
@@ -593,6 +589,7 @@ export default function OrderPage() {
       orderer_name:   ordererName,
       orderer_phone:  order.ordererPhone,
       orderer_email:  order.ordererEmail || '(미입력)',
+      customer_name:  ordererName, // 템플릿 수신자 필드 대응
       // 사용자의 EmailJS 템플릿 변수명에 맞춤
       from_name:      ordererName,
       contact_number: order.ordererPhone,
@@ -609,12 +606,31 @@ export default function OrderPage() {
     };
 
 
-    // ─── EmailJS 발송 (사용자 설정 기반 단일 호출) ───
+    // ─── EmailJS 발송 (본사/고객 제목 차별화) ───
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
       try {
-        console.log('📧 EmailJS(유료) 발송 시작...');
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-        console.log('✅ EmailJS 발송 완료');
+        console.log('📧 EmailJS 발송 시작...');
+        
+        // 1. 본사 알림 (고객사명 포함 제목)
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          ...emailParams,
+          order_title: `[${clientName} ${activeTab === 'quote' ? '견적' : '주문'} 접수]`,
+          to_email: NGS_EMAIL,
+        }, EMAILJS_PUBLIC_KEY);
+
+        // 1초 대기 (연속 호출 안정성)
+        await new Promise(r => setTimeout(r, 1000));
+
+        // 2. 고객 확인 (뉴진사이언스 이름 제목)
+        if (order.ordererEmail && order.ordererEmail.includes('@')) {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+            ...emailParams,
+            order_title: `[(주)뉴진사이언스 ${activeTab === 'quote' ? '견적접수' : '주문접수'}]`,
+            to_email: order.ordererEmail,
+          }, EMAILJS_PUBLIC_KEY);
+        }
+
+        console.log('✅ EmailJS 모든 발송 완료');
       } catch (err) {
         console.error('❌ EmailJS 발송 실패:', err);
       }
