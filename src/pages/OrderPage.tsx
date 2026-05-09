@@ -564,6 +564,9 @@ export default function OrderPage() {
     }
     // ───────────────────────────────────────────────
 
+    saveOrder(order);
+    setIsSubmitting(false);
+
     // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
     setShowCelebration(true);
     // 폼 공통 초기화
