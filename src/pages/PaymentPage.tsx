@@ -241,40 +241,19 @@ export default function PaymentPage() {
           <h3 className="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">
             <CreditCard className="w-3.5 h-3.5" /> 입금 계좌 정보
           </h3>
-          <div className="bg-slate-50 rounded-2xl p-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 font-bold">은행명</span>
+          <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm">
               <span className="font-bold text-slate-800">{NGS_BANK.bank}</span>
+              <span className="font-black text-slate-800 font-mono">{NGS_BANK.account}</span>
+              <span className="text-slate-500">(예금주: {NGS_BANK.holder})</span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 font-bold">예금주</span>
-              <span className="font-bold text-slate-800">{NGS_BANK.holder}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 font-bold">계좌번호</span>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-slate-800 font-mono">{NGS_BANK.account}</span>
-                <button
-                  onClick={copyAccount}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-bold hover:bg-primary/20 transition-colors"
-                >
-                  <Copy className="w-3 h-3" />
-                  {copied ? '복사됨!' : '복사'}
-                </button>
-              </div>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-200">
-              <span className="text-xs text-slate-400 font-bold">입금액</span>
-              <span className="font-black text-primary text-lg">₩{order.totalAmount.toLocaleString()}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-start gap-2">
-            <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 font-medium leading-relaxed">
-              주문일로부터 <strong>3영업일 이내</strong>에 입금해 주세요.<br />
-              입금 확인 후 주문이 처리됩니다.
-            </p>
+            <button
+              onClick={copyAccount}
+              className="flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-lg text-[10px] font-bold hover:bg-primary/20 transition-colors shrink-0"
+            >
+              <Copy className="w-3 h-3" />
+              {copied ? '복사됨!' : '복사'}
+            </button>
           </div>
         </motion.div>
 
