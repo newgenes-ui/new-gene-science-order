@@ -241,11 +241,11 @@ export default function PaymentPage() {
           <h3 className="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">
             <CreditCard className="w-3.5 h-3.5" /> 입금 계좌 정보
           </h3>
-          <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-bold text-slate-800">{NGS_BANK.bank}</span>
-              <span className="font-black text-slate-800 font-mono">{NGS_BANK.account}</span>
-              <span className="text-slate-500">(예금주: {NGS_BANK.holder})</span>
+          <div className="bg-slate-50 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <span className="font-bold text-slate-800 whitespace-nowrap">{NGS_BANK.bank}</span>
+              <span className="font-black text-slate-800 font-mono whitespace-nowrap">{NGS_BANK.account}</span>
+              <span className="text-slate-500 text-[11px] whitespace-nowrap">(예금주: {NGS_BANK.holder})</span>
             </div>
             <button
               onClick={copyAccount}
