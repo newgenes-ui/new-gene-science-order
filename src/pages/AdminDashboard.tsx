@@ -126,8 +126,8 @@ export default function AdminDashboard() {
     }).sort((a, b) => (b.orderDateTime || b.orderDate).localeCompare(a.orderDateTime || a.orderDate));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
-  const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order'), [filteredOrders]);
-  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType === 'quote'), [filteredOrders]);
+  const ordersList = useMemo(() => filteredOrders.filter(o => o.orderType === 'order' || o.status === 'order_requested'), [filteredOrders]);
+  const quotesList = useMemo(() => filteredOrders.filter(o => o.orderType === 'quote' && o.status !== 'order_requested'), [filteredOrders]);
 
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
   const totalItems = filteredOrders.reduce((s, o) => s + o.items.reduce((is, i) => is + i.quantity, 0), 0);
@@ -516,11 +516,11 @@ export default function AdminDashboard() {
                                 key={s.id}
                                 onClick={(e) => { e.stopPropagation(); handleStatusUpdate(order.id, s.id as Order['status']); }}
                                 className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all whitespace-nowrap ${
-                                    (s.id === 'pending' && order.status !== 'shipped') || (s.id === 'shipped' && order.status === 'shipped')
+                                    ((s.id === 'pending' || s.id === 'order_requested') && (order.status === 'pending' || order.status === 'order_requested')) || (s.id === 'shipped' && order.status === 'shipped')
                                     ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                     : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                   }`}
-                                style={(s.id === 'pending' && order.status !== 'shipped') || (s.id === 'shipped' && order.status === 'shipped') ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                style={((s.id === 'pending' || s.id === 'order_requested') && (order.status === 'pending' || order.status === 'order_requested')) || (s.id === 'shipped' && order.status === 'shipped') ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                               >
                                 {s.label}
                               </button>
