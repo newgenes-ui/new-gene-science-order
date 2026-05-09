@@ -1135,7 +1135,9 @@ export default function OrderPage() {
                                           e.stopPropagation(); // 접기 방지
                                           if (e.target.checked) {
                                             setSelectedOrderIds(prev => [...prev, order.id]);
-                                            if (order.ordererEmail) {
+                                            if (order.ordererName === '김기환') {
+                                              setTaxEmail('khkimjhs@naver.com');
+                                            } else if (order.ordererEmail) {
                                               setTaxEmail(order.ordererEmail);
                                             }
                                           } else {
