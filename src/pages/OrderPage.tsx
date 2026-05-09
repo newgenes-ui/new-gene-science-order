@@ -193,7 +193,6 @@ export default function OrderPage() {
   const [tempSearch, setTempSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('전체');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isQuoteSuccess, setIsQuoteSuccess] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({ 'AG Tip': true, '파이펫': true, '튜브': true, '랙': true });
   const [activeTab, setActiveTab] = useState<'quote' | 'order' | 'payment'>('order');
@@ -565,14 +564,8 @@ export default function OrderPage() {
     }
     // ───────────────────────────────────────────────
 
-    saveOrder(order);
-    setIsSubmitting(false);
-
-    // 견적/발주 상관없이 "감사합니다" 화면 표시
+    // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
     setShowCelebration(true);
-    if (order.orderType === 'quote') {
-      setIsQuoteSuccess(true);
-    }
     // 폼 공통 초기화
     setOtherRequest('');
     setQuantities({});
@@ -584,45 +577,6 @@ export default function OrderPage() {
   useEffect(() => {
     // 기존 useEffect 제거
   }, []);
-
-  if (isQuoteSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA] flex items-center justify-center p-4">
-        <div className="fixed inset-0 z-0 bg-white/20 backdrop-blur-3xl" />
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white/90 backdrop-blur-xl rounded-[40px] p-10 md:p-16 max-w-lg w-full text-center shadow-2xl space-y-8 relative z-10 border border-white/50"
-        >
-          <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="w-24 h-24 bg-primary/10 rounded-[35px] flex items-center justify-center mx-auto mb-2"
-          >
-            <CheckCircle2 className="w-12 h-12 text-primary" />
-          </motion.div>
-          <div className="space-y-3">
-            <p className="text-primary font-black text-4xl tracking-tighter drop-shadow-sm">감사합니다!</p>
-            <p className="text-slate-500 text-base md:text-lg mt-4 leading-relaxed font-bold">
-              견적 문의가 정상적으로 접수되었습니다.<br />
-              담당자가 확인 후 빠르게 연락드리겠습니다! 👋
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setIsQuoteSuccess(false);
-              setActiveTab('order');
-            }}
-            className="w-full py-5 bg-primary text-white rounded-3xl font-black text-lg shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
-          >
-            메인으로 돌아가기
-          </button>
-        </motion.div>
-
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0F4F1] to-[#E8F0EA]">
@@ -1564,29 +1518,40 @@ export default function OrderPage() {
       <AnimatePresence>
         {showCelebration && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.5 }}
-            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/10 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-white/40 backdrop-blur-3xl"
           >
-            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-10 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4 mx-6 text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                <CheckCircle2 className="w-10 h-10 text-primary" />
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 20 }}
+              className="bg-white/90 backdrop-blur-xl rounded-[40px] p-10 md:p-16 max-w-lg w-full text-center shadow-2xl space-y-8 relative border border-white/50"
+            >
+              <div className="w-24 h-24 bg-primary/10 rounded-[35px] flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-12 h-12 text-primary" />
               </div>
-              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
-              <p className="text-slate-500 font-bold text-xs md:text-sm">요청이 정상적으로 완료되었습니다.</p>
+              <div className="space-y-3">
+                <h2 className="text-primary font-black text-4xl tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+                <p className="text-slate-500 text-base md:text-lg mt-4 leading-relaxed font-bold">
+                  {activeTab === 'quote' 
+                    ? '견적 문의가 정상적으로 접수되었습니다.' 
+                    : '발주 요청이 정상적으로 완료되었습니다.'}<br />
+                  담당자가 확인 후 빠르게 처리해 드리겠습니다! 👋
+                </p>
+              </div>
               
               <button 
                 onClick={() => {
                   setShowCelebration(false);
-                  setIsQuoteSuccess(false);
                   setActiveTab('order');
                 }}
-                className="mt-4 px-8 py-3 bg-primary text-white rounded-2xl font-black shadow-lg shadow-green-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                className="w-full py-5 bg-primary text-white rounded-3xl font-black text-lg shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98]"
               >
                 메인으로 돌아가기
               </button>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
