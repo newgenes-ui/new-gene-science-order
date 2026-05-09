@@ -201,6 +201,7 @@ export default function OrderPage() {
   const [isStatementSubmitting, setIsStatementSubmitting] = useState(false);
   const [userOrders, setUserOrders] = useState<Order[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const [historyTab, setHistoryTab] = useState<'order' | 'quote'>('order');
   const [dateRange, setDateRange] = useState({
     start: (() => {
@@ -569,6 +570,7 @@ export default function OrderPage() {
 
     if (order.orderType === 'quote') {
       setIsQuoteSuccess(true);
+      setShowCelebration(true);
       // 폼 초기화
       setOtherRequest('');
       setQuantities({});
@@ -1557,6 +1559,35 @@ export default function OrderPage() {
                 <p className="text-xs text-slate-400 mt-1">이메일 발송 및 내역 등록 중입니다...</p>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.5 }}
+            className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/10 backdrop-blur-sm"
+          >
+            <div className="bg-white/90 backdrop-blur-2xl px-8 py-6 md:px-12 md:py-10 rounded-[30px] md:rounded-[40px] shadow-2xl border border-primary/20 flex flex-col items-center gap-4 mx-6 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                <CheckCircle2 className="w-10 h-10 text-primary" />
+              </div>
+              <h2 className="text-2xl md:text-4xl font-black text-primary tracking-tighter drop-shadow-sm whitespace-nowrap">감사합니다!</h2>
+              <p className="text-slate-500 font-bold text-xs md:text-sm">요청이 정상적으로 완료되었습니다.</p>
+              
+              <button 
+                onClick={() => {
+                  setShowCelebration(false);
+                  setIsQuoteSuccess(false);
+                  setActiveTab('order');
+                }}
+                className="mt-4 px-8 py-3 bg-primary text-white rounded-2xl font-black shadow-lg shadow-green-900/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+              >
+                메인으로 돌아가기
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
