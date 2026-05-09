@@ -431,12 +431,18 @@ export default function OrderPage() {
     const ordersOnly = userOrders.filter(o => {
       const type = (o.orderType || '').toLowerCase().trim();
       const status = (o.status || '').toLowerCase().trim();
-      return type === 'order' && status !== 'order_requested' && status !== 'processing';
+      const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+      const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+      
+      return type === 'order' && !isQuoteStatus && !isQuoteByAmount;
     });
     const quotesOnly = userOrders.filter(o => {
       const type = (o.orderType || '').toLowerCase().trim();
       const status = (o.status || '').toLowerCase().trim();
-      return type === 'quote' || status === 'order_requested' || status === 'processing';
+      const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+      const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+      
+      return type === 'quote' || isQuoteStatus || isQuoteByAmount;
     });
     
     return (historyTab === 'order' ? ordersOnly : quotesOnly)

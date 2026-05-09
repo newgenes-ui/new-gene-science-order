@@ -129,12 +129,16 @@ export default function AdminDashboard() {
   const ordersList = useMemo(() => filteredOrders.filter(o => {
     const type = (o.orderType || '').toLowerCase().trim();
     const status = (o.status || '').toLowerCase().trim();
-    return type === 'order' && status !== 'order_requested' && status !== 'processing';
+    const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+    const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+    return type === 'order' && !isQuoteStatus && !isQuoteByAmount;
   }), [filteredOrders]);
   const quotesList = useMemo(() => filteredOrders.filter(o => {
     const type = (o.orderType || '').toLowerCase().trim();
     const status = (o.status || '').toLowerCase().trim();
-    return type === 'quote' || status === 'order_requested' || status === 'processing';
+    const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+    const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+    return type === 'quote' || isQuoteStatus || isQuoteByAmount;
   }), [filteredOrders]);
 
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
