@@ -279,7 +279,7 @@ export default function OrderPage() {
     try {
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       const emailParams = {
-        order_title: `[${clientName} 거래명세서 발행요청]`,
+        order_title: `[(주)뉴진사이언스 거래명세서 발행]`,
         order_type_text: '거래명세서 발행 요청',
         detail_label: '명세서 요청 내역',
         order_id: selectedOrderIds[0],
