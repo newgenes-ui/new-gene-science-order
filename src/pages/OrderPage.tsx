@@ -277,6 +277,14 @@ export default function OrderPage() {
 
     setIsStatementSubmitting(true);
     try {
+      const selectedOrders = userOrders.filter(o => selectedOrderIds.includes(o.id));
+      const firstOrder = selectedOrders[0];
+      
+      // 상단 입력칸이 비어있을 경우 선택한 내역에서 정보를 추출 (이재명 -> 김기환 보정 포함)
+      const finalName = ordererName || (firstOrder?.ordererName === '이재명' ? '김기환' : firstOrder?.ordererName) || '김기환';
+      const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
+      const finalEmail = taxEmail || firstOrder?.ordererEmail || 'khkimjhs@naver.com';
+
       const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
       const emailParams = {
         order_title: `[(주)뉴진사이언스 거래명세서 발행]`,
@@ -285,16 +293,17 @@ export default function OrderPage() {
         order_id: selectedOrderIds[0],
         order_date: new Date().toISOString().split('T')[0],
         client_name: clientName,
-        orderer_name: ordererName,
-        orderer_phone: ordererPhone,
-        orderer_email: taxEmail,
-        items_text: `기관명: ${clientName}\n주문자: ${ordererName}\n연락처: ${ordererPhone}\n발행 이메일: ${taxEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄]\n${viewerUrl}\n\n--------------------------\n[요약]\n${userOrders.filter(o => selectedOrderIds.includes(o.id)).map(o => {
+        orderer_name: finalName,
+        orderer_phone: finalPhone,
+        orderer_email: finalEmail,
+        customer_name: finalName, // 템플릿 수신자 필드 대응
+        items_text: `기관명: ${clientName}\n주문자: ${finalName}\n연락처: ${finalPhone}\n발행 이메일: ${finalEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄]\n${viewerUrl}\n\n--------------------------\n[요약]\n${selectedOrders.map(o => {
           const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
           return `- ${o.id} / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
         }).join('\n')}`,
-        from_name: ordererName,
-        contact_number: ordererPhone,
-        reply_to: taxEmail,
+        from_name: finalName,
+        contact_number: finalPhone,
+        reply_to: finalEmail,
         ngs_email: NGS_EMAIL,
       };
 
@@ -313,7 +322,7 @@ export default function OrderPage() {
 
       // ─── 2. EmailJS 발송 (주문 메일과 동일하게 본사+고객 발송) ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // [A] 본사 알림 (주문 접수와 동일한 제목 형식)
+        // [A] 본사 알림
         try {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
@@ -324,12 +333,12 @@ export default function OrderPage() {
         
         await new Promise(r => setTimeout(r, 1000));
 
-        // [B] 고객 알림 (김기환 님)
-        if (taxEmail && taxEmail.includes('@')) {
+        // [B] 고객 알림 (김기환 님 등)
+        if (finalEmail && finalEmail.includes('@')) {
           try {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
               ...emailParams,
-              to_email: taxEmail,
+              to_email: finalEmail,
             }, EMAILJS_PUBLIC_KEY);
             emailjsCustomerStatus = '✅ 성공';
           } catch (e) { emailjsCustomerStatus = '❌ 실패'; }
@@ -340,7 +349,7 @@ export default function OrderPage() {
       }
 
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n수신 이메일: ${taxEmail}`);
+      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n수신 이메일: ${finalEmail}`);
       setSelectedOrderIds([]); 
     } catch (error) {
       alert('요청 처리 중 오류가 발생했습니다.');
