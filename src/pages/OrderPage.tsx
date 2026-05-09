@@ -280,8 +280,27 @@ export default function OrderPage() {
         ngs_email: NGS_EMAIL,
       };
 
-      // ─── 1. 본사(NGS) 발송 ───
+      // [DEBUG] 전송 정보 확인 알림
+      console.log('Sending statement to:', taxEmail);
+      
+      // ─── 1. GAS 백업/기본 발송 (신뢰도 높음) ───
+      if (SCRIPT_URL) {
+        try {
+          await fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailParams)
+          });
+          console.log('✅ GAS 발송 시도 완료');
+        } catch (e) {
+          console.error('❌ GAS 발송 실패:', e);
+        }
+      }
+
+      // ─── 2. EmailJS 발송 ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+        // 본사 발송
         try {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
@@ -290,13 +309,11 @@ export default function OrderPage() {
             to_email: NGS_EMAIL,
             reply_to: taxEmail,
           }, EMAILJS_PUBLIC_KEY);
-        } catch (e) {
-          console.error('NGS email failed:', e);
-        }
+        } catch (e) { console.error('NGS EmailJS failed:', e); }
         
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1000));
 
-        // ─── 2. 고객(김기환 님) 발송 ───
+        // 고객 발송
         if (taxEmail && taxEmail.includes('@')) {
           try {
             await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -309,30 +326,18 @@ export default function OrderPage() {
               to_email: taxEmail,
               reply_to: NGS_EMAIL,
             }, EMAILJS_PUBLIC_KEY);
-          } catch (e) {
-            console.error('Customer email failed:', e);
-          }
+          } catch (e) { console.error('Customer EmailJS failed:', e); }
         }
-      }
-
-      // ─── 3. GAS 백업 발송 ───
-      if (SCRIPT_URL) {
-        try {
-          await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailParams)
-          });
-        } catch (e) {}
+      } else {
+        console.warn('⚠️ EmailJS 설정(VITE_...)이 누락되어 GAS로만 전송되었습니다.');
       }
 
       markInvoiceRequested(selectedOrderIds);
-      alert('거래명세서 발행 요청이 완료되었습니다.\n잠시 후 이메일을 확인해 주세요.');
+      alert(`거래명세서 발행 요청이 완료되었습니다!\n받는 메일: ${taxEmail}\n\n※ 1~2분 뒤에도 오지 않는다면 스팸함도 확인해 주세요.`);
       setSelectedOrderIds([]); 
     } catch (error) {
       console.error('Statement error:', error);
-      alert('요청 처리 중 오류가 발생했습니다.');
+      alert('요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsStatementSubmitting(false);
     }
