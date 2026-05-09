@@ -428,11 +428,21 @@ export default function OrderPage() {
   }, [activeTab]);
 
   const filteredUserOrders = useMemo(() => {
-    return userOrders
+    const ordersOnly = userOrders.filter(o => {
+      const type = (o.orderType || '').toLowerCase().trim();
+      const status = (o.status || '').toLowerCase().trim();
+      return type === 'order' && status !== 'order_requested' && status !== 'processing';
+    });
+    const quotesOnly = userOrders.filter(o => {
+      const type = (o.orderType || '').toLowerCase().trim();
+      const status = (o.status || '').toLowerCase().trim();
+      return type === 'quote' || status === 'order_requested' || status === 'processing';
+    });
+    
+    return (historyTab === 'order' ? ordersOnly : quotesOnly)
       .filter(o => 
         o.orderDate >= appliedRange.start && 
-        o.orderDate <= appliedRange.end &&
-        (historyTab === 'order' ? o.orderType === 'order' : o.orderType === 'quote')
+        o.orderDate <= appliedRange.end
       )
       .sort((a, b) => {
         const dateA = a.orderDateTime || a.orderDate;
@@ -499,12 +509,13 @@ export default function OrderPage() {
     });
     
     const parts = kstFormatter.formatToParts(now);
-    const y = parts.find(p => p.type === 'year')?.value;
-    const mo = parts.find(p => p.type === 'month')?.value;
     const d = parts.find(p => p.type === 'day')?.value;
     const h = parts.find(p => p.type === 'hour')?.value;
     const mi = parts.find(p => p.type === 'minute')?.value;
     const s = parts.find(p => p.type === 'second')?.value;
+    
+    const y = parts.find(p => p.type === 'year')?.value;
+    const mo = parts.find(p => p.type === 'month')?.value;
     
     const kstDateString = `${y}-${mo}-${d}`;
     const kstDateTimeString = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
@@ -994,7 +1005,7 @@ export default function OrderPage() {
                         onClick={() => setHistoryTab('order')}
                         className={`flex-1 py-2.5 text-[13px] font-black rounded-xl transition-all ${historyTab === 'order' ? 'bg-[#86efac] text-[#166534] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                       >
-                        발주내역 조회
+                        발주내역 조회(완료)
                       </button>
                       <button
                         onClick={() => setHistoryTab('quote')}
