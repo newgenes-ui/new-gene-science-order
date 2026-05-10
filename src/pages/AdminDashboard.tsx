@@ -62,6 +62,9 @@ export default function AdminDashboard() {
       const supabaseOrders = await getOrdersFromSupabase();
       const localOrders = getOrders();
 
+      // 2. ID를 기준으로 중복을 제거하며 병합 (로컬 최신 데이터 우선)
+      const mergedMap = new Map<string, Order>();
+      
       // 로컬 데이터를 먼저 담기
       localOrders.forEach(o => mergedMap.set(o.id, o));
       

@@ -274,7 +274,8 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
 
 async function saveOrderToSupabase(order: Order): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) {
-    return true; 
+    console.warn('⚠️ Supabase가 설정되지 않았습니다. 로컬 모드로 동작합니다.');
+    return false; // 거짓 성공 방지
   }
 
   // DB에 실제로 존재하는 확실한 컬럼만 선별하여 전송
@@ -302,7 +303,30 @@ async function saveOrderToSupabase(order: Order): Promise<boolean> {
   try {
     const { error } = await supabase.from('orders').insert(orderData);
     if (error) {
-      console.error('Supabase Insert Error:', error.message);
+      console.warn('1차 저장 실패, 컬럼 확인 후 재시도...', error.message);
+      
+      // 컬럼 부재 오류인 경우 필수 컬럼으로만 재시도 (Fallback)
+      if (error.message.includes('column') || error.code === 'PGRST204' || error.code === '42703') {
+        const fallbackData = {
+          id: order.id,
+          order_date: order.orderDate,
+          order_date_time: order.orderDateTime,
+          client_id: order.clientId,
+          client_name: order.clientName,
+          orderer_name: order.ordererName,
+          orderer_phone: order.ordererPhone,
+          items: order.items,
+          total_amount: order.totalAmount,
+          status: order.status,
+          order_type: order.orderType || 'order'
+        };
+        const { error: fallbackError } = await supabase.from('orders').insert(fallbackData);
+        if (fallbackError) {
+          console.error('Final Supabase Insert Error:', fallbackError.message);
+          return false;
+        }
+        return true;
+      }
       return false;
     }
     console.log('✅ Supabase 저장 성공:', order.id);
@@ -371,8 +395,6 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
       ordererName: row.orderer_name,
       ordererPhone: row.orderer_phone,
       ordererEmail: row.orderer_email,
-      items: row.items || [],
-      otherRequest: row.other_request || '',
       items: row.items || [],
       otherRequest: row.other_request || '',
       subtotalAmount: (Number(row.total_amount || 0) > 0 && Number(row.subtotal_amount || 0) === Number(row.total_amount || 0) && Number(row.vat_amount || 0) === 0) 
