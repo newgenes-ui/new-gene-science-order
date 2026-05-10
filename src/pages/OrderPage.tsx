@@ -553,8 +553,9 @@ export default function OrderPage() {
     const kstDateString = `${y}-${mo}-${d}`;
     const kstDateTimeString = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
 
+    const newId = await generateOrderId();
     const order: Order = {
-      id: generateOrderId(),
+      id: newId,
       orderDate: kstDateString,
       orderDateTime: kstDateTimeString,
       clientId,

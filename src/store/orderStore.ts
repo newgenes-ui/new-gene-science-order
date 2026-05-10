@@ -200,7 +200,7 @@ export function getOrdersByDateRange(from: string, to: string): Order[] {
   return orders.filter(o => o.orderDate >= from && o.orderDate <= to);
 }
 
-export function generateOrderId(): string {
+export async function generateOrderId(): Promise<string> {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
@@ -213,23 +213,41 @@ export function generateOrderId(): string {
   const m = parts.find(p => p.type === 'month')?.value;
   const d = parts.find(p => p.type === 'day')?.value;
   const ymd = `${y}${m}${d}`;
-  
-  // 오늘 날짜로 시작하는 주문들을 가져와서 다음 순번 계산
-  const orders = getOrders();
   const todayPrefix = `NGS-${ymd}-`;
-  const todayOrders = orders.filter(o => o.id.startsWith(todayPrefix));
-  
-  // 기존 주문들의 suffix 중 최대값을 찾아 +1
-  let nextNum = 1;
-  if (todayOrders.length > 0) {
-    const suffixes = todayOrders.map(o => {
+
+  // 1순위: Supabase 서버에서 오늘 가장 높은 번호 가져오기
+  let maxSuffix = 0;
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data } = await supabase
+        .from('orders')
+        .select('id')
+        .like('id', `${todayPrefix}%`);
+      
+      if (data && data.length > 0) {
+        const suffixes = data.map(o => {
+          const parts = o.id.split('-');
+          return parseInt(parts[parts.length - 1]) || 0;
+        });
+        maxSuffix = Math.max(...suffixes);
+      }
+    } catch (e) {
+      console.warn('Supabase ID fetch failed, falling back to local');
+    }
+  }
+
+  // 2순위: 로컬 데이터와 비교하여 더 높은 번호 선택
+  const localOrders = getOrders();
+  const localTodayOrders = localOrders.filter(o => o.id.startsWith(todayPrefix));
+  if (localTodayOrders.length > 0) {
+    const localSuffixes = localTodayOrders.map(o => {
       const parts = o.id.split('-');
       return parseInt(parts[parts.length - 1]) || 0;
     });
-    nextNum = Math.max(...suffixes) + 1;
+    maxSuffix = Math.max(maxSuffix, ...localSuffixes);
   }
   
-  return `${todayPrefix}${nextNum}`;
+  return `${todayPrefix}${maxSuffix + 1}`;
 }
 
 export const STATUS_LABELS: Record<Order['status'], string> = {
