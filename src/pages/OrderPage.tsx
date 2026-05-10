@@ -429,7 +429,10 @@ export default function OrderPage() {
         o.clientId === 'demo'
       );
       
-      setUserOrders(visibleOrders);
+      // 4. 최신순 정렬 (ID 기준 내림차순)
+      const sortedOrders = visibleOrders.sort((a, b) => b.id.localeCompare(a.id));
+      
+      setUserOrders(sortedOrders);
     } catch (e) {
       console.error('Failed to load orders:', e);
       setUserOrders(getOrders());
@@ -1134,12 +1137,14 @@ export default function OrderPage() {
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
-                                    <span className="text-sm font-black text-slate-700 tracking-tight">
-                                      {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
+                                    <span className="text-[11px] font-black text-slate-700 tracking-tight">
+                                      {order.id.replace('NGS-', '')}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                      {order.items && order.items.length > 0 ? order.items[0].productCode : '상세 내역'}
                                     </span>
                                     {order.ordererName && (
-                                      <p className="text-[11px] font-bold text-slate-400">주문자: {order.ordererName}</p>
+                                      <p className="text-[9px] font-bold text-slate-300">주문자: {order.ordererName}</p>
                                     )}
                                   </div>
                                 </div>
@@ -1238,9 +1243,13 @@ export default function OrderPage() {
                               className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-slate-50/30 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
                             >
                               <div className="flex items-center gap-3">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-slate-400">{order.orderDate}</span>
-                                  <h3 className="text-sm font-black text-slate-800">{summaryText}</h3>
+                                  <div className="flex flex-col">
+                                    <span className="text-[11px] font-black text-slate-700 tracking-tight">
+                                      {order.id.replace('NGS-', '')}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                      {summaryText}
+                                    </span>
                                   {order.ordererName && (
                                     <p className="text-[11px] font-bold text-slate-400">주문자: {order.ordererName}</p>
                                   )}

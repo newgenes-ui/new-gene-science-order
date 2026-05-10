@@ -208,8 +208,22 @@ export function generateOrderId(): string {
   const d = parts.find(p => p.type === 'day')?.value;
   const ymd = `${y}${m}${d}`;
   
-  const rand = Math.floor(Math.random() * 9) + 1;
-  return `NGS-${ymd}-${rand}`;
+  // 오늘 날짜로 시작하는 주문들을 가져와서 다음 순번 계산
+  const orders = getOrders();
+  const todayPrefix = `NGS-${ymd}-`;
+  const todayOrders = orders.filter(o => o.id.startsWith(todayPrefix));
+  
+  // 기존 주문들의 suffix 중 최대값을 찾아 +1
+  let nextNum = 1;
+  if (todayOrders.length > 0) {
+    const suffixes = todayOrders.map(o => {
+      const parts = o.id.split('-');
+      return parseInt(parts[parts.length - 1]) || 0;
+    });
+    nextNum = Math.max(...suffixes) + 1;
+  }
+  
+  return `${todayPrefix}${nextNum}`;
 }
 
 export const STATUS_LABELS: Record<Order['status'], string> = {
