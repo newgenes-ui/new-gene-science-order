@@ -952,19 +952,26 @@ export default function AdminDashboard() {
                                             <div>
                                               <label className="text-[9px] font-bold text-slate-400 mb-1 block">수량</label>
                                               <input 
-                                                type="number" 
+                                                type="text" 
                                                 value={item.quantity} 
-                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'quantity', parseInt(e.target.value) || 0)}
+                                                onChange={(e) => {
+                                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                                  updateQuoteItemField(order.id, idx, 'quantity', parseInt(val) || 0);
+                                                }}
                                                 className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
                                               />
                                             </div>
                                             <div>
                                               <label className="text-[9px] font-bold text-slate-400 mb-1 block">공급가액 (단가)</label>
                                               <input 
-                                                type="number" 
-                                                value={item.unitPrice} 
-                                                onChange={(e) => updateQuoteItemField(order.id, idx, 'unitPrice', parseInt(e.target.value) || 0)}
+                                                type="text" 
+                                                value={item.unitPrice === 0 ? '' : item.unitPrice.toLocaleString()} 
+                                                onChange={(e) => {
+                                                  const val = e.target.value.replace(/[^0-9]/g, '');
+                                                  updateQuoteItemField(order.id, idx, 'unitPrice', parseInt(val) || 0);
+                                                }}
                                                 className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                                placeholder="0"
                                               />
                                             </div>
                                             <div>
