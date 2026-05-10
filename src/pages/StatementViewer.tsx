@@ -22,20 +22,27 @@ export default function StatementViewer() {
   const handleDownloadPDF = async () => {
     if (!statementRef.current || isDownloading) return;
     
+    // 모바일에서는 처리 중임을 알리는 것이 중요함
     setIsDownloading(true);
+    
     try {
+      // 1. 모든 리소스가 로드되도록 잠시 대기 (모바일 폰트/이미지 렌더링 시간 확보)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       const element = statementRef.current;
       
-      // html2canvas 옵션 최적화
+      // html2canvas 옵션 모바일 최적화
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.8, // 모바일 메모리 부하를 줄이면서 선명도 유지
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 15000,
+        imageTimeout: 20000,
+        // 캡처 영역을 정확히 잡기 위해 스크롤 위치 보정
+        scrollX: 0,
+        scrollY: -window.scrollY,
         onclone: (clonedDoc) => {
-          // 클론된 문서에서 이미지들을 Base64로 강제 교체 (안전장치)
           const logo = clonedDoc.querySelector('img[alt="New Gene Science Logo"]');
           if (logo) (logo as HTMLImageElement).src = LOGO_BASE64;
           
@@ -47,20 +54,25 @@ export default function StatementViewer() {
         }
       });
       
-      const imgData = canvas.toDataURL('image/png', 1.0);
+      // 2. 고화질 JPG로 변환 (PNG보다 용량이 적어 모바일에서 유리)
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      // PDF에 이미지 삽입
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       
+      // 3. 파일 이름 생성
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
+      // 4. 저장 실행
       pdf.save(fileName);
+      
     } catch (error) {
       console.error('PDF 생성 상세 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 브라우저의 "인쇄" 기능을 통해 PDF로 저장해 주세요.');
+      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처하여 저장해 주세요.');
     } finally {
       setIsDownloading(false);
     }
