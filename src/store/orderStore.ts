@@ -242,12 +242,20 @@ export async function generateOrderId(): Promise<string> {
   if (localTodayOrders.length > 0) {
     const localSuffixes = localTodayOrders.map(o => {
       const parts = o.id.split('-');
-      return parseInt(parts[parts.length - 1]) || 0;
+      // NGS-YYYYMMDD-X 형식에서 X 추출 (마지막에서 두 번째일 수도 있음 - 타임스탬프 추가 전)
+      const lastPart = parts[parts.length - 1];
+      return parseInt(lastPart) || 0;
     });
     maxSuffix = Math.max(maxSuffix, ...localSuffixes);
   }
   
-  return `${todayPrefix}${maxSuffix + 1}`;
+  // 3순위: 절대 중복 방지를 위한 시간 기반 접미사 추가 (HHMMSS)
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  const timeSuffix = `${hh}${min}${ss}`;
+  
+  return `${todayPrefix}${maxSuffix + 1}-${timeSuffix}`;
 }
 
 export const STATUS_LABELS: Record<Order['status'], string> = {

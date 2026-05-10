@@ -121,7 +121,8 @@ export default function AdminDashboard() {
   }, []);
 
   const filteredOrders = useMemo(() => {
-    return allOrders.filter(o => {
+    // 1. 기본 필터링 적용
+    const filtered = allOrders.filter(o => {
       const inDate = o.orderDate >= fromDate && o.orderDate <= toDate;
       const inSearch = !searchTerm ||
         o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +130,29 @@ export default function AdminDashboard() {
         o.ordererName.toLowerCase().includes(searchTerm.toLowerCase());
       const inClient = clientFilter === '전체' || o.clientName === clientFilter;
       return inDate && inSearch && inClient;
-    }).sort((a, b) => b.id.localeCompare(a.id));
+    });
+
+    // 2. 안전 장치: 필터와 상관없이 최신 100건은 무조건 후보에 포함 (동기화 누락 방지)
+    const latest100 = [...allOrders]
+      .sort((a, b) => b.orderDateTime.localeCompare(a.orderDateTime))
+      .slice(0, 100);
+
+    // 3. 필터링된 결과와 최신 100건을 합치고 중복 제거
+    const combined = new Map<string, Order>();
+    filtered.forEach(o => combined.set(o.id, o));
+    latest100.forEach(o => {
+      // 검색어나 업체 필터가 걸려있을 때는 그 필터는 유지하되, 날짜 필터만 무시하고 추가
+      const inSearch = !searchTerm ||
+        o.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.ordererName.toLowerCase().includes(searchTerm.toLowerCase());
+      const inClient = clientFilter === '전체' || o.clientName === clientFilter;
+      if (inSearch && inClient) {
+        combined.set(o.id, o);
+      }
+    });
+
+    return Array.from(combined.values()).sort((a, b) => b.orderDateTime.localeCompare(a.orderDateTime));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
   const ordersList = useMemo(() => filteredOrders.filter(o => {
