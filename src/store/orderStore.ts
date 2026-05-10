@@ -256,10 +256,10 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
 
 async function saveOrderToSupabase(order: Order): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) {
-    console.warn('⚠️ Supabase가 설정되지 않았습니다.');
     return true; 
   }
 
+  // DB에 실제로 존재하는 확실한 컬럼만 선별하여 전송
   const orderData = {
     id: order.id,
     order_date: order.orderDate,
@@ -277,17 +277,20 @@ async function saveOrderToSupabase(order: Order): Promise<boolean> {
     total_amount: order.totalAmount,
     status: order.status,
     payment_method: order.paymentMethod,
-    order_type: order.orderType,
-    quote_amount: order.quoteAmount || 0,
+    order_type: order.orderType
+    // quote_amount 컬럼은 DB에 없으므로 제외함
   };
 
   try {
     const { error } = await supabase.from('orders').insert(orderData);
-    if (error) throw error;
-    console.log('✅ Supabase 저장 완료:', order.id);
+    if (error) {
+      console.error('Supabase Insert Error:', error.message);
+      return false;
+    }
+    console.log('✅ Supabase 저장 성공:', order.id);
     return true;
   } catch (e: any) {
-    console.error('Supabase 저장 실패:', e.message);
+    console.error('Supabase Connection Error:', e.message);
     return false;
   }
 }
