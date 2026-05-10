@@ -484,8 +484,12 @@ export default function AdminDashboard() {
                       {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
                       <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
                         <div className="col-span-1">
-                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">{order.orderDate}</p>
-                          <p className="text-xs font-mono font-bold text-slate-700 truncate">{order.id}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">
+                            {order.id.replace('NGS-', '')}
+                          </p>
+                          <p className="text-xs font-mono font-bold text-slate-700 truncate">
+                            {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
+                          </p>
                         </div>
                         <div className="col-span-1">
                           <p className="text-[10px] font-bold text-slate-400 mb-0.5">업체명</p>
@@ -496,10 +500,10 @@ export default function AdminDashboard() {
                           <p className="text-sm font-bold text-slate-700 truncate">{order.ordererName}</p>
                         </div>
                         <div className="hidden md:block col-span-2">
-                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">주문 내역 / 요청 사항</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">품목명 / 요청 사항</p>
                           <p className="text-sm font-black text-slate-700 truncate">
                             {order.items && order.items.length > 0
-                              ? `${order.items[0].productCode}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
+                              ? `${order.items[0].productName}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}`
                               : order.otherRequest || '상세 내용 없음'}
                           </p>
                         </div>
@@ -660,8 +664,12 @@ export default function AdminDashboard() {
                       {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
                       <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
                         <div className="col-span-1">
-                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">{order.orderDate}</p>
-                          <p className="text-xs font-mono font-bold text-slate-700 truncate">{order.id}</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">
+                            {order.id.replace('NGS-', '')}
+                          </p>
+                          <p className="text-xs font-mono font-bold text-slate-700 truncate">
+                            {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
+                          </p>
                         </div>
                         <div className="col-span-1">
                           <p className="text-[10px] font-bold text-slate-400 mb-0.5">업체명</p>
@@ -672,9 +680,11 @@ export default function AdminDashboard() {
                           <p className="text-sm font-bold text-slate-700 truncate">{order.ordererName}</p>
                         </div>
                         <div className="hidden md:block col-span-3">
-                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">문의 및 요청 상세 내용</p>
+                          <p className="text-[10px] font-bold text-slate-400 mb-0.5">품목명 / 요청 사항</p>
                           <p className="text-sm font-black text-slate-700 truncate">
-                            {order.otherRequest || '상세 내용 없음'}
+                            {order.items && order.items.length > 0
+                              ? `${order.items[0].productName}${order.items.length > 1 ? ` 외 ${order.items.length - 1}건` : ''}${order.otherRequest ? ` / ${order.otherRequest}` : ''}`
+                              : order.otherRequest || '상세 내용 없음'}
                           </p>
                         </div>
                       </div>
