@@ -1020,15 +1020,7 @@ export default function OrderPage() {
                 </div>
               </section>
 
-              {/* Submit Button */}
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full py-4 bg-primary text-white rounded-2xl font-black text-base shadow-xl shadow-green-900/20 hover:bg-primary-dark transition-all active:scale-[0.98] disabled:opacity-60 flex items-center justify-center gap-3"
-              >
-                <FileText className="w-5 h-5" />
-                발주서 제출
-              </button>
+
             </motion.div>
           )}
 
