@@ -277,8 +277,8 @@ async function saveOrderToSupabase(order: Order): Promise<boolean> {
     total_amount: order.totalAmount,
     status: order.status,
     payment_method: order.paymentMethod,
-    order_type: order.orderType
-    // quote_amount 컬럼은 DB에 없으므로 제외함
+    order_type: order.orderType || (order.items && order.items.length > 0 ? 'order' : 'quote')
+    // quote_amount 컬럼은 DB에 추가되었으므로 필요시 포함 가능
   };
 
   try {
