@@ -378,3 +378,24 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
     return [];
   }
 }
+
+/** Supabase 실시간 변경 구독 */
+export function subscribeToOrders(callback: (payload: any) => void) {
+  if (!isSupabaseConfigured || !supabase) return () => {};
+
+  const channel = supabase
+    .channel('public:orders')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      (payload) => {
+        console.log('🔔 실시간 데이터 변경 감지:', payload);
+        callback(payload);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}

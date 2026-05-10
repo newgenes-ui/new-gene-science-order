@@ -4,7 +4,7 @@ import {
   BarChart3, Calendar, Download, TrendingUp, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 
@@ -109,9 +109,12 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadOrders();
-    // 60초마다 자동 갱신 (신규 주문/견적 자동 반영)
-    const interval = setInterval(loadOrders, 60000);
-    return () => clearInterval(interval);
+    // Supabase 실시간 구독 설정 (데이터 변경 시 즉시 갱신)
+    const unsubscribe = subscribeToOrders(() => {
+      loadOrders();
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const filteredOrders = useMemo(() => {

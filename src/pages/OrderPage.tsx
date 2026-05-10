@@ -6,7 +6,7 @@ import {
   User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
-import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS } from '../store/orderStore';
+import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 
 // ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
@@ -446,9 +446,11 @@ export default function OrderPage() {
   useEffect(() => {
     if (activeTab === 'payment') {
       loadUserOrders();
-      // 30초마다 자동 갱신 (관리자 상태 변경 실시간 반영)
-      const interval = setInterval(loadUserOrders, 30000);
-      return () => clearInterval(interval);
+      // Supabase 실시간 구독 (관리자 상태 변경 시 즉시 내역 갱신)
+      const unsubscribe = subscribeToOrders(() => {
+        loadUserOrders();
+      });
+      return () => unsubscribe();
     }
   }, [activeTab]);
 
