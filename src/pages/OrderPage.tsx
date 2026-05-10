@@ -422,12 +422,13 @@ export default function OrderPage() {
       
       const all = Array.from(mergedMap.values());
 
-      // 3. 업체별 필터링 (데모나 보령제약에서는 모든 내역 조회 가능하도록 완화)
+      // 3. 업체별 필터링 (보령제약 및 데모 권한 강화)
       const visibleOrders = all.filter(o => 
         clientId === 'demo' || 
         clientId === 'boryung' ||
         o.clientId === clientId ||
-        o.clientId === 'demo'
+        o.clientId === 'boryung' ||
+        o.clientName?.includes('보령')
       );
       
       // 4. 최신순 정렬 (ID 기준 내림차순)
@@ -657,14 +658,18 @@ export default function OrderPage() {
     }
     // ───────────────────────────────────────────────
 
-    saveOrder(order);
+    const success = await saveOrder(order);
     setIsSubmitting(false);
 
-    // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
-    setShowCelebration(true);
-    // 폼 공통 초기화
-    setOtherRequest('');
-    setQuantities({});
+    if (success) {
+      // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
+      setShowCelebration(true);
+      // 폼 공통 초기화
+      setOtherRequest('');
+      setQuantities({});
+    } else {
+      alert('데이터베이스 저장에 실패했습니다. 관리자에게 확인 부탁드립니다.');
+    }
   };
 
   const productsByCategory = (cat: string) =>

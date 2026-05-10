@@ -69,14 +69,20 @@ export function getOrders(): Order[] {
   }
 }
 
-export function saveOrder(order: Order): void {
+export async function saveOrder(order: Order): Promise<boolean> {
   // 1) localStorage에 저장 (즉시 반영)
   const orders = getOrders();
   orders.push(order);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
 
-  // 2) Supabase에도 저장 (비동기, 실패해도 localStorage에는 이미 저장됨)
-  saveOrderToSupabase(order);
+  // 2) Supabase에도 저장 (완료될 때까지 대기)
+  try {
+    const success = await saveOrderToSupabase(order);
+    return success;
+  } catch (e) {
+    console.error('Save to Supabase failed:', e);
+    return false;
+  }
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<boolean> {
@@ -248,10 +254,10 @@ export const STATUS_COLORS: Record<Order['status'], string> = {
 
 // ─── Supabase 연동 함수 ─────────────────────────────────────────
 
-async function saveOrderToSupabase(order: Order): Promise<void> {
+async function saveOrderToSupabase(order: Order): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) {
-    console.warn('⚠️ Supabase가 설정되지 않았습니다. 로컬에만 저장됩니다.');
-    return;
+    console.warn('⚠️ Supabase가 설정되지 않았습니다.');
+    return true; 
   }
 
   const orderData = {
@@ -272,49 +278,17 @@ async function saveOrderToSupabase(order: Order): Promise<void> {
     status: order.status,
     payment_method: order.paymentMethod,
     order_type: order.orderType,
-    quote_amount: order.quoteAmount,
+    quote_amount: order.quoteAmount || 0,
   };
 
   try {
     const { error } = await supabase.from('orders').insert(orderData);
-    
-    if (error) {
-      console.error('Supabase 저장 1차 시도 실패:', error.message);
-      
-      // 컬럼이 없어서 발생하는 오류인 경우, 필수 컬럼만으로 재시도
-      if (error.message.includes('column') || error.code === '42703') {
-        console.log('⚠️ DB 스키마 불일치 감지. 신규 컬럼 제외하고 재시도합니다...');
-        const fallbackData = {
-          id: order.id,
-          order_date: order.orderDate,
-          order_date_time: order.orderDateTime,
-          client_id: order.clientId,
-          client_name: order.clientName,
-          client_email: order.clientEmail,
-          orderer_name: order.ordererName,
-          orderer_phone: order.ordererPhone,
-          orderer_email: order.ordererEmail,
-          items: order.items,
-          other_request: order.otherRequest,
-          total_amount: order.totalAmount,
-          status: order.status,
-          payment_method: order.paymentMethod,
-          order_type: order.orderType,
-          quote_amount: order.quoteAmount,
-        };
-        
-        const { error: fallbackError } = await supabase.from('orders').insert(fallbackData);
-        if (fallbackError) {
-          console.error('Supabase 저장 2차 시도 실패:', fallbackError.message);
-        } else {
-          console.log('✅ Supabase 저장 성공 (기본 컬럼)');
-        }
-      }
-    } else {
-      console.log('✅ Supabase 저장 완료:', order.id);
-    }
+    if (error) throw error;
+    console.log('✅ Supabase 저장 완료:', order.id);
+    return true;
   } catch (e: any) {
-    console.error('Supabase 연결 실패:', e);
+    console.error('Supabase 저장 실패:', e.message);
+    return false;
   }
 }
 
