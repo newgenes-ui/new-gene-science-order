@@ -182,9 +182,10 @@ export default function OrderPage() {
   useEffect(() => {
     if (clientData) {
       setClientName(clientData.name);
-      setOrdererName(clientData.contactPerson || '');
-      setOrdererPhone(clientData.phone || '');
-      setOrdererEmail(clientData.email || '');
+      // 주문자 정보는 사용자가 직접 입력하거나 퀵 버튼을 누를 때까지 비워둡니다.
+      setOrdererName('');
+      setOrdererPhone('');
+      setOrdererEmail('');
     }
   }, [clientData]);
 
