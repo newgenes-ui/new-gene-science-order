@@ -16,32 +16,45 @@ export default function StatementViewer() {
   const orderIds = idsParam.split(',').filter(Boolean);
 
   const handleDownloadPDF = async () => {
-    if (!statementRef.current) return;
+    if (!statementRef.current || isDownloading) return;
     
     setIsDownloading(true);
     try {
       const element = statementRef.current;
+      
+      // html2canvas 옵션 최적화
       const canvas = await html2canvas(element, {
-        scale: 2, // 해상도 향상
-        useCORS: true, // 외부 이미지 허용
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
         logging: false,
-        backgroundColor: '#ffffff'
+        // 폰트 및 이미지 로딩 대기 시간 추가
+        imageTimeout: 15000,
+        // 캡처 직전 스타일 조정 (에러 유발 요소 제거)
+        onclone: (clonedDoc) => {
+          const stamp = clonedDoc.querySelector('img[alt="직인"]');
+          if (stamp) {
+            // mix-blend-multiply는 html2canvas에서 오류를 일으킬 수 있으므로 제거
+            (stamp as HTMLElement).style.mixBlendMode = 'normal';
+          }
+        }
       });
       
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/png', 1.0);
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210; // A4 가로 (mm)
-      const pageHeight = 297; // A4 세로 (mm)
+      const imgWidth = 210;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       
-      // 파일명 생성
-      const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
+      
       pdf.save(fileName);
     } catch (error) {
-      console.error('PDF 생성 실패:', error);
-      alert('파일 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      console.error('PDF 생성 상세 에러:', error);
+      alert('PDF 생성 중 오류가 발생했습니다. 브라우저의 "인쇄" 기능을 통해 PDF로 저장해 주세요.');
     } finally {
       setIsDownloading(false);
     }
