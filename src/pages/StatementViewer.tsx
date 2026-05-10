@@ -1,15 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getOrdersFromSupabase, Order } from '../store/orderStore';
-import { Printer } from 'lucide-react';
+import { Printer, Download, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function StatementViewer() {
   const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const statementRef = useRef<HTMLDivElement>(null);
 
   const idsParam = searchParams.get('ids') || '';
   const orderIds = idsParam.split(',').filter(Boolean);
+
+  const handleDownloadPDF = async () => {
+    if (!statementRef.current) return;
+    
+    setIsDownloading(true);
+    try {
+      const element = statementRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2, // 해상도 향상
+        useCORS: true, // 외부 이미지 허용
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210; // A4 가로 (mm)
+      const pageHeight = 297; // A4 세로 (mm)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // 파일명 생성
+      const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('PDF 생성 실패:', error);
+      alert('파일 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const loadOrders = async () => {
@@ -112,18 +148,33 @@ export default function StatementViewer() {
     <div className="min-h-screen bg-gray-100 py-10 print:py-0 print:bg-white flex flex-col items-center">
       
       {/* 인쇄 버튼 (출력 시 숨김) */}
-      <div className="w-full max-w-[800px] flex justify-end mb-4 print:hidden px-4">
+      <div className="w-full max-w-[800px] flex justify-end gap-3 mb-4 print:hidden px-4">
+        <button 
+          onClick={handleDownloadPDF}
+          disabled={isDownloading}
+          className="flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:bg-primary-dark transition-all active:scale-95 disabled:opacity-70"
+        >
+          {isDownloading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Download className="w-5 h-5" />
+          )}
+          PDF 다운로드
+        </button>
         <button 
           onClick={() => window.print()}
-          className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:bg-slate-700 transition-colors"
+          className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg hover:bg-slate-700 transition-all active:scale-95"
         >
           <Printer className="w-5 h-5" />
-          PDF 저장 / 인쇄하기
+          인쇄하기
         </button>
       </div>
 
       {/* A4 용지 컨테이너 */}
-      <div className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[13px] leading-tight border border-gray-200">
+      <div 
+        ref={statementRef}
+        className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[13px] leading-tight border border-gray-200"
+      >
         
         {/* 제목 */}
         <div className="text-center text-4xl font-black tracking-[1em] mb-6">거래명세서</div>
