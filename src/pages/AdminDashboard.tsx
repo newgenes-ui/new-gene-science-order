@@ -123,7 +123,7 @@ export default function AdminDashboard() {
         o.ordererName.toLowerCase().includes(searchTerm.toLowerCase());
       const inClient = clientFilter === '전체' || o.clientName === clientFilter;
       return inDate && inSearch && inClient;
-    }).sort((a, b) => (b.orderDateTime || b.orderDate).localeCompare(a.orderDateTime || a.orderDate));
+    }).sort((a, b) => b.id.localeCompare(a.id));
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
   const ordersList = useMemo(() => filteredOrders.filter(o => {
