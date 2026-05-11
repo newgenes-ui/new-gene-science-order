@@ -197,24 +197,23 @@ export default function AdminDashboard() {
     
     const emailParams = {
       order_title: `[(주)뉴진사이언스] 견적서가 도착했습니다 - ${order.clientName}`,
-      order_type_text: '견적서 전송',
-      detail_label: '견적서 확인 및 다운로드',
+      order_type_text: '견적서 발송',
+      detail_label: '견적서 확인 및 다운로드 내역',
       order_id: order.id,
       order_date: new Date().toLocaleDateString(),
-      client_name: order.clientName,
+      // 성공한 명세서 메일의 변수명과 일치시킴
+      client_name: order.clientName,   // 기관명
+      orderer_name: order.ordererName, // 주문자
+      contact_number: order.ordererPhone, // 연락처
+      orderer_email: order.ordererEmail,  // 발행 이메일
+      
+      // 링크 형식을 성공한 메일과 동일하게 구성
+      items_text: `▶ [공식 견적서 확인 및 인쇄]\n${quoteUrl}\n\n-------------------------\n[안내]\n위 링크를 클릭하시면 공식 견적서를 확인하실 수 있습니다.`,
+      
+      // 혹시 모를 다른 변수들 대응
       customer_name: order.ordererName,
-      orderer_name: order.ordererName,
       from_name: "(주)뉴진사이언스",
-      to_name: order.ordererName,
-      orderer_email: order.ordererEmail,
-      contact_number: order.ordererPhone,
-      total_amount: `₩${order.totalAmount.toLocaleString()}`,
-      // 여러 필드에 링크를 중복 배치하여 하나라도 나오게 함
-      items_text: `[견적서 확인 링크]\n${quoteUrl}\n\n위 링크를 클릭하여 견적서를 확인하세요.`,
-      message: `공식 견적서 확인 링크: ${quoteUrl}`,
-      quote_link: quoteUrl,
       to_email: order.ordererEmail,
-      ngs_email: NGS_EMAIL,
     };
 
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
