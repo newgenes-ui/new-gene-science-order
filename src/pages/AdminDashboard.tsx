@@ -8,6 +8,7 @@ import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, 
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 
+// BUILD TRIGGER: V5.1 - FORCE DEPLOYMENT
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
