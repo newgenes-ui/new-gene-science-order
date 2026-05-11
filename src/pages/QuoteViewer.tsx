@@ -22,47 +22,68 @@ export default function QuoteViewer() {
     if (!quoteRef.current || isDownloading) return;
     setIsDownloading(true);
     
+    // 현재 스크롤 위치 저장
+    const scrollY = window.scrollY;
+    
     try {
+      // 1. 캡처를 위해 화면 상단으로 일시 이동 (모바일 좌표 오류 방지)
+      window.scrollTo(0, 0);
+      
+      // 2. 이미지 로딩 대기 강화
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
-          img.onload = () => resolve(img);
-          img.onerror = reject;
           img.src = src;
+          if (img.complete) resolve(img);
+          else {
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+          }
         });
       };
 
       await Promise.all([loadImage(LOGO_PATH), loadImage(STAMP_PATH)]);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 폰트 및 스타일 렌더링을 위한 충분한 대기
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const element = quoteRef.current;
+      
+      // 3. html2canvas 모바일 최적화 옵션
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: window.devicePixelRatio > 1 ? 2 : 1, // 저사양 기기 배려
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 15000,
-        scrollX: 0,
-        scrollY: -window.scrollY
+        imageTimeout: 0,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        onclone: (clonedDoc) => {
+          // 클론된 요소에서 가시성 보장
+          const clonedElement = clonedDoc.getElementById('quote-container');
+          if (clonedElement) clonedElement.style.display = 'block';
+        }
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // 4. PDF 생성
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
       pdf.save(fileName);
     } catch (error) {
-      console.error('PDF 생성 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다.');
+      console.error('PDF 생성 상세 에러:', error);
+      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처해 주세요.');
     } finally {
+      // 원래 스크롤 위치로 복구
+      window.scrollTo(0, scrollY);
       setIsDownloading(false);
     }
   };
@@ -148,7 +169,7 @@ export default function QuoteViewer() {
         </button>
       </div>
 
-      <div ref={quoteRef} className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[12px] leading-tight border border-gray-200">
+      <div ref={quoteRef} id="quote-container" className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[12px] leading-tight border border-gray-200">
         <div className="text-center text-4xl font-black tracking-[1em] mb-6 underline underline-offset-8">견 적 서</div>
         
         <div className="flex justify-between items-stretch gap-2 mb-4">
@@ -186,7 +207,7 @@ export default function QuoteViewer() {
             <tbody>
               <tr>
                 <td colSpan={4} className="border border-black p-2 relative h-[60px]">
-                  <img src={LOGO_PATH} className="h-10 mx-auto object-contain" alt="Logo"/>
+                  <img src={LOGO_PATH} crossOrigin="anonymous" className="h-10 mx-auto object-contain" alt="Logo"/>
                 </td>
               </tr>
               <tr className="h-8">
@@ -199,7 +220,7 @@ export default function QuoteViewer() {
                 <th className="border border-black p-1 bg-gray-50">대 표 자</th>
                 <td className="border border-black p-1 font-bold relative">
                   김 기 환
-                  <img src={STAMP_PATH} className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-12 w-auto mix-blend-multiply opacity-80" alt="Stamp" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-12 w-auto mix-blend-multiply opacity-80" alt="Stamp" />
                 </td>
               </tr>
               <tr className="h-8">

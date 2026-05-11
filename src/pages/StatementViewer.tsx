@@ -25,57 +25,69 @@ export default function StatementViewer() {
     // 모바일에서는 처리 중임을 알리는 것이 중요함
     setIsDownloading(true);
     
+    // 현재 스크롤 위치 저장
+    const scrollY = window.scrollY;
+    
     try {
+      // 1. 캡처를 위해 화면 상단으로 일시 이동 (모바일 좌표 오류 방지)
+      window.scrollTo(0, 0);
+
       // 이미지 객체를 미리 생성하여 로드 보장
       const loadImage = (src: string): Promise<HTMLImageElement> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
-          img.onload = () => resolve(img);
-          img.onerror = reject;
           img.src = src;
+          if (img.complete) resolve(img);
+          else {
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+          }
         });
       };
 
-      // 로고와 직인을 미리 로드
+      // 로고와 직인을 미리 로드 및 충분한 렌더링 대기
       await Promise.all([loadImage(LOGO_PATH), loadImage(STAMP_PATH)]);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const element = statementRef.current;
       
-      // html2canvas 옵션 모바일 최적화
+      // 2. html2canvas 옵션 모바일 최적화
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: window.devicePixelRatio > 1 ? 2 : 1, // 메모리 부족 방지
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 15000,
-        // 캡처 영역을 정확히 잡기 위해 스크롤 위치 보정
-        scrollX: 0,
-        scrollY: -window.scrollY
+        imageTimeout: 0,
+        width: element.offsetWidth,
+        height: element.offsetHeight,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('statement-container');
+          if (clonedElement) clonedElement.style.display = 'block';
+        }
       });
       
-      // 2. 고화질 JPG로 변환 (PNG보다 용량이 적어 모바일에서 유리)
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      // 3. 고화질 JPG로 변환 (PNG보다 용량이 적어 모바일에서 유리)
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdfWidth = 210;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
       // PDF에 이미지 삽입
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       
-      // 3. 파일 이름 생성
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
-      // 4. 저장 실행
       pdf.save(fileName);
       
     } catch (error) {
       console.error('PDF 생성 상세 에러:', error);
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처하여 저장해 주세요.');
     } finally {
+      // 원래 스크롤 위치로 복구
+      window.scrollTo(0, scrollY);
       setIsDownloading(false);
     }
   };
@@ -206,6 +218,7 @@ export default function StatementViewer() {
       {/* A4 용지 컨테이너 */}
       <div 
         ref={statementRef}
+        id="statement-container"
         className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[13px] leading-tight border border-gray-200"
       >
         
@@ -248,7 +261,7 @@ export default function StatementViewer() {
             <tbody>
               <tr>
                 <td colSpan={4} className="border border-black p-2 relative h-[70px]">
-                  <img src={LOGO_PATH} className="h-10 mx-auto object-contain" alt="New Gene Science Logo"/>
+                  <img src={LOGO_PATH} crossOrigin="anonymous" className="h-10 mx-auto object-contain" alt="New Gene Science Logo"/>
                 </td>
               </tr>
               <tr>
@@ -262,7 +275,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1 font-bold relative w-[25%]">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
                   {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src={STAMP_PATH} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
                 </td>
               </tr>
               <tr>
