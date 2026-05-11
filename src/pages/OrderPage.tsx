@@ -1227,17 +1227,16 @@ export default function OrderPage() {
                                           <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
                                         </>
                                       )}
-                                    </div>
+                                      </div>
+                                    {order.items && order.items.length > 0 && order.otherRequest && (
+                                      <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+                                        <p className="text-[10px] font-black text-amber-700/50 uppercase mb-1">기타 요청사항</p>
+                                        <p className="text-xs text-amber-800 font-medium leading-relaxed">{order.otherRequest}</p>
+                                      </div>
+                                    )}
                                   </div>
-                                  {order.items && order.items.length > 0 && order.otherRequest && (
-                                    <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
-                                      <p className="text-[10px] font-black text-amber-700/50 uppercase mb-1">기타 요청사항</p>
-                                      <p className="text-xs text-amber-800 font-medium leading-relaxed">{order.otherRequest}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                                )}
+                              </div>
                           );
                         }
 
@@ -1360,9 +1359,8 @@ export default function OrderPage() {
                                           <p className="text-[10px] font-bold text-primary">₩{item.subtotal.toLocaleString()}</p>
                                         )}
                                       </div>
-                                    </div>
-                                  ))}
-                                </div>
+                                    ))}
+                                  </div>
                                 
                                 {/* 펼침 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
                                 {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
