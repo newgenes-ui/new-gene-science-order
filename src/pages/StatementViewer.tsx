@@ -54,14 +54,14 @@ export default function StatementViewer() {
       
       // 2. html2canvas 옵션 모바일 최적화
       const canvas = await html2canvas(element, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1, // 메모리 부족 방지
+        scale: 1.2, // 메모리 부족 방지
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 0,
-        width: element.offsetWidth,
-        height: element.offsetHeight,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         onclone: (clonedDoc) => {
           const clonedElement = clonedDoc.getElementById('statement-container');
           if (clonedElement) clonedElement.style.display = 'block';
@@ -275,7 +275,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1 font-bold relative w-[25%]">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
                   {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-90 pointer-events-none" alt="직인" />
                 </td>
               </tr>
               <tr>

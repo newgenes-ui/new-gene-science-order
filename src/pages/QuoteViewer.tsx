@@ -51,14 +51,14 @@ export default function QuoteViewer() {
       
       // 3. html2canvas 모바일 최적화 옵션
       const canvas = await html2canvas(element, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1, // 저사양 기기 배려
+        scale: 1.2, // 고해상도보다는 안정성에 우선순위
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 0,
-        width: element.offsetWidth,
-        height: element.offsetHeight,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
         onclone: (clonedDoc) => {
           // 클론된 요소에서 가시성 보장
           const clonedElement = clonedDoc.getElementById('quote-container');
@@ -220,7 +220,7 @@ export default function QuoteViewer() {
                 <th className="border border-black p-1 bg-gray-50">대 표 자</th>
                 <td className="border border-black p-1 font-bold relative">
                   김 기 환
-                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-12 w-auto mix-blend-multiply opacity-80" alt="Stamp" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-12 w-auto opacity-80" alt="Stamp" />
                 </td>
               </tr>
               <tr className="h-8">
