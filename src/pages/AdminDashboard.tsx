@@ -189,11 +189,51 @@ export default function AdminDashboard() {
   const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
   const [editingQuoteItems, setEditingQuoteItems] = useState<Record<string, OrderItem[]>>({});
 
+  const sendQuoteEmail = async (order: Order) => {
+    if (!order.ordererEmail || !order.ordererEmail.includes('@')) return;
+
+    // 현재 도메인 기반 견적서 링크 생성
+    const quoteUrl = `${window.location.origin}/quote?ids=${order.id}`;
+    
+    const emailParams = {
+      order_title: `[(주)뉴진사이언스] 견적서가 도착했습니다 - ${order.clientName}`,
+      order_type_text: '견적서 발송',
+      detail_label: '견적서 확인',
+      order_id: order.id,
+      order_date: new Date().toLocaleDateString(),
+      client_name: order.clientName,
+      orderer_name: order.ordererName,
+      customer_name: order.ordererName,
+      total_amount: `₩${order.totalAmount.toLocaleString()}`,
+      quote_link: quoteUrl,
+      to_email: order.ordererEmail,
+      ngs_email: NGS_EMAIL,
+    };
+
+    if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+      try {
+        console.log('📧 견적서 이메일 발송 시작...', order.ordererEmail);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+        console.log('✅ 견적서 이메일 발송 완료');
+      } catch (err) {
+        console.error('❌ 견적서 이메일 발송 실패:', err);
+      }
+    }
+  };
+
   const handleStatusUpdate = async (id: string, newStatus: Order['status']) => {
     try {
       const success = await updateOrderStatus(id, newStatus);
       if (success) {
         setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+        
+        // '전송' (processing) 상태로 변경될 때 이메일 발송
+        if (newStatus === 'processing') {
+          const order = allOrders.find(o => o.id === id);
+          if (order) {
+            sendQuoteEmail(order);
+          }
+        }
       } else {
         alert('DB 업데이트에 실패했습니다. Supabase의 RLS 정책에서 UPDATE 또는 UPSERT 권한이 허용되어 있는지 확인해 주세요.');
       }
@@ -221,14 +261,19 @@ export default function AdminDashboard() {
       if (success) {
         // 금액 업데이트와 동시에 상태를 'processing'(견적전송)으로 변경
         await updateOrderStatus(id, 'processing');
-        setAllOrders(prev => prev.map(o => o.id === id ? { 
-          ...o, 
+        const updatedOrder = { 
+          ...order, 
           status: 'processing',
           quoteAmount: amount, 
           totalAmount: amount, 
           subtotalAmount: subtotal, 
           vatAmount: vat 
-        } : o));
+        };
+        setAllOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+        
+        // 이메일 발송
+        sendQuoteEmail(updatedOrder);
+        
         alert('견적 금액이 전송되었습니다.');
       }
     } catch (err: any) {
@@ -253,14 +298,22 @@ export default function AdminDashboard() {
     try {
       const success = await updateQuoteDetails(id, items, subtotal, vat, total);
       if (success) {
-        setAllOrders(prev => prev.map(o => o.id === id ? { 
-          ...o, 
+        const order = allOrders.find(o => o.id === id);
+        const updatedOrder = { 
+          ...order!,
           items, 
           subtotalAmount: subtotal, 
           vatAmount: vat, 
           totalAmount: total,
           quoteAmount: total 
-        } : o));
+        };
+        setAllOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+
+        // 이미 '전송' 상태인 경우, 상세 내용 저장 시 이메일 재발송
+        if (order?.status === 'processing') {
+          sendQuoteEmail(updatedOrder);
+        }
+        
         alert('견적 상세 내용이 저장되었습니다.');
       }
     } catch (err: any) {

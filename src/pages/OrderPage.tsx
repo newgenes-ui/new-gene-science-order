@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Search, Plus, Minus, ShoppingCart, FileText,
-  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw
+  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw, Eye
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
 import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders } from '../store/orderStore';
@@ -1287,21 +1287,33 @@ export default function OrderPage() {
                                   />
                                 )}
                                 {order.orderType === 'quote' && order.status === 'processing' ? (
-                                  <button
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
-                                        const success = await convertQuoteToOrder(order.id);
-                                        if (success) {
-                                          alert('발주 요청이 완료되었습니다.');
-                                          loadUserOrders(); // 목록 새로고침
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        window.open(`/quote?ids=${order.id}`, '_blank');
+                                      }}
+                                      className="px-3 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      견적서 보기
+                                    </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
+                                          const success = await convertQuoteToOrder(order.id);
+                                          if (success) {
+                                            alert('발주 요청이 완료되었습니다.');
+                                            loadUserOrders(); // 목록 새로고침
+                                          }
                                         }
-                                      }
-                                    }}
-                                    className="px-4 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
-                                  >
-                                    발주요청
-                                  </button>
+                                      }}
+                                      className="px-4 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
+                                    >
+                                      발주요청
+                                    </button>
+                                  </div>
                                 ) : (
                                   <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
                                     order.status === 'pending' ? 'bg-blue-500 text-white' :
