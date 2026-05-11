@@ -197,37 +197,42 @@ export default function AdminDashboard() {
   const sendQuoteEmail = async (order: Order) => {
     if (!order.ordererEmail || !order.ordererEmail.includes('@')) return;
 
-    // 현재 도메인 기반 견적서 링크 생성
-    const quoteUrl = `${window.location.origin}/quote?ids=${order.id}`;
-    
+    // 100% 확실한 정식 URL 및 데이터 안전장치
+    const quoteUrl = "https://new-gene-science-order.vercel.app/quote?ids=" + order.id;
+    const client = order.clientName || "(주)보령제약";
+    const name = order.ordererName || "담당자";
+    const phone = order.ordererPhone || "-";
+    const email = order.ordererEmail || "-";
+
+    // 템플릿이 어떤 변수명을 쓰더라도 대응할 수 있도록 모든 이름으로 송신
+    const emailContent = "기관명: " + client + "\n주문자: " + name + "\n연락처: " + phone + "\n이메일: " + email + "\n\n▶ [공식 견적서 확인 및 인쇄]\n" + quoteUrl + "\n\n--------------------------\n[안내]\n위 링크를 클릭하시면 공식 견적서를 확인하실 수 있습니다.";
+
     const emailParams = {
-      order_title: `[(주)뉴진사이언스] 견적서 도착 (NEW) - ${order.clientName}`,
-      order_type_text: '견적서 발송',
-      detail_label: '견적서 확인 및 다운로드 내역',
-      order_id: order.id,
-      order_date: new Date().toLocaleDateString(),
-      // 성공한 명세서 메일의 변수명과 일치시킴
-      client_name: order.clientName,   // 기관명
-      orderer_name: order.ordererName, // 주문자
-      contact_number: order.ordererPhone, // 연락처
-      orderer_email: order.ordererEmail,  // 발행 이메일
+      order_title: "[(주)뉴진사이언스] 견적서 도착 (V5) - " + client,
+      detail_label: "견적서 확인",
+      items_text: emailContent,    // 기본 변수
+      message: emailContent,       // 대체 변수 1
+      content: emailContent,       // 대체 변수 2
+      order_details: emailContent, // 대체 변수 3
       
-      // 링크 형식을 성공한 메일과 동일하게 구성
-      items_text: `▶ [공식 견적서 확인 및 인쇄]\n${quoteUrl}\n\n-------------------------\n[안내]\n위 링크를 클릭하시면 공식 견적서를 확인하실 수 있습니다.`,
-      
-      // 혹시 모를 다른 변수들 대응
-      customer_name: order.ordererName,
-      from_name: "(주)뉴진사이언스",
-      to_email: order.ordererEmail,
+      // 개별 필드 대응
+      client_name: client,
+      orderer_name: name,
+      orderer_phone: phone,
+      orderer_email: email,
+      customer_name: name,
+      from_name: name,
+      contact_number: phone,
+      to_email: email,
+      reply_to: email
     };
 
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
       try {
-        console.log('📧 견적서 이메일 발송 시작...', order.ordererEmail);
+        console.log('📧 견적서 이메일 발송 시도 (V5)...', email);
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-        console.log('✅ 견적서 이메일 발송 완료');
       } catch (err) {
-        console.error('❌ 견적서 이메일 발송 실패:', err);
+        console.error('❌ 발송 오류:', err);
       }
     }
   };
@@ -238,18 +243,17 @@ export default function AdminDashboard() {
       if (success) {
         setAllOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
         
-        // '전송' (processing) 상태로 변경될 때 이메일 발송
         if (newStatus === 'processing') {
-          const order = allOrders.find(o => o.id === id);
-          if (order) {
-            sendQuoteEmail(order);
+          const targetOrder = allOrders.find(o => o.id === id);
+          if (targetOrder) {
+            sendQuoteEmail({ ...targetOrder, status: newStatus });
           }
         }
       } else {
-        alert('DB 업데이트에 실패했습니다. Supabase의 RLS 정책에서 UPDATE 또는 UPSERT 권한이 허용되어 있는지 확인해 주세요.');
+        alert('DB 업데이트 실패');
       }
     } catch (err: any) {
-      alert('상태 업데이트 중 오류가 발생했습니다:\n' + err.message);
+      console.error(err);
     }
   };
 
@@ -808,7 +812,7 @@ export default function AdminDashboard() {
                                       }`}
                                     style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: s.id === 'processing' ? '#ef4444' : (STATUS_COLORS[s.id as Order['status']] || '#94a3b8'), opacity: 1 } : {}}
                                   >
-                                    {s.label}{s.id === 'processing' ? '(V3)' : ''}
+                                    {s.label}{s.id === 'processing' ? ' (V5)' : ''}
                                   </button>
                                 ))}
                               </div>
