@@ -15,9 +15,9 @@ export default function StatementViewer() {
   const idsParam = searchParams.get('ids') || '';
   const orderIds = idsParam.split(',').filter(Boolean);
 
-  // 로고 및 직인 Base64 데이터 (CORS 문제 방지를 위해 내장)
-  const LOGO_BASE64 = "data:image/png;base64,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MwA0AJsANQA2AKIANwA4AKoAOQA6ALEAOwA+ALgAPwA/AMEAQABAAMYAQQBCAIsAQwBEAKAAXABuAL0AogCkALIAqACqALcAqwCtALsArgCwAMAAsQCxAMUAeAB8AAIApACpAAYArACuAAoAsQCxAA0AdQB/ACAApACpACQArACuACgAsQCxACwAdQB/ACwApACpACwArACuACwAsQCxACwAdQB/ADAApACpADQArACuADgAsQCxADwAdQB/AEAAsQCxAEAAfQCAAEAAfQCBAEAAfQCCAEAAfQCDAEAAfQCEAEAAfQCFAD4AfQCGAEAAfQCHAEAAfQCIAEAAfQCJAEAAfQCRAEAAfQCSAEAAfQCTAEAAfQCUAEAAfQCVAEAAfQCWAD4AfQCcAEAAfQCdAEAAfQCeAEAAfQCfAEAAfQChAEAAfQCjAEAAfQCkAEAAfQCmAEAAfQCoAEAAfQCpAEAAfQCuAEAAfQCvAEAAfQCwAEAAfQCxAEAAfQC8AEAAfQC+AEAAfQC/AEAAfQDAAEAAfQDBAEAAfQDCAD4AfQDEAIIAhwACAKEAogBCAHMAeAA8AHIAeABCAIUAhgA8AHIAdgA8AHIAdwA8AHIAeAB8AH4AAgCiAKMAAgCmAKcAFAAA"
-  const STAMP_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAABACAYAAABf+79WAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAasSURBVHgB7V07bBRXFH2f3uulRQu0kL8L0pCi7eI9EAIJiEAm9SfoK/wX+S/yU+SlyE8AnDgo6S8AF05I/I90UqRTB0U6dVBEInXQIhKpgxYRSB20iEDqoEUkqX2eunfXm707Hs/szux6P7R6d3Z2d3Z3P+68x7v7PGeMcV83B6YV8pP83E7WlOunXfW9Iu/Z6enp2p08PYD+Srvm8vG6f0Xf8nPd7Kzu6up6pXfKNX7p0nRqhJ3C0Gb+LpM7h0mWxbmLIBAgD+Y8hP2n6FtWlX8gMm5wId7LLqNjhPviCE/Hz6I9bIcNTg6ftnBMj82t48JOxcG5+fRe62eN1gIAON1QT88rHR0dtw8IDjpmZWBwinHcCcYxfCcAnCDgqFc64YzhGBsoBeoYCJbLBirQaYeVMsnLVXSUFVCFbZXY0BCSvA9FG2UdB+NgEDXjTzazNDud5Gy7fEKXlAMc9+wvGWVzyvynCZw/f97gRPEVb8YzIy2DEOTdvuOfn59vruV+yDwRIAJEgAgQASJQjwnANSpv5BNbYNb5q52m/fau0gsZ8LWBe8dh+g5R/QTmLr2EVuK3BCK/3vr2IR+gCETAuPhL97eFlq49BHbSD4Titp8IGqd+bdpv928m7YZnce7Sq9qabrCn5/kpn3bLWDOn3dK+CWVjE3ycBvvZWfWW2Fr2DHQRvR/matc3RGL7gb+LdW+xrVUvb2fr/h1CJSM/bhcyY0BM/7TBvdollejmS7u7+6uXmY9mO3vXv8vW/m08N6P96u3X759TeP5v87+JRm7Cujoa6fX80IEiAARIAJEgAgQASJABIigNglAX6FNc/Pbz/yA+/SyKm/nC281CTn8bpDzueGxI6csSms09psY6S7eEuf9UWcm+GRAlQhgrSxcFuNVhHFpjvoNsro62W6f2CRw99KUuEWfJcRM6BDis7ZHeHCOr7n5tWcOhioJQG0C4FfIMZksHBrcXpAxhpM6qTY3zGqnNf0mOnp6SluNfT2yEtf0e75z0qQuIxMjk3u9m9Xf0vLs/Bb/yZpW/8jEnwPo16VKZUSACBABIkAEiAARIAJEgAjUiwDAZit9/TOgvf5TABwrI+pUanRmUoR/NrSjRASIABEgAkSACBABIkAEiEA9JODvH9psY6Tf3DY7C6/6mhkdfSNCjioFEN9yKz0d6pZmW7e0iV6M6YivRkSACBABIkAEiAARIAJEgAjUQwLajwDAXyXG9O6Wp98C0K8Zf9HByzVTu0I9+D09Pe1f6Bfr+WwPN5vHjI6mhnv8na3v9E8O7Zge4S4S6X2M0EIEiAARIAJEgAgQASJABOpFAiI9XGlj97B+E/X3GBe49O+iTq0SgS+Ni9z3Yf/E7j6NfR0W9W3iP3X9Xm+mU767lT70u3mX+93eB37p3+Z7vbe6f685H6+D9Tq8I6f00n9L+yftmve7fE8p/TDPXP+y/3L9K/7X/Vf9F7N63Y7O63r9M57p6WmfZqZnpG8zQf8m9X63fV6/5v9jU9p5+qU9/vK/jXW5DjtN+/2vP07297e6837vXnbe5/3T9jXfU3p6T996Uq+007VpXp6Wvmdk6N6p75le8H89oI6OOk9PD/VvIn09M3M6VpG+6+6Z6TvX6/6966f919S923m+r+/p6ZlC+v7/A/D/7f+X7j2/M/30048e/H97e3v8r7/+4vVj+5f9+u6zNf8/v/P002/+O9u75e96f+f98/6u/9u+qVf6u/89/65P6pV6u7Zvzr/rM8/W579+Xv8v6fGf/2+uzfLrtWlPv9I77fKXP+notu/u/rXv7//Z/+l77e+u3+7p3/+Z/6nz+rn/z/Y871/fb17zP/03/tP+0+0//vdPf0f///P//873nfP+X/X/+f/7/P9//Ff/n/z//P/8/v/9vX/O/4z//P///n+//z///5///7///v///69//8f+v9T1t967/P3ev/T3tN+33rt8709N677vX9/T9/X360f///A99P99L76+v83Svp//96f///wP9T097S+ut7z1//gG/9P5633N9T9/77vV9/78f//7P9/L7v/99///z97f7//7f//73/e/+167u/7v//7/ff86v6//Wp56pZ56pZ/qv7un6Z+uZZzN9v+90b797z/T/N/Odfub67XzX77L/bSyz9cx8/9fM/O9sff7r5/X/7mU96Wemv/pP2rve03/9m57T//Sc9p7+6D89rX7T0/p/fU9//9fM6ZOfvP9j0zM/qf/U6v8fWp7/8z/P57/+6v99Z/7n/59PfnL8/6f9X7p7n67P/96v8vX0f/2X/tOfvvO951/6T39T/6lH/pW+Z/6Xvm/u6Xv/D//658/Tf/1/Wp/89M///7/p+u9pX9++697+p31X0vVfS7/Z+/+U/9rVvdt2t67P+P/YVPrvX0qf76X/9V97T/n7v/+9036f+m/v7T2lz+rP//xZ06dfv670Wf6pZ77/5/X/7rP0//r/6pX/N9/6v+9++63f9Yf///h7/p/vn/6Xvt767f7unf/5n/6fP6uf/P9jzvX99vXvM//Tf+0/7f7T/+909/R///f/zP8v6fH/f+j/zP9X0mP9X/pPHf/X/3//8f/T9f/6f/+f///r/+e6/+uv9v9/AP8fAAABAAEmAAIAIgAkAAIAIQAoAAQALQAvAAcAMQAxAAoAMwA6AA0AQAAfABgAIQAhAC4AIwAjADIAJAAkAD0AJQAlAEYAJgAmAFEAJwAnAF0AKAAoAGcAKQAqAHEAKwAsAHkALQAsAHkALQAuAIIALwAwAIsAMQAyAJQAMwA0AJsANQA2AKIANwA4AKoAOQA6ALEAOwA+ALgAPwA/AMEAQABAAMYAQQBCAIsAQwBEAKAAXABuAL0AogCkALIAqACqALcAqwCtALsArgCwAMAAsQCxAMUAeAB8AAIApACpAAYArACuAAoAsQCxAA0AdQB/ACAApACpACQArACuACgAsQCxACwAdQB/ACwApACpACwArACuACwAsQCxACwAdQB/ADAApACpADQArACuADgAsQCxADwAdQB/AEAAsQCxAEAAfQCAAEAAfQCBAEAAfQCCAEAAfQCDAEAAfQCEAEAAfQCFAD4AfQCGAEAAfQCHAEAAfQCIAEAAfQCJAEAAfQCRAEAAfQCSAEAAfQCTAEAAfQCUAEAAfQCVAEAAfQCWAD4AfQCcAEAAfQCdAEAAfQCeAEAAfQCfAEAAfQChAEAAfQCjAEAAfQCkAEAAfQCmAEAAfQCoAEAAfQCpAEAAfQCuAEAAfQCvAEAAfQCwAEAAfQCxAEAAfQC8AEAAfQC+AEAAfQC/AEAAfQDAAEAAfQDBAEAAfQDCAD4AfQDEAIIAhwACAKEAogBCAHMAeAA8AHIAeABCAIUAhgA8AHIAdgA8AHIAdwA8AHIAeAB8AH4AAgCiAKMAAgCmAKcAFAAA"
+  // 로고 및 직인 경로 (화면 출력용)
+  const LOGO_PATH = "/logo.png";
+  const STAMP_PATH = "/stamp.png";
 
   const handleDownloadPDF = async () => {
     if (!statementRef.current || isDownloading) return;
@@ -26,32 +26,34 @@ export default function StatementViewer() {
     setIsDownloading(true);
     
     try {
-      // 1. 모든 리소스가 로드되도록 잠시 대기 (모바일 폰트/이미지 렌더링 시간 확보)
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // 이미지 객체를 미리 생성하여 로드 보장
+      const loadImage = (src: string): Promise<HTMLImageElement> => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      };
+
+      // 로고와 직인을 미리 로드
+      await Promise.all([loadImage(LOGO_PATH), loadImage(STAMP_PATH)]);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       const element = statementRef.current;
       
       // html2canvas 옵션 모바일 최적화
       const canvas = await html2canvas(element, {
-        scale: 1.8, // 모바일 메모리 부하를 줄이면서 선명도 유지
+        scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 20000,
+        imageTimeout: 15000,
         // 캡처 영역을 정확히 잡기 위해 스크롤 위치 보정
         scrollX: 0,
-        scrollY: -window.scrollY,
-        onclone: (clonedDoc) => {
-          const logo = clonedDoc.querySelector('img[alt="New Gene Science Logo"]');
-          if (logo) (logo as HTMLImageElement).src = LOGO_BASE64;
-          
-          const stamp = clonedDoc.querySelector('img[alt="직인"]');
-          if (stamp) {
-            (stamp as HTMLImageElement).src = STAMP_BASE64;
-            (stamp as HTMLElement).style.mixBlendMode = 'normal';
-          }
-        }
+        scrollY: -window.scrollY
       });
       
       // 2. 고화질 JPG로 변환 (PNG보다 용량이 적어 모바일에서 유리)
@@ -246,7 +248,7 @@ export default function StatementViewer() {
             <tbody>
               <tr>
                 <td colSpan={4} className="border border-black p-2 relative h-[70px]">
-                  <img src={LOGO_BASE64} className="h-10 mx-auto object-contain" alt="New Gene Science Logo"/>
+                  <img src={LOGO_PATH} className="h-10 mx-auto object-contain" alt="New Gene Science Logo"/>
                 </td>
               </tr>
               <tr>
@@ -260,7 +262,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1 font-bold relative w-[25%]">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
                   {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src={STAMP_BASE64} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
+                  <img src={STAMP_PATH} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto mix-blend-multiply opacity-90 pointer-events-none" alt="직인" />
                 </td>
               </tr>
               <tr>
