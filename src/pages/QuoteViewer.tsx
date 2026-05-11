@@ -229,8 +229,8 @@ export default function QuoteViewer() {
                 <td className="border border-black p-1 font-bold">(주) 뉴진사이언스</td>
                 <th className="border border-black p-1 bg-gray-50">대 표 자</th>
                 <td className="border border-black p-1 font-bold relative">
-                  김 기 환
-                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-12 w-auto opacity-80" alt="Stamp" />
+                  김 기 환 <span className="text-[10px] ml-1">(인)</span>
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-14 w-auto opacity-90 pointer-events-none" alt="Stamp" />
                 </td>
               </tr>
               <tr className="h-8">
@@ -255,25 +255,27 @@ export default function QuoteViewer() {
 
         <table className="border-collapse border-[2px] border-black w-full text-[11px] mb-4">
           <thead>
-            <tr>
-              <th colSpan={8} className="border border-black p-2 bg-[#f8fafc]">
-                <div className="flex justify-between items-center px-2">
-                  <span className="font-bold text-sm tracking-widest">합계 :</span>
-                  <span className="font-bold text-base tracking-widest underline underline-offset-4">{totalAmountKorean} 원정</span>
-                  <span className="text-sm font-bold">₩{totalAmount.toLocaleString()}</span>
-                  <span className="text-[10px] text-slate-500">(VAT포함)</span>
-                </div>
-              </th>
+            <tr className="bg-[#f8fafc] text-center h-10 font-bold">
+              <th className="border border-black p-1 w-10">합계</th>
+              <td colSpan={5} className="border border-black p-1 text-base tracking-[0.5em] underline underline-offset-4">
+                {totalAmountKorean} 원정
+              </td>
+              <td className="border border-black p-1 text-right px-2">
+                {totalAmount.toLocaleString()}
+              </td>
+              <td className="border border-black p-1 text-[10px] font-normal text-slate-500">
+                (VAT포함)
+              </td>
             </tr>
             <tr className="bg-[#E4EAF2] text-center font-bold h-8">
               <th className="border border-black p-1 w-10">No</th>
               <th className="border border-black p-1">품 명</th>
-              <th className="border border-black p-1 w-20">코드</th>
-              <th className="border border-black p-1 w-20">규격</th>
-              <th className="border border-black p-1 w-12">수량</th>
-              <th className="border border-black p-1 w-20">단가</th>
-              <th className="border border-black p-1 w-24">금액</th>
-              <th className="border border-black p-1 w-20">비고</th>
+              <th className="border border-black p-1 w-20">코 드</th>
+              <th className="border border-black p-1 w-16">단 위</th>
+              <th className="border border-black p-1 w-12">수 량</th>
+              <th className="border border-black p-1 w-20">단 가</th>
+              <th className="border border-black p-1 w-24">금 액</th>
+              <th className="border border-black p-1 w-16">비 고</th>
             </tr>
           </thead>
           <tbody>
@@ -303,33 +305,41 @@ export default function QuoteViewer() {
             ))}
           </tbody>
           <tfoot>
-            <tr className="h-10 font-bold bg-gray-50">
-              <td colSpan={5} className="border border-black p-2 text-left align-top font-normal text-[10px]">
+            <tr className="h-8 font-bold">
+              <td colSpan={5} rowSpan={3} className="border border-black p-2 text-left align-top font-normal text-[10px]">
                 {`<비 고>`}
               </td>
-              <td className="border border-black p-1 text-center flex flex-col items-center justify-center h-full">
-                <span>금액</span>
-                <span className="text-[9px] font-normal">부가세</span>
-                <span className="text-primary">합계</span>
-              </td>
-              <td className="border border-black p-1 text-right px-2 flex flex-col justify-center h-full">
-                <span>{totalSubtotal.toLocaleString()}</span>
-                <span className="text-[9px] font-normal">{totalVat.toLocaleString()}</span>
-                <span className="text-primary">{totalAmount.toLocaleString()}</span>
-              </td>
-              <td className="border border-black p-1"></td>
+              <th className="border border-black p-1 text-center bg-gray-50 tracking-widest text-[10px]">금 액</th>
+              <td colSpan={2} className="border border-black p-1 text-right px-2 font-normal">{totalSubtotal.toLocaleString()}</td>
+            </tr>
+            <tr className="h-8 font-bold">
+              <th className="border border-black p-1 text-center bg-gray-50 tracking-widest text-[10px]">부가세</th>
+              <td colSpan={2} className="border border-black p-1 text-right px-2 font-normal">{totalVat.toLocaleString()}</td>
+            </tr>
+            <tr className="h-8 font-bold">
+              <th className="border border-black p-1 text-center bg-gray-50 tracking-widest text-[10px]">합 계</th>
+              <td colSpan={2} className="border border-black p-1 text-right px-2 text-primary font-bold">{totalAmount.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
 
-        <div className="border-[2px] border-black p-2 text-[10px] leading-relaxed">
-          <p className="font-bold">▶ 견적 유효기간 : 견적 발행일로 14일 입니다.</p>
-          <p>▶ 결제계좌 : 기업은행 699-037504-04-022 예금주 ㈜ 뉴진사이언스</p>
-          <p className="text-red-500 font-bold">★ 수입발주 품목은 발주 진행 후 취소 불가합니다.</p>
-          <div className="flex justify-end mt-1 font-bold text-slate-700">
-            ◆ 작성자 : 양유지 매니저 // 영업담당자 : 010-7169-8805
-          </div>
-        </div>
+        <table className="w-full border-collapse border-[2px] border-black text-[10px] leading-tight mt-[-2px]">
+          <tbody>
+            <tr>
+              <td className="border border-black p-1.5 w-[60%] font-bold">▶ 견적 유효기간 : 견적 발행일로 14일 입니다.</td>
+              <td rowSpan={2} className="border border-black p-1.5 bg-gray-50"></td>
+            </tr>
+            <tr>
+              <td className="border border-black p-1.5 font-bold">▶ 결제계좌 : 기업은행 699-037504-04-022 예금주 ㈜ 뉴진사이언스</td>
+            </tr>
+            <tr>
+              <td className="border border-black p-1.5 text-red-500 font-bold">★ 수입발주 품목은 발주 진행 후 취소 불가합니다.</td>
+              <td className="border border-black p-1.5 text-center font-bold bg-gray-50 whitespace-nowrap">
+                ◆ 작성자 : 양유지 매니저 // 영업담당자 : 010-7169-8805
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
