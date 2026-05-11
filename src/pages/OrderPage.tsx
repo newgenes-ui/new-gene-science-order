@@ -1209,19 +1209,24 @@ export default function OrderPage() {
                                         </div>
                                         <div className="text-right shrink-0 ml-4">
                                           <p className="text-[11px] font-black text-slate-700">{item.quantity}개</p>
-                                          <p className="text-[10px] font-bold text-primary">₩{item.subtotal.toLocaleString()}</p>
+                                          {!(order.orderType === 'quote' && order.status === 'pending') && (
+                                            <p className="text-[10px] font-bold text-primary">₩{item.subtotal.toLocaleString()}</p>
+                                          )}
                                         </div>
                                       </div>
                                     ))}
                                   </div>
                                   <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                    <div className="text-right flex-1">
-                                      <div className="flex justify-end gap-4 text-[10px] font-bold text-slate-400 mb-1">
-                                        <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
-                                        <span>부가세: ₩{dVat.toLocaleString()}</span>
-                                      </div>
-                                      <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
-                                      <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
+                                      {!(order.orderType === 'quote' && order.status === 'pending') && (
+                                        <>
+                                          <div className="flex justify-end gap-4 text-[10px] font-bold text-slate-400 mb-1">
+                                            <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
+                                            <span>부가세: ₩{dVat.toLocaleString()}</span>
+                                          </div>
+                                          <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
+                                          <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                   {order.items && order.items.length > 0 && order.otherRequest && (
@@ -1258,12 +1263,17 @@ export default function OrderPage() {
                               </div>
 
                               <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
-                                {/* 접기 모드에서 견적 금액 표시 (품목이 없어도 금액만 입력된 경우 표시) */}
-                                {dTotal > 0 && (
+                                {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
+                                {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
                                   <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0 max-w-[200px] md:max-w-none">
                                     <span className="text-[10px] font-black text-slate-800 truncate">{summaryText}</span>
                                     {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
                                     <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {(order.orderType === 'quote' && order.status === 'pending') && (
+                                  <div className="mr-auto md:mr-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                                    <span className="text-[10px] font-bold text-slate-500 italic">견적 검토 중...</span>
                                   </div>
                                 )}
 
@@ -1345,16 +1355,17 @@ export default function OrderPage() {
                                         <p className="text-[11px] font-black text-slate-800 truncate">{item.productName}</p>
                                         <p className="text-[10px] text-slate-400 font-medium truncate">{item.productCode}</p>
                                       </div>
-                                      <div className="text-right shrink-0 ml-4">
                                         <p className="text-[11px] font-black text-slate-700">{item.quantity}개</p>
-                                        <p className="text-[10px] font-bold text-primary">₩{item.subtotal.toLocaleString()}</p>
+                                        {!(order.orderType === 'quote' && order.status === 'pending') && (
+                                          <p className="text-[10px] font-bold text-primary">₩{item.subtotal.toLocaleString()}</p>
+                                        )}
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                                 
-                                {/* 펼침 모드에서 견적 금액 표시 */}
-                                {dTotal > 0 && (
+                                {/* 펼침 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
+                                {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
                                   <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col md:flex-row md:items-end justify-between gap-4">
                                     <div className="text-right flex-1">
                                       <div className="flex justify-end gap-4 text-[10px] font-bold text-slate-400 mb-1">
@@ -1364,6 +1375,13 @@ export default function OrderPage() {
                                       <p className="text-[11px] text-slate-400 font-bold">안내된 견적 금액 (VAT 포함)</p>
                                       <p className="text-xl font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
                                     </div>
+                                  </div>
+                                )}
+                                {(order.orderType === 'quote' && order.status === 'pending') && (
+                                  <div className="mt-4 pt-4 border-t border-slate-100 text-center">
+                                    <p className="text-xs font-bold text-slate-400 italic bg-slate-50 py-3 rounded-2xl border border-dashed border-slate-200">
+                                      관리자가 견적 내용을 확인 중입니다. 잠시만 기다려 주세요.
+                                    </p>
                                   </div>
                                 )}
                                 
