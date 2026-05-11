@@ -111,6 +111,11 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    // EmailJS 초기화 (OrderPage와 동일하게)
+    if (EMAILJS_PUBLIC_KEY) {
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+    }
+
     loadOrders();
     // Supabase 실시간 구독 설정 (데이터 변경 시 즉시 갱신)
     const unsubscribe = subscribeToOrders(() => {
@@ -803,7 +808,7 @@ export default function AdminDashboard() {
                                       }`}
                                     style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
                                   >
-                                    {s.label}
+                                    {s.label}{s.id === 'processing' ? '(V3)' : ''}
                                   </button>
                                 ))}
                               </div>
