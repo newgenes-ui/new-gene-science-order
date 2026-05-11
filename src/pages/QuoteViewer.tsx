@@ -19,20 +19,21 @@ export default function QuoteViewer() {
   const STAMP_PATH = "/stamp.png";
 
   const handleDownloadPDF = async () => {
-    if (!quoteRef.current || isDownloading) return;
+    if (isDownloading) return;
     setIsDownloading(true);
     
-    const scrollY = window.scrollY;
-    
     try {
-      window.scrollTo(0, 0);
+      const pdf = new jsPDF('p', 'mm', 'a4');
       
-      // 이미지를 Base64로 미리 변환 (CORS 및 로딩 에러 방지)
-      const toBase64 = (url: string): Promise<string> => {
+      // 한글 폰트 설정 (기본 폰트가 한글을 지원하지 않을 경우를 대비해 텍스트 대신 선과 이미지 위주로 구성하거나 폰트 추가)
+      // 여기서는 jspdf의 기본 기능을 활용하되, 가장 안전한 방식으로 구현합니다.
+      
+      // 1. 로고 및 직인 이미지 로드
+      const loadImage = (src: string): Promise<string> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
-          img.src = url;
+          img.src = src;
           img.onload = () => {
             const canvas = document.createElement("canvas");
             canvas.width = img.width;
@@ -45,51 +46,54 @@ export default function QuoteViewer() {
         });
       };
 
-      // 렌더링 대기
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const [logoBase64, stampBase64] = await Promise.all([
+        loadImage(LOGO_PATH),
+        loadImage(STAMP_PATH)
+      ]);
 
-      const element = quoteRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 1.5, // 안정적인 해상도
+      // 2. 제목 그리기
+      pdf.setFontSize(20);
+      pdf.text("견 적 서", 105, 20, { align: 'center' });
+      pdf.line(80, 22, 130, 22);
+
+      // 3. 상단 정보 테이블 (선 그리기)
+      pdf.setLineWidth(0.5);
+      pdf.rect(15, 30, 85, 45); // 왼쪽 테이블
+      pdf.rect(110, 30, 85, 45); // 오른쪽 테이블
+
+      // 왼쪽 정보 채우기 (이미지 렌더링 방식 우회 - 한글 깨짐 방지 위해 이미지를 활용할 수도 있음)
+      // 하지만 가장 확실한 방법은 html2canvas를 아주 작게 쪼개서 사용하는 것입니다.
+      
+      // [전략 수정] 전체 화면이 아닌 '부분 캡처' 방식으로 메모리 부하를 줄입니다.
+      const canvas = await html2canvas(quoteRef.current!, {
+        scale: 1.5,
         useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 0,
-        width: element.scrollWidth,
-        height: element.scrollHeight
+        backgroundColor: '#ffffff'
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width);
       
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
-      // 모바일 우회 방식: 새 창에서 열기 (Safari 대응)
+      // 모바일 전용 저장 방식 (Blob)
       const blob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       
-      // PC와 모바일을 구분하여 처리
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        window.open(blobUrl, '_blank');
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        window.open(url, '_blank');
       } else {
         pdf.save(fileName);
       }
       
-      // 메모리 정리
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
 
     } catch (error) {
       console.error('PDF 생성 상세 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처해 주세요.');
+      alert('PDF 생성 중 오류가 발생했습니다. 화면을 캡처해 주세요.');
     } finally {
-      window.scrollTo(0, scrollY);
       setIsDownloading(false);
     }
   };

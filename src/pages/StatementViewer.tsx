@@ -20,72 +20,40 @@ export default function StatementViewer() {
   const STAMP_PATH = "/stamp.png";
 
   const handleDownloadPDF = async () => {
-    if (!statementRef.current || isDownloading) return;
+    if (isDownloading) return;
     setIsDownloading(true);
     
-    const scrollY = window.scrollY;
-    
     try {
-      window.scrollTo(0, 0);
-
-      const toBase64 = (url: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = url;
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx?.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL("image/png"));
-          };
-          img.onerror = reject;
-        });
-      };
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const element = statementRef.current;
-      const canvas = await html2canvas(element, {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const canvas = await html2canvas(statementRef.current!, {
         scale: 1.5,
         useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
         logging: false,
-        imageTimeout: 0,
-        width: element.scrollWidth,
-        height: element.scrollHeight
+        backgroundColor: '#ffffff'
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = 210;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width);
       
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
       const blob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
-        window.open(blobUrl, '_blank');
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        window.open(url, '_blank');
       } else {
         pdf.save(fileName);
       }
       
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
       
     } catch (error) {
       console.error('PDF 생성 상세 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처하여 저장해 주세요.');
+      alert('PDF 생성 중 오류가 발생했습니다. 화면을 캡처해 주세요.');
     } finally {
-      window.scrollTo(0, scrollY);
       setIsDownloading(false);
     }
   };
