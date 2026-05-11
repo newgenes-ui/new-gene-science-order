@@ -197,14 +197,19 @@ export default function AdminDashboard() {
     
     const emailParams = {
       order_title: `[(주)뉴진사이언스] 견적서가 도착했습니다 - ${order.clientName}`,
-      order_type_text: '견적서 발송',
-      detail_label: '견적서 확인',
+      order_type_text: '견적서 전송',
+      detail_label: '견적서 확인 및 다운로드',
       order_id: order.id,
       order_date: new Date().toLocaleDateString(),
       client_name: order.clientName,
       orderer_name: order.ordererName,
-      customer_name: order.ordererName,
+      customer_name: order.ordererName, // 템플릿 호환용
+      from_name: order.ordererName,    // 템플릿 호환용
+      orderer_email: order.ordererEmail,
+      contact_number: order.ordererPhone,
       total_amount: `₩${order.totalAmount.toLocaleString()}`,
+      // 상세 내역 칸에 링크를 눈에 띄게 삽입
+      items_text: `[공식 견적서 확인 링크]\n${quoteUrl}\n\n* 위 링크를 클릭하시면 견적서를 확인하고 PDF로 다운로드 받으실 수 있습니다.`,
       quote_link: quoteUrl,
       to_email: order.ordererEmail,
       ngs_email: NGS_EMAIL,
