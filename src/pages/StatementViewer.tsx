@@ -21,72 +21,70 @@ export default function StatementViewer() {
 
   const handleDownloadPDF = async () => {
     if (!statementRef.current || isDownloading) return;
-    
-    // 모바일에서는 처리 중임을 알리는 것이 중요함
     setIsDownloading(true);
     
-    // 현재 스크롤 위치 저장
     const scrollY = window.scrollY;
     
     try {
-      // 1. 캡처를 위해 화면 상단으로 일시 이동 (모바일 좌표 오류 방지)
       window.scrollTo(0, 0);
 
-      // 이미지 객체를 미리 생성하여 로드 보장
-      const loadImage = (src: string): Promise<HTMLImageElement> => {
+      const toBase64 = (url: string): Promise<string> => {
         return new Promise((resolve, reject) => {
           const img = new Image();
           img.crossOrigin = "anonymous";
-          img.src = src;
-          if (img.complete) resolve(img);
-          else {
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-          }
+          img.src = url;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx?.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL("image/png"));
+          };
+          img.onerror = reject;
         });
       };
 
-      // 로고와 직인을 미리 로드 및 충분한 렌더링 대기
-      await Promise.all([loadImage(LOGO_PATH), loadImage(STAMP_PATH)]);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const element = statementRef.current;
-      
-      // 2. html2canvas 옵션 모바일 최적화
       const canvas = await html2canvas(element, {
-        scale: 1.2, // 메모리 부족 방지
+        scale: 1.5,
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 0,
         width: element.scrollWidth,
-        height: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('statement-container');
-          if (clonedElement) clonedElement.style.display = 'block';
-        }
+        height: element.scrollHeight
       });
       
-      // 3. 고화질 JPG로 변환 (PNG보다 용량이 적어 모바일에서 유리)
       const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = 210;
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      // PDF에 이미지 삽입
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
       
-      pdf.save(fileName);
+      const blob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        window.open(blobUrl, '_blank');
+      } else {
+        pdf.save(fileName);
+      }
+      
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
       
     } catch (error) {
       console.error('PDF 생성 상세 에러:', error);
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주시거나, 화면을 캡처하여 저장해 주세요.');
     } finally {
-      // 원래 스크롤 위치로 복구
       window.scrollTo(0, scrollY);
       setIsDownloading(false);
     }
