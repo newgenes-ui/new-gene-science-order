@@ -806,7 +806,7 @@ export default function AdminDashboard() {
                                         ? 'text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)] scale-110 ring-2 ring-white/30 z-10'
                                         : 'text-slate-400 hover:text-slate-600 hover:bg-white/80 opacity-60 hover:opacity-100'
                                       }`}
-                                    style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: STATUS_COLORS[s.id as Order['status']] || '#94a3b8', opacity: 1 } : {}}
+                                    style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: s.id === 'processing' ? '#2563eb' : (STATUS_COLORS[s.id as Order['status']] || '#94a3b8'), opacity: 1 } : {}}
                                   >
                                     {s.label}{s.id === 'processing' ? '(V3)' : ''}
                                   </button>
