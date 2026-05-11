@@ -196,7 +196,7 @@ export default function AdminDashboard() {
     const quoteUrl = `${window.location.origin}/quote?ids=${order.id}`;
     
     const emailParams = {
-      order_title: `[(주)뉴진사이언스] 견적서가 도착했습니다 - ${order.clientName}`,
+      order_title: `[(주)뉴진사이언스] 견적서 도착 (NEW) - ${order.clientName}`,
       order_type_text: '견적서 발송',
       detail_label: '견적서 확인 및 다운로드 내역',
       order_id: order.id,
