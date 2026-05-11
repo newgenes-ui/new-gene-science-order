@@ -8,7 +8,7 @@ import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, 
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 
-// BUILD TRIGGER: V5.1 - FORCE DEPLOYMENT
+
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
     const emailContent = "기관명: " + client + "\n주문자: " + name + "\n연락처: " + phone + "\n이메일: " + email + "\n\n▶ [공식 견적서 확인 및 인쇄]\n" + quoteUrl + "\n\n--------------------------\n[안내]\n위 링크를 클릭하시면 공식 견적서를 확인하실 수 있습니다.";
 
     const emailParams = {
-      order_title: "[(주)뉴진사이언스] 견적서 도착 (V5) - " + client,
+      order_title: "[(주)뉴진사이언스] 견적서 도착 - " + client,
       detail_label: "견적서 확인",
       items_text: emailContent,    // 기본 변수
       message: emailContent,       // 대체 변수 1
@@ -467,10 +467,7 @@ export default function AdminDashboard() {
               <div className={`w-1.5 h-1.5 rounded-full ${allOrders.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {allOrders.length > 0 ? 'DB 연결됨' : '로컬 모드'}
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-blue-600 text-white shadow-lg animate-bounce">
-              <RefreshCw className="w-3 h-3 animate-spin" />
-              v2.0.0-FINAL
-            </div>
+              v2.1.0 Official
             <button
               onClick={loadOrders}
               disabled={isLoading}
@@ -813,7 +810,7 @@ export default function AdminDashboard() {
                                       }`}
                                     style={String(order.status).toLowerCase() === String(s.id).toLowerCase() ? { backgroundColor: s.id === 'processing' ? '#ef4444' : (STATUS_COLORS[s.id as Order['status']] || '#94a3b8'), opacity: 1 } : {}}
                                   >
-                                    {s.label}{s.id === 'processing' ? ' (V5)' : ''}
+                                    {s.label}
                                   </button>
                                 ))}
                               </div>
