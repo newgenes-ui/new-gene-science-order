@@ -462,9 +462,9 @@ export default function AdminDashboard() {
               <div className={`w-1.5 h-1.5 rounded-full ${allOrders.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {allOrders.length > 0 ? 'DB 연결됨' : '로컬 모드'}
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">
-              <RefreshCw className="w-3 h-3" />
-              v1.4.0 Updated
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-blue-600 text-white shadow-lg animate-bounce">
+              <RefreshCw className="w-3 h-3 animate-spin" />
+              v2.0.0-FINAL
             </div>
             <button
               onClick={loadOrders}
