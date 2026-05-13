@@ -13,6 +13,7 @@ export default function QuoteViewer() {
   const [docScale, setDocScale] = useState(1);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
+  const scaleWrapperRef = useRef<HTMLDivElement>(null);
 
   const idsParam = searchParams.get('ids') || '';
   const orderIds = idsParam.split(',').filter(Boolean);
@@ -40,52 +41,77 @@ export default function QuoteViewer() {
     if (isDownloading) return;
     setIsDownloading(true);
 
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMobile = isIOS || isAndroid;
+
+    // ① iOS Safari: window.open()은 버튼 클릭 직후 동기적으로만 허용됨
+    //    await 이후에 호운하면 팅 팝업 차단으로 지속 품림 → 미리 열어두기
+    let iosWin: Window | null = null;
+    if (isIOS) {
+      iosWin = window.open('', '_blank');
+      if (iosWin) {
+        iosWin.document.write(
+          '<html><head><title>PDF 생성 중</title></head>' +
+          '<body style="display:flex;align-items:center;justify-content:center;' +
+          'height:100vh;font-family:sans-serif;color:#444;text-align:center">' +
+          '<div><p style="font-size:18px">📄 PDF를 생성하고 있습니다...</p>' +
+          '<p style="font-size:14px;color:#888">잠시만 기다려 주세요.</p></div>' +
+          '</body></html>'
+        );
+      }
+    }
+
     try {
-      // 모바일은 메모리 절약을 위해 scale:1.5, PC는 scale:2 (선명도)
-      // allowTaint는 절대 사용 금지 → useCORS와 충돌 시 SecurityError 발생
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      // ② CSS transform이 html2canvas 케스쮘 계산을 방해 → 일시적으로 해제
+      const wrapper = scaleWrapperRef.current;
+      const savedTransform = wrapper?.style.transform ?? '';
+      const savedMargin = wrapper?.style.marginBottom ?? '';
+      if (wrapper) {
+        wrapper.style.transform = 'scale(1)';
+        wrapper.style.marginBottom = '0';
+      }
+      // 2프레임 대기: 브라우저가 변경사항을 실제 렌더링하도록
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
       const canvas = await html2canvas(quoteRef.current!, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
+        windowWidth: 800,
       });
 
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true,
-      });
+      // transform 복원
+      if (wrapper) {
+        wrapper.style.transform = savedTransform;
+        wrapper.style.marginBottom = savedMargin;
+      }
 
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = 210;
       const pageH = (canvas.height * pageW) / canvas.width;
-      const imgData = canvas.toDataURL('image/png'); // PNG → 글자/직인 선명
+      const imgData = canvas.toDataURL('image/png');
       pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
 
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const isAndroid = /Android/i.test(navigator.userAgent);
-
       if (isIOS) {
-        // iOS Safari: 새 탭에서 PDF 열기 → 공유 버튼으로 저장 가능
-        const dataUri = pdf.output('datauristring');
-        const w = window.open();
-        if (w) {
-          w.document.write(
+        // ①에서 미리 연 새 탭에 PDF data URI 주입
+        if (iosWin) {
+          const dataUri = pdf.output('datauristring');
+          iosWin.document.write(
             `<html><head><title>${fileName}</title></head>` +
             `<body style="margin:0">` +
             `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
             `</body></html>`
           );
-          w.document.close();
+          iosWin.document.close();
+          showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
         }
-        showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
       } else if (isAndroid) {
-        // Android: blob URL + <a download> 클릭
         const blob = pdf.output('blob');
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -97,11 +123,11 @@ export default function QuoteViewer() {
         setTimeout(() => URL.revokeObjectURL(url), 10000);
         showToast('📥 PDF 다운로드가 시작되었습니다.');
       } else {
-        // PC: 직접 저장
         pdf.save(fileName);
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
+      if (iosWin) iosWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
@@ -204,6 +230,7 @@ export default function QuoteViewer() {
           marginBottom: docScale < 1 ? `${(docScale - 1) * 800 * 1.414}px` : undefined,
         }}
         className="print:w-full print:transform-none"
+        ref={scaleWrapperRef}
       >
       <div ref={quoteRef} id="quote-container" className="w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] overflow-hidden text-[12px] leading-tight border border-gray-200">
         <div className="text-center text-4xl font-black tracking-[1em] mb-6 underline underline-offset-8">견 적 서</div>
