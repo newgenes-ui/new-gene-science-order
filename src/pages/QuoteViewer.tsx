@@ -18,81 +18,79 @@ export default function QuoteViewer() {
   const LOGO_PATH = "/logo.png";
   const STAMP_PATH = "/stamp.png";
 
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
+
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
-    
+
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      // 한글 폰트 설정 (기본 폰트가 한글을 지원하지 않을 경우를 대비해 텍스트 대신 선과 이미지 위주로 구성하거나 폰트 추가)
-      // 여기서는 jspdf의 기본 기능을 활용하되, 가장 안전한 방식으로 구현합니다.
-      
-      // 1. 로고 및 직인 이미지 로드
-      const loadImage = (src: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = "anonymous";
-          img.src = src;
-          img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx?.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL("image/png"));
-          };
-          img.onerror = reject;
-        });
-      };
-
-      const [logoBase64, stampBase64] = await Promise.all([
-        loadImage(LOGO_PATH),
-        loadImage(STAMP_PATH)
-      ]);
-
-      // 2. 제목 그리기
-      pdf.setFontSize(20);
-      pdf.text("견 적 서", 105, 20, { align: 'center' });
-      pdf.line(80, 22, 130, 22);
-
-      // 3. 상단 정보 테이블 (선 그리기)
-      pdf.setLineWidth(0.5);
-      pdf.rect(15, 30, 85, 45); // 왼쪽 테이블
-      pdf.rect(110, 30, 85, 45); // 오른쪽 테이블
-
-      // 왼쪽 정보 채우기 (이미지 렌더링 방식 우회 - 한글 깨짐 방지 위해 이미지를 활용할 수도 있음)
-      // 하지만 가장 확실한 방법은 html2canvas를 아주 작게 쪼개서 사용하는 것입니다.
-      
-      // [전략 수정] 전체 화면이 아닌 '부분 캡처' 방식으로 메모리 부하를 줄입니다.
+      // HTML 요소를 고해상도 캔버스로 캡처 (scale:2 → 글자·로고·직인 선명)
       const canvas = await html2canvas(quoteRef.current!, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000,
       });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width);
-      
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
+
+      const pageW = 210;
+      const pageH = (canvas.height * pageW) / canvas.width;
+      const imgData = canvas.toDataURL('image/png'); // PNG → 글자/직인 선명
+      pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
+
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
-      
-      // 모바일 전용 저장 방식 (Blob)
-      const blob = pdf.output('blob');
-      const url = URL.createObjectURL(blob);
-      
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        window.open(url, '_blank');
+
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+
+      if (isIOS) {
+        // iOS Safari: 새 탭에서 PDF 열기 → 공유 버튼으로 저장 가능
+        const dataUri = pdf.output('datauristring');
+        const w = window.open();
+        if (w) {
+          w.document.write(
+            `<html><head><title>${fileName}</title></head>` +
+            `<body style="margin:0">` +
+            `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
+            `</body></html>`
+          );
+          w.document.close();
+        }
+        showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
+      } else if (isAndroid) {
+        // Android: blob URL + <a download> 클릭
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        showToast('📥 PDF 다운로드가 시작되었습니다.');
       } else {
+        // PC: 직접 저장
         pdf.save(fileName);
       }
-      
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-
     } catch (error) {
-      console.error('PDF 생성 상세 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 화면을 캡처해 주세요.');
+      console.error('PDF 생성 에러:', error);
+      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
     }
@@ -168,6 +166,12 @@ export default function QuoteViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 print:py-0 print:bg-white flex flex-col items-center">
+      {/* iOS 안내 Toast */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl max-w-[90vw] text-center animate-fade-in print:hidden">
+          {toastMsg}
+        </div>
+      )}
       <div className="w-full max-w-[800px] flex justify-end gap-3 mb-4 print:hidden px-4">
         <button onClick={handleDownloadPDF} disabled={isDownloading} className="flex items-center gap-2 bg-[#2D5A27] text-white px-5 py-2.5 rounded-lg font-bold shadow-lg disabled:opacity-70">
           {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}

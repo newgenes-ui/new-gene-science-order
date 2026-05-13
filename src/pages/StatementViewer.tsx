@@ -10,6 +10,7 @@ export default function StatementViewer() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const statementRef = useRef<HTMLDivElement>(null);
 
   const idsParam = searchParams.get('ids') || '';
@@ -19,40 +20,77 @@ export default function StatementViewer() {
   const LOGO_PATH = "/logo.png";
   const STAMP_PATH = "/stamp.png";
 
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 4000);
+  };
+
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
-    
+
     try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
+      // HTML 요소를 고해상도 캔버스로 캡처 (scale:2 → 글자·로고·직인 선명)
       const canvas = await html2canvas(statementRef.current!, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        imageTimeout: 15000,
       });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
-      pdf.addImage(imgData, 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width);
-      
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      });
+
+      const pageW = 210;
+      const pageH = (canvas.height * pageW) / canvas.width;
+      const imgData = canvas.toDataURL('image/png'); // PNG → 글자/직인 선명
+      pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
+
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
-      
-      const blob = pdf.output('blob');
-      const url = URL.createObjectURL(blob);
-      
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        window.open(url, '_blank');
+
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid = /Android/i.test(navigator.userAgent);
+
+      if (isIOS) {
+        // iOS Safari: 새 탭에서 PDF 열기 → 공유 버튼으로 저장 가능
+        const dataUri = pdf.output('datauristring');
+        const w = window.open();
+        if (w) {
+          w.document.write(
+            `<html><head><title>${fileName}</title></head>` +
+            `<body style="margin:0">` +
+            `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
+            `</body></html>`
+          );
+          w.document.close();
+        }
+        showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
+      } else if (isAndroid) {
+        // Android: blob URL + <a download> 클릭
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+        showToast('📥 PDF 다운로드가 시작되었습니다.');
       } else {
+        // PC: 직접 저장
         pdf.save(fileName);
       }
-      
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      
     } catch (error) {
-      console.error('PDF 생성 상세 에러:', error);
-      alert('PDF 생성 중 오류가 발생했습니다. 화면을 캡처해 주세요.');
+      console.error('PDF 생성 에러:', error);
+      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
     }
@@ -157,8 +195,15 @@ export default function StatementViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 print:py-0 print:bg-white flex flex-col items-center">
-      
-      {/* 인쇄 버튼 (출력 시 숨김) */}
+
+      {/* iOS 안내 Toast */}
+      {toastMsg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl max-w-[90vw] text-center print:hidden">
+          {toastMsg}
+        </div>
+      )}
+
+      {/* 버튼 영역 */}
       <div className="w-full max-w-[800px] flex justify-end gap-3 mb-4 print:hidden px-4">
         <button 
           onClick={handleDownloadPDF}

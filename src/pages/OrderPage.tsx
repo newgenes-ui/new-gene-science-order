@@ -1151,13 +1151,13 @@ export default function OrderPage() {
                                 </div>
 
                                 <div className="flex items-center gap-2 justify-end flex-1">
-                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0 max-w-[200px] md:max-w-none">
-                                    <span className="text-[10px] font-black text-slate-700 truncate">{summaryText}</span>
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0">
+                                    <span className="hidden md:inline text-[10px] font-black text-slate-700 truncate max-w-[120px]">{summaryText}</span>
                                     <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>
                                     <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
 
-                                  <div className="shrink-0 flex items-center gap-3">
+                                  <div className="shrink-0 flex flex-wrap items-center gap-2">
                                     {order.status === 'shipped' && (
                                       <input 
                                         type="checkbox" 
@@ -1261,11 +1261,11 @@ export default function OrderPage() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2 justify-end flex-1 min-w-0">
                                 {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
                                 {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
-                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0 max-w-[200px] md:max-w-none">
-                                    <span className="text-[10px] font-black text-slate-800 truncate">{summaryText}</span>
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0">
+                                    <span className="hidden md:inline text-[10px] font-black text-slate-800 truncate max-w-[120px]">{summaryText}</span>
                                     {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
                                     <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
@@ -1296,16 +1296,16 @@ export default function OrderPage() {
                                   />
                                 )}
                                 {order.orderType === 'quote' && order.status === 'processing' ? (
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         window.open(`/quote?ids=${order.id}`, '_blank');
                                       }}
-                                      className="px-3 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                      className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                     >
                                       <Eye className="w-3 h-3" />
-                                      견적서 보기
+                                      견적서
                                     </button>
                                     <button
                                       onClick={async (e) => {
@@ -1318,7 +1318,7 @@ export default function OrderPage() {
                                           }
                                         }
                                       }}
-                                      className="px-4 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
+                                      className="px-3 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
                                     >
                                       발주요청
                                     </button>
