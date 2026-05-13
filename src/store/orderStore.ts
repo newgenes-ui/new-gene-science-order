@@ -8,6 +8,7 @@ export interface OrderItem {
   unitPrice: number;
   quantity: number;
   subtotal: number;
+  remarks?: string;
 }
 
 export interface Order {

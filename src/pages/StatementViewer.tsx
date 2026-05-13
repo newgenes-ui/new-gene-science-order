@@ -441,7 +441,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1">{item.quantity}</td>
                 <td className="border border-black p-1 text-right px-2">{item.unitPrice.toLocaleString()}</td>
                 <td className="border border-black p-1 text-right px-2 font-bold">{item.subtotal.toLocaleString()}</td>
-                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1 text-[10px]">{item.remarks || ''}</td>
               </tr>
             ))}
             

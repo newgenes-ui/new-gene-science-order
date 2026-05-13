@@ -1047,6 +1047,16 @@ export default function AdminDashboard() {
                                               </div>
                                             </div>
                                           </div>
+                                          <div>
+                                            <label className="text-[9px] font-bold text-slate-400 mb-1 block">비고 (자유 입력)</label>
+                                            <input 
+                                              type="text" 
+                                              value={item.remarks || ''} 
+                                              onChange={(e) => updateQuoteItemField(order.id, idx, 'remarks', e.target.value)}
+                                              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold focus:ring-2 focus:ring-primary/20 outline-none"
+                                              placeholder="추가적인 설명이나 비고 사항을 입력하세요 (선택)"
+                                            />
+                                          </div>
                                         </div>
                                       </div>
                                     ))}
