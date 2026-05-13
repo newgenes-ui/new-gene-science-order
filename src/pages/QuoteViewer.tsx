@@ -86,37 +86,40 @@ export default function QuoteViewer() {
         width: 800,
         height: source.offsetHeight || 1131,
         onclone: async (_doc, el) => {
-          // Tailwind v4 oklch → rgb 변환 (하위 함수)
+          // Canvas 2D fillStyle은 oklch를 포함한 모든 색상을 항상 #rrggbb로 정규화함
+          // getComputedStyle는 Chrome에서 oklch를 그대로 반환하는 케이스가 있어 불신력함
+          const cvs = document.createElement('canvas');
+          cvs.width = 1; cvs.height = 1;
+          const ctx2d = cvs.getContext('2d')!;
           const replaceOklch = (css: string): string => {
             if (!css.includes('oklch')) return css;
-            const seen = new Set<string>();
-            (css.match(/oklch\([^)]+\)/g) || []).forEach(v => {
-              if (seen.has(v)) return;
-              seen.add(v);
-              const tmp = document.createElement('span');
-              tmp.style.color = v;
-              document.body.appendChild(tmp);
-              const rgb = window.getComputedStyle(tmp).color;
-              document.body.removeChild(tmp);
-              css = css.split(v).join(rgb && !rgb.includes('oklch') ? rgb : 'rgb(100,100,100)');
+            const cache = new Map<string, string>();
+            return css.replace(/oklch\([^)]+\)/g, (v) => {
+              if (cache.has(v)) return cache.get(v)!;
+              try {
+                ctx2d.fillStyle = '#000'; // reset
+                ctx2d.fillStyle = v;
+                const hex = ctx2d.fillStyle; // 항상 #rrggbb 반환
+                cache.set(v, hex);
+                return hex;
+              } catch {
+                cache.set(v, '#888888');
+                return '#888888';
+              }
             });
-            return css;
           };
           const clonedDoc = el.ownerDocument;
-          // 1) <link rel="stylesheet"> 외부 CSS 파일 fetch 후 변환
           const links = Array.from(clonedDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
           for (const link of links) {
             try {
               const res = await fetch(link.href);
-              let css = await res.text();
-              css = replaceOklch(css);
+              let css = replaceOklch(await res.text());
               const s = clonedDoc.createElement('style');
               s.textContent = css;
               link.parentNode?.insertBefore(s, link);
               link.parentNode?.removeChild(link);
-            } catch (e) { /* skip cross-origin */ }
+            } catch (e) { /* skip */ }
           }
-          // 2) <style> 인라인 스타일 변환
           clonedDoc.querySelectorAll('style').forEach(s => {
             s.textContent = replaceOklch(s.textContent || '');
           });

@@ -85,28 +85,32 @@ export default function StatementViewer() {
         width: 800,
         height: source.offsetHeight || 1131,
         onclone: async (_doc, el) => {
+          const cvs = document.createElement('canvas');
+          cvs.width = 1; cvs.height = 1;
+          const ctx2d = cvs.getContext('2d')!;
           const replaceOklch = (css: string): string => {
             if (!css.includes('oklch')) return css;
-            const seen = new Set<string>();
-            (css.match(/oklch\([^)]+\)/g) || []).forEach(v => {
-              if (seen.has(v)) return;
-              seen.add(v);
-              const tmp = document.createElement('span');
-              tmp.style.color = v;
-              document.body.appendChild(tmp);
-              const rgb = window.getComputedStyle(tmp).color;
-              document.body.removeChild(tmp);
-              css = css.split(v).join(rgb && !rgb.includes('oklch') ? rgb : 'rgb(100,100,100)');
+            const cache = new Map<string, string>();
+            return css.replace(/oklch\([^)]+\)/g, (v) => {
+              if (cache.has(v)) return cache.get(v)!;
+              try {
+                ctx2d.fillStyle = '#000';
+                ctx2d.fillStyle = v;
+                const hex = ctx2d.fillStyle;
+                cache.set(v, hex);
+                return hex;
+              } catch {
+                cache.set(v, '#888888');
+                return '#888888';
+              }
             });
-            return css;
           };
           const clonedDoc = el.ownerDocument;
           const links = Array.from(clonedDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
           for (const link of links) {
             try {
               const res = await fetch(link.href);
-              let css = await res.text();
-              css = replaceOklch(css);
+              let css = replaceOklch(await res.text());
               const s = clonedDoc.createElement('style');
               s.textContent = css;
               link.parentNode?.insertBefore(s, link);
