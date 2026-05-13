@@ -84,11 +84,9 @@ export default function StatementViewer() {
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
-        onclone: (_doc, el) => {
-          const styleEls = el.ownerDocument.querySelectorAll('style');
-          styleEls.forEach(s => {
-            let css = s.textContent || '';
-            if (!css.includes('oklch')) return;
+        onclone: async (_doc, el) => {
+          const replaceOklch = (css: string): string => {
+            if (!css.includes('oklch')) return css;
             const seen = new Set<string>();
             (css.match(/oklch\([^)]+\)/g) || []).forEach(v => {
               if (seen.has(v)) return;
@@ -100,7 +98,23 @@ export default function StatementViewer() {
               document.body.removeChild(tmp);
               css = css.split(v).join(rgb && !rgb.includes('oklch') ? rgb : 'rgb(100,100,100)');
             });
-            s.textContent = css;
+            return css;
+          };
+          const clonedDoc = el.ownerDocument;
+          const links = Array.from(clonedDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+          for (const link of links) {
+            try {
+              const res = await fetch(link.href);
+              let css = await res.text();
+              css = replaceOklch(css);
+              const s = clonedDoc.createElement('style');
+              s.textContent = css;
+              link.parentNode?.insertBefore(s, link);
+              link.parentNode?.removeChild(link);
+            } catch (e) { /* skip */ }
+          }
+          clonedDoc.querySelectorAll('style').forEach(s => {
+            s.textContent = replaceOklch(s.textContent || '');
           });
         },
       });
