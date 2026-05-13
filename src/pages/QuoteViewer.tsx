@@ -45,13 +45,15 @@ export default function QuoteViewer() {
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isMobile = isIOS || isAndroid;
 
-    // iOS/Android 모두: window.open()은 버튼 클릭 직후 동기적으로만 팝업 허용됨
-    //   await 이후 호출 시 팝업 차단 → 미리 창을 열어두고 나중에 내용 주입
-    let mobileWin: Window | null = null;
-    if (isMobile) {
-      mobileWin = window.open('', '_blank');
-      if (mobileWin) {
-        mobileWin.document.write(
+    // ★ Android는 window.open() 절대 사용 금지!
+    //   새 탭 열기 → 원래 탭이 백그라운드 전환 → requestAnimationFrame 중단
+    //   → html2canvas 실패 → "생성오류" 발생
+    // iOS만 미리 창을 열어두는 방식 사용
+    let iosWin: Window | null = null;
+    if (isIOS) {
+      iosWin = window.open('', '_blank');
+      if (iosWin) {
+        iosWin.document.write(
           '<html><head><title>PDF 생성 중</title>' +
           '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
           '<body style="display:flex;align-items:center;justify-content:center;' +
@@ -63,8 +65,13 @@ export default function QuoteViewer() {
       }
     }
 
+    // Android: 같은 탭에서 진행 중임을 toast로 안내
+    if (isAndroid) {
+      showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
+    }
+
     try {
-      // ② CSS transform이 html2canvas 케스쮘 계산을 방해 → 일시적으로 해제
+      // CSS transform 일시 해제 (html2canvas 좌표 계산 방해 방지)
       const wrapper = scaleWrapperRef.current;
       const savedTransform = wrapper?.style.transform ?? '';
       const savedMargin = wrapper?.style.marginBottom ?? '';
@@ -72,8 +79,9 @@ export default function QuoteViewer() {
         wrapper.style.transform = 'scale(1)';
         wrapper.style.marginBottom = '0';
       }
-      // 2프레임 대기: 브라우저가 변경사항을 실제 렌더링하도록
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      // requestAnimationFrame 대신 setTimeout 사용
+      // (rAF는 백그라운드 탭에서 실행 안 됨 - Android 탭 전환 없어도 안전하게)
+      await new Promise(r => setTimeout(r, 200));
 
       const canvas = await html2canvas(quoteRef.current!, {
         scale: isMobile ? 1.5 : 2,
@@ -100,35 +108,41 @@ export default function QuoteViewer() {
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (isIOS) {
-        // iOS: data URI → iframe으로 표시 (blob URL은 iOS에서 안 열림)
-        if (mobileWin) {
+        // iOS: 미리 열어둔 창에 data URI 주입
+        if (iosWin) {
           const dataUri = pdf.output('datauristring');
-          mobileWin.document.write(
+          iosWin.document.write(
             `<html><head><title>${fileName}</title>` +
             `<meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
             `<body style="margin:0">` +
             `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
             `</body></html>`
           );
-          mobileWin.document.close();
+          iosWin.document.close();
           showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
         }
       } else if (isAndroid) {
-        // Android Chrome: blob URL로 리다이렉트 → Chrome PDF 뷰어가 자동 열림
-        //   사용자가 오른쪽 위 다운로드 버튼 턱하면 파일 저장
-        if (mobileWin) {
-          const blob = pdf.output('blob');
-          const url = URL.createObjectURL(blob);
-          mobileWin.location.href = url;
-          setTimeout(() => URL.revokeObjectURL(url), 60000);
-          showToast('📥 PDF가 열렸습니다. 우측 위 다운로드 버튼(⬇)을 탭하세요.');
-        }
+        // Android: <a download> 방식 - 현재 탭 유지, 파일 직접 다운로드
+        // window.open() 불필요 - 팝업이 아닌 파일 다운로드이므로 차단 없음
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 5000);
+        showToast('📥 PDF 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
       } else {
         pdf.save(fileName);
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
-      if (mobileWin) mobileWin.close();
+      if (iosWin) iosWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);

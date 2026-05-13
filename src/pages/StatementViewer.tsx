@@ -46,12 +46,12 @@ export default function StatementViewer() {
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isMobile = isIOS || isAndroid;
 
-    // iOS/Android 모두: window.open()은 버튼 클릭 직후 동기적으로만 팝업 허용됨
-    let mobileWin: Window | null = null;
-    if (isMobile) {
-      mobileWin = window.open('', '_blank');
-      if (mobileWin) {
-        mobileWin.document.write(
+    // Android는 window.open() 절대 사용 금지 (백그라운드 탭 전환 → html2canvas 실패)
+    let iosWin: Window | null = null;
+    if (isIOS) {
+      iosWin = window.open('', '_blank');
+      if (iosWin) {
+        iosWin.document.write(
           '<html><head><title>PDF 생성 중</title>' +
           '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
           '<body style="display:flex;align-items:center;justify-content:center;' +
@@ -63,6 +63,10 @@ export default function StatementViewer() {
       }
     }
 
+    if (isAndroid) {
+      showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
+    }
+
     try {
       // CSS transform 일시 해제
       const wrapper = scaleWrapperRef.current;
@@ -72,7 +76,7 @@ export default function StatementViewer() {
         wrapper.style.transform = 'scale(1)';
         wrapper.style.marginBottom = '0';
       }
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 200));
 
       const canvas = await html2canvas(statementRef.current!, {
         scale: isMobile ? 1.5 : 2,
@@ -98,32 +102,38 @@ export default function StatementViewer() {
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (isIOS) {
-        if (mobileWin) {
+        if (iosWin) {
           const dataUri = pdf.output('datauristring');
-          mobileWin.document.write(
+          iosWin.document.write(
             `<html><head><title>${fileName}</title>` +
             `<meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
             `<body style="margin:0">` +
             `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
             `</body></html>`
           );
-          mobileWin.document.close();
+          iosWin.document.close();
           showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
         }
       } else if (isAndroid) {
-        if (mobileWin) {
-          const blob = pdf.output('blob');
-          const url = URL.createObjectURL(blob);
-          mobileWin.location.href = url;
-          setTimeout(() => URL.revokeObjectURL(url), 60000);
-          showToast('📥 PDF가 열렸습니다. 우측 위 다운로드 버튼(⬇)을 탭하세요.');
-        }
+        const blob = pdf.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 5000);
+        showToast('📥 PDF 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
       } else {
         pdf.save(fileName);
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
-      if (mobileWin) mobileWin.close();
+      if (iosWin) iosWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
