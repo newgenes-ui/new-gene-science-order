@@ -63,64 +63,50 @@ export default function QuoteViewer() {
     }
     if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
-    // ── oklch → hex 변환 헬퍼 ──────────────────────────────────────────────
-    // Canvas 2D의 fillStyle은 브라우저가 계산한 #rrggbb를 반환하므로 oklch도 변환됨
+    // ── oklch → hex 변환 (Canvas 2D fillStyle은 모든 색상을 #rrggbb로 정규화) ──
     const colorCvs = document.createElement('canvas');
     colorCvs.width = 1; colorCvs.height = 1;
     const colorCtx = colorCvs.getContext('2d')!;
     const colorCache = new Map<string, string>();
-
-    const toHex = (color: string): string => {
-      if (!color.includes('oklch')) return color;
-      if (colorCache.has(color)) return colorCache.get(color)!;
+    const toHex = (match: string): string => {
+      if (colorCache.has(match)) return colorCache.get(match)!;
       try {
         colorCtx.fillStyle = '#000000';
-        colorCtx.fillStyle = color;
-        const hex = colorCtx.fillStyle; // 브라우저가 #rrggbb로 반환
-        colorCache.set(color, hex);
+        colorCtx.fillStyle = match;
+        const hex = colorCtx.fillStyle;
+        colorCache.set(match, hex);
         return hex;
       } catch {
-        colorCache.set(color, '#888888');
+        colorCache.set(match, '#888888');
         return '#888888';
       }
     };
+    const replaceOklch = (css: string): string =>
+      css.includes('oklch') ? css.replace(/oklch\([^)]+\)/g, toHex) : css;
 
-    const replaceOklchInCss = (css: string): string => {
-      if (!css.includes('oklch')) return css;
-      return css.replace(/oklch\([^)]+\)/g, toHex);
-    };
+    // ── CSSOM API로 모든 스타일시트의 oklch를 hex로 교체 ──────────────────
+    // fetch() 대신 document.styleSheets를 사용 → HTTP 요청 불필요, 100% 안정적
+    const removedNodes: Node[] = [];
+    const injectedStyles: HTMLStyleElement[] = [];
 
-    // ── 1단계: <link rel="stylesheet"> 를 oklch-free <style>로 교체 ────────
-    const replacedLinks: HTMLLinkElement[] = [];
-    const addedStyles: HTMLStyleElement[] = [];
-
-    const allLinks = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
-    for (const link of allLinks) {
+    for (const sheet of Array.from(document.styleSheets)) {
       try {
-        const resp = await fetch(link.href);
-        if (!resp.ok) continue;
-        const css = replaceOklchInCss(await resp.text());
-        const s = document.createElement('style');
-        s.textContent = css;
-        addedStyles.push(s);
-        replacedLinks.push(link);
-      } catch { /* CORS 등으로 fetch 실패 시 skip */ }
+        const rules = sheet.cssRules; // cross-origin이면 여기서 예외 발생
+        const cssText = Array.from(rules).map(r => r.cssText).join('\n');
+        if (!cssText.includes('oklch')) continue; // oklch 없으면 건너뜀
+        // oklch → hex 변환된 CSS를 새 <style>로 주입
+        const fixed = replaceOklch(cssText);
+        const newStyle = document.createElement('style');
+        newStyle.textContent = fixed;
+        injectedStyles.push(newStyle);
+        // 원본 노드(<link> 또는 <style>) 제거 대상으로 저장
+        if (sheet.ownerNode) removedNodes.push(sheet.ownerNode);
+      } catch { /* cross-origin stylesheet → skip (oklch 미포함 가능성 높음) */ }
     }
-
-    // ── 2단계: 문서 내 <style> 태그의 oklch도 변환 ───────────────────────
-    const inlineStyleTags = Array.from(document.head.querySelectorAll<HTMLStyleElement>('style'));
-    const savedInlineContents: string[] = [];
-    for (const st of inlineStyleTags) {
-      savedInlineContents.push(st.textContent || '');
-      if (st.textContent?.includes('oklch')) {
-        st.textContent = replaceOklchInCss(st.textContent);
-      }
-    }
-
-    // 추가 먼저 → 제거 (페이지가 순간 무스타일 되지 않도록)
-    addedStyles.forEach(s => document.head.appendChild(s));
-    replacedLinks.forEach(l => l.remove());
-    await new Promise(r => setTimeout(r, 250));
+    // 새 스타일 먼저 추가 → 원본 제거 (무스타일 순간 방지)
+    injectedStyles.forEach(s => document.head.appendChild(s));
+    removedNodes.forEach(n => n.parentNode?.removeChild(n));
+    await new Promise(r => setTimeout(r, 200));
 
     let cloneEl: HTMLElement | null = null;
     try {
@@ -132,43 +118,14 @@ export default function QuoteViewer() {
       document.body.appendChild(cloneEl);
       await new Promise(r => setTimeout(r, 400));
 
-      // ── 3단계: html2canvas onclone에서 클론 DOM 요소의 computed 색상 강제 치환 ──
-      // html2canvas가 CSS를 내부 파싱할 때 oklch가 남아있으면 에러 발생하므로
-      // 클론 DOM의 모든 요소에 인라인 style로 RGB 값을 직접 박아넣음
-      const forceRgbOnClone = (root: HTMLElement) => {
-        const colorProps = [
-          'color', 'backgroundColor', 'borderColor',
-          'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
-          'outlineColor', 'textDecorationColor',
-        ];
-        const allEls = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
-        for (const el of allEls) {
-          try {
-            const computed = window.getComputedStyle(el);
-            for (const prop of colorProps) {
-              const val = computed.getPropertyValue(prop);
-              if (val && val.includes('oklch')) {
-                (el.style as unknown as Record<string, string>)[prop] = toHex(val);
-              }
-            }
-          } catch { /* ignore */ }
-        }
-      };
-      forceRgbOnClone(cloneEl);
-
       const canvas = await html2canvas(cloneEl, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
-        onclone: (_doc: Document, cloned: HTMLElement) => {
-          // onclone에서도 한 번 더 처리 (html2canvas 내부 클론에도 적용)
-          forceRgbOnClone(cloned);
-        },
       });
 
       document.body.removeChild(cloneEl);
@@ -217,11 +174,9 @@ export default function QuoteViewer() {
       alert('PDF 오류: ' + msg);
     } finally {
       if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
-      // 원본 <link> 복원 및 임시 <style> 제거
-      replacedLinks.forEach(l => document.head.appendChild(l));
-      addedStyles.forEach(s => s.remove());
-      // 인라인 <style> 원본 복원
-      inlineStyleTags.forEach((st, i) => { st.textContent = savedInlineContents[i]; });
+      // 원본 스타일시트 복원, 주입된 <style> 제거
+      removedNodes.forEach(n => document.head.appendChild(n));
+      injectedStyles.forEach(s => s.remove());
       setIsDownloading(false);
     }
   };

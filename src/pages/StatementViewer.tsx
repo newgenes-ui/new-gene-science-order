@@ -65,6 +65,47 @@ export default function StatementViewer() {
 
     if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
+    // ── oklch → hex 변환 (Canvas 2D fillStyle은 모든 색상을 #rrggbb로 정규화) ──
+    const colorCvs = document.createElement('canvas');
+    colorCvs.width = 1; colorCvs.height = 1;
+    const colorCtx = colorCvs.getContext('2d')!;
+    const colorCache = new Map<string, string>();
+    const toHex = (match: string): string => {
+      if (colorCache.has(match)) return colorCache.get(match)!;
+      try {
+        colorCtx.fillStyle = '#000000';
+        colorCtx.fillStyle = match;
+        const hex = colorCtx.fillStyle;
+        colorCache.set(match, hex);
+        return hex;
+      } catch {
+        colorCache.set(match, '#888888');
+        return '#888888';
+      }
+    };
+    const replaceOklch = (css: string): string =>
+      css.includes('oklch') ? css.replace(/oklch\([^)]+\)/g, toHex) : css;
+
+    // ── CSSOM API로 모든 스타일시트의 oklch를 hex로 교체 ──────────────────
+    const removedNodes: Node[] = [];
+    const injectedStyles: HTMLStyleElement[] = [];
+
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        const rules = sheet.cssRules;
+        const cssText = Array.from(rules).map(r => r.cssText).join('\n');
+        if (!cssText.includes('oklch')) continue;
+        const fixed = replaceOklch(cssText);
+        const newStyle = document.createElement('style');
+        newStyle.textContent = fixed;
+        injectedStyles.push(newStyle);
+        if (sheet.ownerNode) removedNodes.push(sheet.ownerNode);
+      } catch { /* cross-origin stylesheet → skip */ }
+    }
+    injectedStyles.forEach(s => document.head.appendChild(s));
+    removedNodes.forEach(n => n.parentNode?.removeChild(n));
+    await new Promise(r => setTimeout(r, 200));
+
     let cloneEl: HTMLElement | null = null;
     try {
       const source = statementRef.current!;
@@ -73,8 +114,7 @@ export default function StatementViewer() {
         'position:absolute;top:99999px;left:0;width:800px;' +
         'background:#fff;overflow:hidden;transform:none;z-index:-1;';
       document.body.appendChild(cloneEl);
-
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
 
       const canvas = await html2canvas(cloneEl, {
         scale: isMobile ? 1.5 : 2,
@@ -84,43 +124,6 @@ export default function StatementViewer() {
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
-        onclone: async (_doc, el) => {
-          const cvs = document.createElement('canvas');
-          cvs.width = 1; cvs.height = 1;
-          const ctx2d = cvs.getContext('2d')!;
-          const replaceOklch = (css: string): string => {
-            if (!css.includes('oklch')) return css;
-            const cache = new Map<string, string>();
-            return css.replace(/oklch\([^)]+\)/g, (v) => {
-              if (cache.has(v)) return cache.get(v)!;
-              try {
-                ctx2d.fillStyle = '#000';
-                ctx2d.fillStyle = v;
-                const hex = ctx2d.fillStyle;
-                cache.set(v, hex);
-                return hex;
-              } catch {
-                cache.set(v, '#888888');
-                return '#888888';
-              }
-            });
-          };
-          const clonedDoc = el.ownerDocument;
-          const links = Array.from(clonedDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
-          for (const link of links) {
-            try {
-              const res = await fetch(link.href);
-              let css = replaceOklch(await res.text());
-              const s = clonedDoc.createElement('style');
-              s.textContent = css;
-              link.parentNode?.insertBefore(s, link);
-              link.parentNode?.removeChild(link);
-            } catch (e) { /* skip */ }
-          }
-          clonedDoc.querySelectorAll('style').forEach(s => {
-            s.textContent = replaceOklch(s.textContent || '');
-          });
-        },
       });
 
       document.body.removeChild(cloneEl);
@@ -165,9 +168,13 @@ export default function StatementViewer() {
     } catch (error) {
       console.error('PDF 생성 에러:', error);
       if (iosWin) iosWin.close();
-      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      const msg = error instanceof Error ? error.message : String(error);
+      alert('PDF 오류: ' + msg);
     } finally {
       if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
+      // 원본 스타일시트 복원, 주입된 <style> 제거
+      removedNodes.forEach(n => document.head.appendChild(n));
+      injectedStyles.forEach(s => s.remove());
       setIsDownloading(false);
     }
   };
