@@ -85,6 +85,27 @@ export default function QuoteViewer() {
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
+        onclone: (_doc, el) => {
+          // Tailwind v4는 oklch() 색상을 사용하는데 html2canvas가 파싱 불가
+          // 클론 스타일에서 oklch 값을 브라우저 계산 rgb로 교체
+          const styleEls = el.ownerDocument.querySelectorAll('style');
+          styleEls.forEach(s => {
+            let css = s.textContent || '';
+            if (!css.includes('oklch')) return;
+            const seen = new Set<string>();
+            (css.match(/oklch\([^)]+\)/g) || []).forEach(v => {
+              if (seen.has(v)) return;
+              seen.add(v);
+              const tmp = document.createElement('span');
+              tmp.style.color = v;
+              document.body.appendChild(tmp);
+              const rgb = window.getComputedStyle(tmp).color;
+              document.body.removeChild(tmp);
+              css = css.split(v).join(rgb && !rgb.includes('oklch') ? rgb : 'rgb(100,100,100)');
+            });
+            s.textContent = css;
+          });
+        },
       });
 
       document.body.removeChild(cloneEl);

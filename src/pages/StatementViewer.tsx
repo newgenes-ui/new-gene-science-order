@@ -84,6 +84,25 @@ export default function StatementViewer() {
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
+        onclone: (_doc, el) => {
+          const styleEls = el.ownerDocument.querySelectorAll('style');
+          styleEls.forEach(s => {
+            let css = s.textContent || '';
+            if (!css.includes('oklch')) return;
+            const seen = new Set<string>();
+            (css.match(/oklch\([^)]+\)/g) || []).forEach(v => {
+              if (seen.has(v)) return;
+              seen.add(v);
+              const tmp = document.createElement('span');
+              tmp.style.color = v;
+              document.body.appendChild(tmp);
+              const rgb = window.getComputedStyle(tmp).color;
+              document.body.removeChild(tmp);
+              css = css.split(v).join(rgb && !rgb.includes('oklch') ? rgb : 'rgb(100,100,100)');
+            });
+            s.textContent = css;
+          });
+        },
       });
 
       document.body.removeChild(cloneEl);
