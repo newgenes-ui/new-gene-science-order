@@ -63,66 +63,111 @@ export default function QuoteViewer() {
     }
     if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
-    // 화면 밖 클론 요소 (transform/뷰포트 문제 완전 회피)
+    // ── oklch → hex 변환 헬퍼 ──────────────────────────────────────────────
+    // Canvas 2D의 fillStyle은 브라우저가 계산한 #rrggbb를 반환하므로 oklch도 변환됨
+    const colorCvs = document.createElement('canvas');
+    colorCvs.width = 1; colorCvs.height = 1;
+    const colorCtx = colorCvs.getContext('2d')!;
+    const colorCache = new Map<string, string>();
+
+    const toHex = (color: string): string => {
+      if (!color.includes('oklch')) return color;
+      if (colorCache.has(color)) return colorCache.get(color)!;
+      try {
+        colorCtx.fillStyle = '#000000';
+        colorCtx.fillStyle = color;
+        const hex = colorCtx.fillStyle; // 브라우저가 #rrggbb로 반환
+        colorCache.set(color, hex);
+        return hex;
+      } catch {
+        colorCache.set(color, '#888888');
+        return '#888888';
+      }
+    };
+
+    const replaceOklchInCss = (css: string): string => {
+      if (!css.includes('oklch')) return css;
+      return css.replace(/oklch\([^)]+\)/g, toHex);
+    };
+
+    // ── 1단계: <link rel="stylesheet"> 를 oklch-free <style>로 교체 ────────
+    const replacedLinks: HTMLLinkElement[] = [];
+    const addedStyles: HTMLStyleElement[] = [];
+
+    const allLinks = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
+    for (const link of allLinks) {
+      try {
+        const resp = await fetch(link.href);
+        if (!resp.ok) continue;
+        const css = replaceOklchInCss(await resp.text());
+        const s = document.createElement('style');
+        s.textContent = css;
+        addedStyles.push(s);
+        replacedLinks.push(link);
+      } catch { /* CORS 등으로 fetch 실패 시 skip */ }
+    }
+
+    // ── 2단계: 문서 내 <style> 태그의 oklch도 변환 ───────────────────────
+    const inlineStyleTags = Array.from(document.head.querySelectorAll<HTMLStyleElement>('style'));
+    const savedInlineContents: string[] = [];
+    for (const st of inlineStyleTags) {
+      savedInlineContents.push(st.textContent || '');
+      if (st.textContent?.includes('oklch')) {
+        st.textContent = replaceOklchInCss(st.textContent);
+      }
+    }
+
+    // 추가 먼저 → 제거 (페이지가 순간 무스타일 되지 않도록)
+    addedStyles.forEach(s => document.head.appendChild(s));
+    replacedLinks.forEach(l => l.remove());
+    await new Promise(r => setTimeout(r, 250));
+
     let cloneEl: HTMLElement | null = null;
     try {
       const source = quoteRef.current!;
       cloneEl = source.cloneNode(true) as HTMLElement;
-      // 화면 훨씬 아래 배치 - 유저에게 보이지 않고, html2canvas는 정상 캡처
       cloneEl.style.cssText =
         'position:absolute;top:99999px;left:0;width:800px;' +
         'background:#fff;overflow:hidden;transform:none;z-index:-1;';
       document.body.appendChild(cloneEl);
+      await new Promise(r => setTimeout(r, 400));
 
-      // 클론 내 이미지가 렌더링될 때까지 대기
-      await new Promise(r => setTimeout(r, 600));
+      // ── 3단계: html2canvas onclone에서 클론 DOM 요소의 computed 색상 강제 치환 ──
+      // html2canvas가 CSS를 내부 파싱할 때 oklch가 남아있으면 에러 발생하므로
+      // 클론 DOM의 모든 요소에 인라인 style로 RGB 값을 직접 박아넣음
+      const forceRgbOnClone = (root: HTMLElement) => {
+        const colorProps = [
+          'color', 'backgroundColor', 'borderColor',
+          'borderTopColor', 'borderRightColor', 'borderBottomColor', 'borderLeftColor',
+          'outlineColor', 'textDecorationColor',
+        ];
+        const allEls = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
+        for (const el of allEls) {
+          try {
+            const computed = window.getComputedStyle(el);
+            for (const prop of colorProps) {
+              const val = computed.getPropertyValue(prop);
+              if (val && val.includes('oklch')) {
+                (el.style as unknown as Record<string, string>)[prop] = toHex(val);
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      };
+      forceRgbOnClone(cloneEl);
 
       const canvas = await html2canvas(cloneEl, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
-        onclone: async (_doc, el) => {
-          // Canvas 2D fillStyle은 oklch를 포함한 모든 색상을 항상 #rrggbb로 정규화함
-          // getComputedStyle는 Chrome에서 oklch를 그대로 반환하는 케이스가 있어 불신력함
-          const cvs = document.createElement('canvas');
-          cvs.width = 1; cvs.height = 1;
-          const ctx2d = cvs.getContext('2d')!;
-          const replaceOklch = (css: string): string => {
-            if (!css.includes('oklch')) return css;
-            const cache = new Map<string, string>();
-            return css.replace(/oklch\([^)]+\)/g, (v) => {
-              if (cache.has(v)) return cache.get(v)!;
-              try {
-                ctx2d.fillStyle = '#000'; // reset
-                ctx2d.fillStyle = v;
-                const hex = ctx2d.fillStyle; // 항상 #rrggbb 반환
-                cache.set(v, hex);
-                return hex;
-              } catch {
-                cache.set(v, '#888888');
-                return '#888888';
-              }
-            });
-          };
-          const clonedDoc = el.ownerDocument;
-          const links = Array.from(clonedDoc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'));
-          for (const link of links) {
-            try {
-              const res = await fetch(link.href);
-              let css = replaceOklch(await res.text());
-              const s = clonedDoc.createElement('style');
-              s.textContent = css;
-              link.parentNode?.insertBefore(s, link);
-              link.parentNode?.removeChild(link);
-            } catch (e) { /* skip */ }
-          }
-          clonedDoc.querySelectorAll('style').forEach(s => {
-            s.textContent = replaceOklch(s.textContent || '');
-          });
+        onclone: (_doc: Document, cloned: HTMLElement) => {
+          // onclone에서도 한 번 더 처리 (html2canvas 내부 클론에도 적용)
+          forceRgbOnClone(cloned);
         },
       });
 
@@ -172,6 +217,11 @@ export default function QuoteViewer() {
       alert('PDF 오류: ' + msg);
     } finally {
       if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
+      // 원본 <link> 복원 및 임시 <style> 제거
+      replacedLinks.forEach(l => document.head.appendChild(l));
+      addedStyles.forEach(s => s.remove());
+      // 인라인 <style> 원본 복원
+      inlineStyleTags.forEach((st, i) => { st.textContent = savedInlineContents[i]; });
       setIsDownloading(false);
     }
   };
