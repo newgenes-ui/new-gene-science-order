@@ -10,6 +10,8 @@ export default function QuoteViewer() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [docScale, setDocScale] = useState(1);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const quoteRef = useRef<HTMLDivElement>(null);
 
   const idsParam = searchParams.get('ids') || '';
@@ -18,7 +20,16 @@ export default function QuoteViewer() {
   const LOGO_PATH = "/logo.png";
   const STAMP_PATH = "/stamp.png";
 
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // 모바일에서 800px 문서를 화면에 맞게 축소 비율 계산
+  useEffect(() => {
+    const calcScale = () => {
+      const available = window.innerWidth - 16; // 좌우 여백 8px씩
+      setDocScale(Math.min(1, available / 800));
+    };
+    calcScale();
+    window.addEventListener('resize', calcScale);
+    return () => window.removeEventListener('resize', calcScale);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -30,11 +41,12 @@ export default function QuoteViewer() {
     setIsDownloading(true);
 
     try {
-      // HTML 요소를 고해상도 캔버스로 캡처 (scale:2 → 글자·로고·직인 선명)
+      // 모바일은 메모리 절약을 위해 scale:1.5, PC는 scale:2 (선명도)
+      // allowTaint는 절대 사용 금지 → useCORS와 충돌 시 SecurityError 발생
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const canvas = await html2canvas(quoteRef.current!, {
-        scale: 2,
+        scale: isMobile ? 1.5 : 2,
         useCORS: true,
-        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
@@ -183,7 +195,17 @@ export default function QuoteViewer() {
         </button>
       </div>
 
-      <div ref={quoteRef} id="quote-container" className="w-full max-w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] mx-auto overflow-hidden text-[12px] leading-tight border border-gray-200">
+      {/* 모바일: 800px 고정폭 문서를 CSS scale로 축소 → 레이아웃 깨짐 방지 */}
+      <div
+        style={{
+          width: '800px',
+          transform: `scale(${docScale})`,
+          transformOrigin: 'top center',
+          marginBottom: docScale < 1 ? `${(docScale - 1) * 800 * 1.414}px` : undefined,
+        }}
+        className="print:w-full print:transform-none"
+      >
+      <div ref={quoteRef} id="quote-container" className="w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] overflow-hidden text-[12px] leading-tight border border-gray-200">
         <div className="text-center text-4xl font-black tracking-[1em] mb-6 underline underline-offset-8">견 적 서</div>
         
         <div className="flex justify-between items-stretch gap-2 mb-4">
@@ -345,6 +367,7 @@ export default function QuoteViewer() {
           </tbody>
         </table>
       </div>
+      </div>  {/* scale wrapper 닫기 */}
     </div>
   );
 }
