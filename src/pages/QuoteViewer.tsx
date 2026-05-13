@@ -129,7 +129,8 @@ export default function QuoteViewer() {
     } catch (error) {
       console.error('PDF 생성 에러:', error);
       if (iosWin) iosWin.close();
-      alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      const msg = error instanceof Error ? error.message : String(error);
+      alert('PDF 오류: ' + msg);
     } finally {
       if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
       setIsDownloading(false);
