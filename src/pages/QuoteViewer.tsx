@@ -45,10 +45,7 @@ export default function QuoteViewer() {
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isMobile = isIOS || isAndroid;
 
-    // ★ Android는 window.open() 절대 사용 금지!
-    //   새 탭 열기 → 원래 탭이 백그라운드 전환 → requestAnimationFrame 중단
-    //   → html2canvas 실패 → "생성오류" 발생
-    // iOS만 미리 창을 열어두는 방식 사용
+    // iOS: 팝업 차단 우회 - 버튼 클릭 직후 동기적으로 창 열기
     let iosWin: Window | null = null;
     if (isIOS) {
       iosWin = window.open('', '_blank');
@@ -64,51 +61,45 @@ export default function QuoteViewer() {
         );
       }
     }
+    if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
-    // Android: 같은 탭에서 진행 중임을 toast로 안내
-    if (isAndroid) {
-      showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
-    }
-
+    // 화면 밖 클론 요소 (transform/뷰포트 문제 완전 회피)
+    let cloneEl: HTMLElement | null = null;
     try {
-      // CSS transform 일시 해제 (html2canvas 좌표 계산 방해 방지)
-      const wrapper = scaleWrapperRef.current;
-      const savedTransform = wrapper?.style.transform ?? '';
-      const savedMargin = wrapper?.style.marginBottom ?? '';
-      if (wrapper) {
-        wrapper.style.transform = 'scale(1)';
-        wrapper.style.marginBottom = '0';
-      }
-      // requestAnimationFrame 대신 setTimeout 사용
-      // (rAF는 백그라운드 탭에서 실행 안 됨 - Android 탭 전환 없어도 안전하게)
-      await new Promise(r => setTimeout(r, 200));
+      const source = quoteRef.current!;
+      cloneEl = source.cloneNode(true) as HTMLElement;
+      // 화면 훨씬 아래 배치 - 유저에게 보이지 않고, html2canvas는 정상 캡처
+      cloneEl.style.cssText =
+        'position:absolute;top:99999px;left:0;width:800px;' +
+        'background:#fff;overflow:hidden;transform:none;z-index:-1;';
+      document.body.appendChild(cloneEl);
 
-      const canvas = await html2canvas(quoteRef.current!, {
+      // 클론 내 이미지가 렌더링될 때까지 대기
+      await new Promise(r => setTimeout(r, 600));
+
+      const canvas = await html2canvas(cloneEl, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
-        windowWidth: 800,
+        width: 800,
+        height: source.offsetHeight || 1131,
       });
 
-      // transform 복원
-      if (wrapper) {
-        wrapper.style.transform = savedTransform;
-        wrapper.style.marginBottom = savedMargin;
-      }
+      document.body.removeChild(cloneEl);
+      cloneEl = null;
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = 210;
       const pageH = (canvas.height * pageW) / canvas.width;
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH);
 
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (isIOS) {
-        // iOS: 미리 열어둔 창에 data URI 주입
         if (iosWin) {
           const dataUri = pdf.output('datauristring');
           iosWin.document.write(
@@ -122,8 +113,6 @@ export default function QuoteViewer() {
           showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
         }
       } else if (isAndroid) {
-        // Android: <a download> 방식 - 현재 탭 유지, 파일 직접 다운로드
-        // window.open() 불필요 - 팝업이 아닌 파일 다운로드이므로 차단 없음
         const blob = pdf.output('blob');
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -132,11 +121,8 @@ export default function QuoteViewer() {
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 5000);
-        showToast('📥 PDF 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+        showToast('📥 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
       } else {
         pdf.save(fileName);
       }
@@ -145,6 +131,7 @@ export default function QuoteViewer() {
       if (iosWin) iosWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
+      if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
       setIsDownloading(false);
     }
   };

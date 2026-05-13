@@ -63,40 +63,37 @@ export default function StatementViewer() {
       }
     }
 
-    if (isAndroid) {
-      showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
-    }
+    if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
+    let cloneEl: HTMLElement | null = null;
     try {
-      // CSS transform 일시 해제
-      const wrapper = scaleWrapperRef.current;
-      const savedTransform = wrapper?.style.transform ?? '';
-      const savedMargin = wrapper?.style.marginBottom ?? '';
-      if (wrapper) {
-        wrapper.style.transform = 'scale(1)';
-        wrapper.style.marginBottom = '0';
-      }
-      await new Promise(r => setTimeout(r, 200));
+      const source = statementRef.current!;
+      cloneEl = source.cloneNode(true) as HTMLElement;
+      cloneEl.style.cssText =
+        'position:absolute;top:99999px;left:0;width:800px;' +
+        'background:#fff;overflow:hidden;transform:none;z-index:-1;';
+      document.body.appendChild(cloneEl);
 
-      const canvas = await html2canvas(statementRef.current!, {
+      await new Promise(r => setTimeout(r, 600));
+
+      const canvas = await html2canvas(cloneEl, {
         scale: isMobile ? 1.5 : 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
-        windowWidth: 800,
+        width: 800,
+        height: source.offsetHeight || 1131,
       });
 
-      if (wrapper) {
-        wrapper.style.transform = savedTransform;
-        wrapper.style.marginBottom = savedMargin;
-      }
+      document.body.removeChild(cloneEl);
+      cloneEl = null;
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
       const pageW = 210;
       const pageH = (canvas.height * pageW) / canvas.width;
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, pageW, pageH);
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH);
 
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
@@ -123,11 +120,8 @@ export default function StatementViewer() {
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => {
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }, 5000);
-        showToast('📥 PDF 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+        showToast('📥 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
       } else {
         pdf.save(fileName);
       }
@@ -136,6 +130,7 @@ export default function StatementViewer() {
       if (iosWin) iosWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
+      if (cloneEl && document.body.contains(cloneEl)) document.body.removeChild(cloneEl);
       setIsDownloading(false);
     }
   };
