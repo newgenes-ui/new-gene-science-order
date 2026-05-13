@@ -45,17 +45,18 @@ export default function QuoteViewer() {
     const isAndroid = /Android/i.test(navigator.userAgent);
     const isMobile = isIOS || isAndroid;
 
-    // ① iOS Safari: window.open()은 버튼 클릭 직후 동기적으로만 허용됨
-    //    await 이후에 호운하면 팅 팝업 차단으로 지속 품림 → 미리 열어두기
-    let iosWin: Window | null = null;
-    if (isIOS) {
-      iosWin = window.open('', '_blank');
-      if (iosWin) {
-        iosWin.document.write(
-          '<html><head><title>PDF 생성 중</title></head>' +
+    // iOS/Android 모두: window.open()은 버튼 클릭 직후 동기적으로만 팝업 허용됨
+    //   await 이후 호출 시 팝업 차단 → 미리 창을 열어두고 나중에 내용 주입
+    let mobileWin: Window | null = null;
+    if (isMobile) {
+      mobileWin = window.open('', '_blank');
+      if (mobileWin) {
+        mobileWin.document.write(
+          '<html><head><title>PDF 생성 중</title>' +
+          '<meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
           '<body style="display:flex;align-items:center;justify-content:center;' +
-          'height:100vh;font-family:sans-serif;color:#444;text-align:center">' +
-          '<div><p style="font-size:18px">📄 PDF를 생성하고 있습니다...</p>' +
+          'height:100vh;font-family:sans-serif;color:#444;text-align:center;margin:0">' +
+          '<div><p style="font-size:20px;margin-bottom:8px">📄 PDF를 생성하고 있습니다...</p>' +
           '<p style="font-size:14px;color:#888">잠시만 기다려 주세요.</p></div>' +
           '</body></html>'
         );
@@ -99,35 +100,35 @@ export default function QuoteViewer() {
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (isIOS) {
-        // ①에서 미리 연 새 탭에 PDF data URI 주입
-        if (iosWin) {
+        // iOS: data URI → iframe으로 표시 (blob URL은 iOS에서 안 열림)
+        if (mobileWin) {
           const dataUri = pdf.output('datauristring');
-          iosWin.document.write(
-            `<html><head><title>${fileName}</title></head>` +
+          mobileWin.document.write(
+            `<html><head><title>${fileName}</title>` +
+            `<meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
             `<body style="margin:0">` +
             `<iframe src="${dataUri}" style="width:100%;height:100vh;border:none;"></iframe>` +
             `</body></html>`
           );
-          iosWin.document.close();
+          mobileWin.document.close();
           showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
         }
       } else if (isAndroid) {
-        const blob = pdf.output('blob');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-        showToast('📥 PDF 다운로드가 시작되었습니다.');
+        // Android Chrome: blob URL로 리다이렉트 → Chrome PDF 뷰어가 자동 열림
+        //   사용자가 오른쪽 위 다운로드 버튼 턱하면 파일 저장
+        if (mobileWin) {
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          mobileWin.location.href = url;
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          showToast('📥 PDF가 열렸습니다. 우측 위 다운로드 버튼(⬇)을 탭하세요.');
+        }
       } else {
         pdf.save(fileName);
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
-      if (iosWin) iosWin.close();
+      if (mobileWin) mobileWin.close();
       alert('PDF 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       setIsDownloading(false);
