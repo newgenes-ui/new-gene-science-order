@@ -1158,8 +1158,8 @@ export default function OrderPage() {
                                   </div>
 
                                   <div className="shrink-0 flex flex-wrap items-center gap-2">
-                                    {order.status === 'shipped' && (
-                                      statementRequestedOrderIds.includes(order.id) ? (
+                                    {order.status === 'shipped' && (order.items && order.items.length > 0) && (
+                                      <div className="flex items-center gap-2">
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
@@ -1170,28 +1170,29 @@ export default function OrderPage() {
                                           <Eye className="w-3 h-3" />
                                           거래명세서 보기
                                         </button>
-                                      ) : (
-                                        <input 
-                                          type="checkbox" 
-                                          checked={selectedOrderIds.includes(order.id)}
-                                          onChange={(e) => {
-                                            e.stopPropagation(); // 접기 방지
-                                            if (e.target.checked) {
-                                              setSelectedOrderIds(prev => [...prev, order.id]);
-                                              if (order.ordererName === '김기환' || order.ordererName === '이재명') {
-                                                setOrdererName('김기환');
-                                                setOrdererPhone('010-5882-4997');
-                                                setTaxEmail('khkimjhs@naver.com');
-                                              } else if (order.ordererEmail) {
-                                                setTaxEmail(order.ordererEmail);
+                                        {!statementRequestedOrderIds.includes(order.id) && (
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation(); // 접기 방지
+                                              if (e.target.checked) {
+                                                setSelectedOrderIds(prev => [...prev, order.id]);
+                                                if (order.ordererName === '김기환' || order.ordererName === '이재명') {
+                                                  setOrdererName('김기환');
+                                                  setOrdererPhone('010-5882-4997');
+                                                  setTaxEmail('khkimjhs@naver.com');
+                                                } else if (order.ordererEmail) {
+                                                  setTaxEmail(order.ordererEmail);
+                                                }
+                                              } else {
+                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                               }
-                                            } else {
-                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }
-                                          }}
-                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                        />
-                                      )
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                        )}
+                                      </div>
                                     )}
                                     <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
                                       (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
@@ -1289,9 +1290,9 @@ export default function OrderPage() {
                                   </div>
                                 )}
 
-                                {/* 체크박스 (거래명세서 발행용) */}
+                                {/* 거래명세서 보기 및 체크박스 (납품완료 상태 시 항상 표시) */}
                                 {order.status === 'shipped' && (order.items && order.items.length > 0) && (
-                                  statementRequestedOrderIds.includes(order.id) ? (
+                                  <div className="flex items-center gap-2">
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1302,24 +1303,25 @@ export default function OrderPage() {
                                       <Eye className="w-3 h-3" />
                                       거래명세서 보기
                                     </button>
-                                  ) : (
-                                    <input 
-                                      type="checkbox" 
-                                      checked={selectedOrderIds.includes(order.id)}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        if (e.target.checked) {
-                                          setSelectedOrderIds(prev => [...prev, order.id]);
-                                          if (order.ordererEmail) {
-                                            setTaxEmail(order.ordererEmail);
+                                    {!statementRequestedOrderIds.includes(order.id) && (
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedOrderIds.includes(order.id)}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          if (e.target.checked) {
+                                            setSelectedOrderIds(prev => [...prev, order.id]);
+                                            if (order.ordererEmail) {
+                                              setTaxEmail(order.ordererEmail);
+                                            }
+                                          } else {
+                                            setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                           }
-                                        } else {
-                                          setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                        }
-                                      }}
-                                      className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                  )
+                                        }}
+                                        className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                      />
+                                    )}
+                                  </div>
                                 )}
                                 {order.orderType === 'quote' && order.status === 'processing' ? (
                                   <div className="flex items-center gap-1.5">
