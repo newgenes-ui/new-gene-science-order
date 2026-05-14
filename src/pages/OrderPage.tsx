@@ -1150,14 +1150,14 @@ export default function OrderPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-between gap-2 flex-1 w-full mt-2 md:mt-0">
-                                  <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm shrink-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-1 w-full mt-2 md:mt-0">
+                                  <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm w-fit shrink-0">
                                     <span className="hidden md:inline text-[10px] font-black text-slate-700 truncate max-w-[120px]">{summaryText}</span>
                                     <span className="text-[10px] font-bold text-slate-400">{totalQty}개</span>
                                     <span className="text-[10px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
                                   </div>
 
-                                  <div className="flex flex-wrap items-center justify-end gap-1.5 md:gap-2">
+                                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2 sm:justify-end">
                                     {order.status === 'shipped' && (order.items && order.items.length > 0) && (
                                       <div className="flex items-center gap-2">
                                         <button
@@ -1168,7 +1168,7 @@ export default function OrderPage() {
                                           className="px-2 py-1.5 rounded-lg text-[10px] font-black bg-white text-blue-600 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                         >
                                           <Eye className="w-3 h-3" />
-                                          거래명세서 보기
+                                          명세서
                                         </button>
                                         {!statementRequestedOrderIds.includes(order.id) && (
                                           <input 
@@ -1276,8 +1276,8 @@ export default function OrderPage() {
                                 </div>
                               </div>
 
-                              <div className="flex flex-wrap items-center justify-between gap-2 flex-1 w-full mt-2 md:mt-0">
-                                <div className="flex items-center gap-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-1 w-full mt-2 md:mt-0">
+                                <div className="flex flex-wrap items-center gap-2">
                                   {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
                                   {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
                                     <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm shrink-0">
@@ -1287,13 +1287,13 @@ export default function OrderPage() {
                                     </div>
                                   )}
                                   {(order.orderType === 'quote' && order.status === 'pending') && (
-                                    <div className="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                                    <div className="bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
                                       <span className="text-[10px] font-bold text-slate-500 italic">견적 검토 중...</span>
                                     </div>
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap items-center justify-end gap-1.5 md:gap-2">
+                                <div className="flex flex-wrap items-center gap-1.5 md:gap-2 sm:justify-end">
                                 {/* 거래명세서 보기 및 체크박스 (납품완료 상태 시 항상 표시) */}
                                 {order.status === 'shipped' && (order.items && order.items.length > 0) && (
                                   <div className="flex items-center gap-2">
@@ -1305,7 +1305,7 @@ export default function OrderPage() {
                                       className="px-2 py-1.5 rounded-lg text-[10px] font-black bg-white text-blue-600 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                     >
                                       <Eye className="w-3 h-3" />
-                                      거래명세서 보기
+                                      명세서
                                     </button>
                                     {!statementRequestedOrderIds.includes(order.id) && (
                                       <input 
