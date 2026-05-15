@@ -1136,75 +1136,58 @@ export default function OrderPage() {
                                 onClick={() => setIsItemCollapsed(prev => ({ ...prev, [order.id]: !isCollapsed }))}
                                 className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-slate-50/30 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
                               >
-                                <div className="flex items-start justify-between w-full gap-3">
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="text-[11px] font-black text-slate-700 tracking-tight truncate">
+                                <div className="flex items-center gap-3">
+                                  <div className="flex flex-col">
+                                    <span className="text-[11px] font-black text-slate-700 tracking-tight">
                                       {order.id.replace('NGS-', '')}
                                     </span>
-                                    <span className="text-[10px] font-bold text-slate-400 truncate">
+                                    <span className="text-[10px] font-bold text-slate-400">
                                       {order.items && order.items.length > 0 ? order.items[0].productCode : '상세 내역'}
                                     </span>
                                     {order.ordererName && (
-                                      <p className="text-[9px] font-bold text-slate-300 truncate">주문자: {order.ordererName}</p>
+                                      <p className="text-[9px] font-bold text-slate-300">주문자: {order.ordererName}</p>
                                     )}
-                                  </div>
-                                  <div className="flex flex-col items-end gap-1.5 shrink-0 mt-0.5">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black shadow-sm ${
-                                        (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
-                                        order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
-                                      }`}>
-                                        {STATUS_LABELS[order.status] || order.status}
-                                      </span>
-                                      {order.status === 'shipped' && !statementRequestedOrderIds.includes(order.id) && (
-                                        <input 
-                                          type="checkbox" 
-                                          checked={selectedOrderIds.includes(order.id)}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            if (e.target.checked) {
-                                              setSelectedOrderIds(prev => [...prev, order.id]);
-                                              if (order.ordererName === '김기환' || order.ordererName === '이재명') {
-                                                setOrdererName('김기환');
-                                                setOrdererPhone('010-5882-4997');
-                                                setTaxEmail('khkimjhs@naver.com');
-                                              } else if (order.ordererEmail) {
-                                                setTaxEmail(order.ordererEmail);
-                                              }
-                                            } else {
-                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }
-                                          }}
-                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer ml-1"
-                                        />
-                                      )}
-                                    </div>
                                   </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 flex-1 w-full mt-2 md:mt-0">
-                                  <div className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm w-fit shrink-0">
+                                <div className="flex items-center gap-2 justify-end flex-1">
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0">
                                     <span className="hidden md:inline text-[10px] font-black text-slate-700 truncate max-w-[120px]">{summaryText}</span>
-                                    <span className="text-[10px] font-bold text-slate-400">{totalQty}개</span>
-                                    <span className="text-[10px] font-black text-primary">₩{dTotal.toLocaleString()}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>
+                                    <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
 
-                                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2 sm:justify-end">
-                                    {order.status === 'shipped' && (order.items && order.items.length > 0) && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          window.open(`/statement?ids=${order.id}`, '_blank');
+                                  <div className="shrink-0 flex flex-wrap items-center gap-2">
+                                    {order.status === 'shipped' && (
+                                      <input 
+                                        type="checkbox" 
+                                        checked={selectedOrderIds.includes(order.id)}
+                                        onChange={(e) => {
+                                          e.stopPropagation(); // 접기 방지
+                                          if (e.target.checked) {
+                                            setSelectedOrderIds(prev => [...prev, order.id]);
+                                            if (order.ordererName === '김기환' || order.ordererName === '이재명') {
+                                              setOrdererName('김기환');
+                                              setOrdererPhone('010-5882-4997');
+                                              setTaxEmail('khkimjhs@naver.com');
+                                            } else if (order.ordererEmail) {
+                                              setTaxEmail(order.ordererEmail);
+                                            }
+                                          } else {
+                                            setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                          }
                                         }}
-                                        className="px-2.5 py-1.5 rounded-lg text-[10px] font-black bg-white text-blue-600 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1.5"
-                                      >
-                                        <Eye className="w-3.5 h-3.5" />
-                                        명세서 보기
-                                      </button>
+                                        className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                      />
                                     )}
+                                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
+                                      (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
+                                      order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
+                                    }`}>
+                                      {STATUS_LABELS[order.status] || order.status}
+                                    </span>
                                     <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                                   </div>
-                                </div>
                                 </div>
                               </div>
                               
@@ -1240,66 +1223,77 @@ export default function OrderPage() {
                                             <span>공급가액: ₩{dSubtotal.toLocaleString()}</span>
                                             <span>부가세: ₩{dVat.toLocaleString()}</span>
                                           </div>
-                                          <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT �                                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2 sm:justify-end">
-                                  {/* 거래명세서 보기 및 체크박스 (납품완료 상태 시 항상 표시) */}
-                                  {order.status === 'shipped' && (order.items && order.items.length > 0) && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(`/statement?ids=${order.id}`, '_blank');
-                                      }}
-                                      className="px-2.5 py-1.5 rounded-lg text-[10px] font-black bg-white text-blue-600 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1.5"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" />
-                                      거래명세서 보기
-                                    </button>
-                                  )}
-                                  {order.orderType === 'quote' && order.status === 'processing' ? (
-                                    <div className="flex items-center gap-1.5">
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          window.open(`/quote?ids=${order.id}`, '_blank');
-                                        }}
-                                        className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                      >
-                                        <Eye className="w-3 h-3" />
-                                        견적서
-                                      </button>
-                                      <button
-                                        onClick={async (e) => {
-                                          e.stopPropagation();
-                                          if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
-                                            const success = await convertQuoteToOrder(order.id);
-                                            if (success) {
-                                              alert('발주 요청이 완료되었습니다.');
-                                              loadUserOrders(); // 목록 새로고침
-                                            }
-                                          }
-                                        }}
-                                        className="px-3 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
-                                      >
-                                        발주요청
-                                      </button>
-                                    </div>
-                                  ) : null}
-                                  <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
-                                </div>                    checked={selectedOrderIds.includes(order.id)}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          if (e.target.checked) {
-                                            setSelectedOrderIds(prev => [...prev, order.id]);
-                                            if (order.ordererEmail) {
-                                              setTaxEmail(order.ordererEmail);
-                                            }
-                                          } else {
-                                            setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                          }
-                                        }}
-                                        className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                      />
+                                          <p className="text-[11px] text-slate-400 font-bold">최종 합계 (VAT 포함)</p>
+                                          <p className="text-lg font-black text-primary tracking-tighter">₩{dTotal.toLocaleString()}</p>
+                                        </>
+                                      )}
+                                      </div>
+                                    {order.items && order.items.length > 0 && order.otherRequest && (
+                                      <div className="mt-3 p-3 bg-amber-50/50 rounded-xl border border-dashed border-amber-200">
+                                        <p className="text-[10px] font-black text-amber-700/50 uppercase mb-1">기타 요청사항</p>
+                                        <p className="text-xs text-amber-800 font-medium leading-relaxed">{order.otherRequest}</p>
+                                      </div>
                                     )}
                                   </div>
+                                )}
+                              </div>
+                          );
+                        }
+
+                        // 2. 견적 내역 (Collapsible)
+                        return (
+                          <div key={order.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm mb-4 hover:border-primary/20 transition-all">
+                            <div 
+                              onClick={() => setIsItemCollapsed(prev => ({ ...prev, [order.id]: !isCollapsed }))}
+                              className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 bg-slate-50/30 border-b border-slate-50 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                  <div className="flex flex-col">
+                                    <span className="text-[11px] font-black text-slate-700 tracking-tight">
+                                      {order.id.replace('NGS-', '')}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                      {summaryText}
+                                    </span>
+                                  {order.ordererName && (
+                                    <p className="text-[11px] font-bold text-slate-400">주문자: {order.ordererName}</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 justify-end flex-1 min-w-0">
+                                {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
+                                {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
+                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0">
+                                    <span className="hidden md:inline text-[10px] font-black text-slate-800 truncate max-w-[120px]">{summaryText}</span>
+                                    {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
+                                    <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {(order.orderType === 'quote' && order.status === 'pending') && (
+                                  <div className="mr-auto md:mr-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                                    <span className="text-[10px] font-bold text-slate-500 italic">견적 검토 중...</span>
+                                  </div>
+                                )}
+
+                                {/* 체크박스 (거래명세서 발행용) */}
+                                {order.status === 'shipped' && (order.items && order.items.length > 0) && (
+                                  <input 
+                                    type="checkbox" 
+                                    checked={selectedOrderIds.includes(order.id)}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      if (e.target.checked) {
+                                        setSelectedOrderIds(prev => [...prev, order.id]);
+                                        if (order.ordererEmail) {
+                                          setTaxEmail(order.ordererEmail);
+                                        }
+                                      } else {
+                                        setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                      }
+                                    }}
+                                    className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                  />
                                 )}
                                 {order.orderType === 'quote' && order.status === 'processing' ? (
                                   <div className="flex items-center gap-1.5">
@@ -1342,7 +1336,6 @@ export default function OrderPage() {
                                   </span>
                                 )}
                                 <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
-                                </div>
                               </div>
                             </div>
                             
