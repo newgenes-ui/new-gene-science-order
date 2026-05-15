@@ -6,38 +6,45 @@ const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
+    // 이미 설치되어 앱으로 실행 중인지 확인
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    setIsStandalone(checkStandalone);
+    if (checkStandalone) return;
+
     // iOS 여부 확인
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIOSDevice);
 
-    // 이미 설치되었거나 최근에 닫았는지 확인 (7일간 다시 묻지 않음)
+    // 최근에 닫았는지 확인 (7일간 다시 묻지 않음)
     const lastDismissed = localStorage.getItem('pwa_prompt_dismissed');
     const now = new Date().getTime();
     if (lastDismissed && now - parseInt(lastDismissed) < 1000 * 60 * 60 * 24 * 7) {
       return;
     }
 
-    // 안드로이드/크롬 설치 프롬프트 처리
+    // 안드로이드/크롬 설치 프롬프트 이벤트 리스너
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // 접속 후 5초 뒤에 표시
-      setTimeout(() => setIsVisible(true), 5000);
+      // 이벤트가 발생하면 즉시 또는 짧은 지연 후 표시
+      setTimeout(() => setIsVisible(true), 1500);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // iOS는 별도 이벤트가 없으므로 수동으로 설치 권유 (설치되지 않은 경우만)
-    if (isIOSDevice && !(window.navigator as any).standalone) {
-       setTimeout(() => setIsVisible(true), 8000);
-    }
+    // iOS 또는 이벤트가 늦게 발생하는 경우를 대비해 3초 후 강제 표시 (설치 안 된 경우만)
+    const fallbackTimer = setTimeout(() => {
+      if (!isStandalone) setIsVisible(true);
+    }, 3000);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      clearTimeout(fallbackTimer);
     };
-  }, []);
+  }, [isStandalone]);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
@@ -47,6 +54,9 @@ const InstallPrompt = () => {
         setIsVisible(false);
       }
       setDeferredPrompt(null);
+    } else {
+      // 프롬프트가 아직 준비 안 된 경우 안내 (삼성 인터넷 등)
+      alert('브라우저 메뉴의 [홈 화면에 추가]를 통해서도 설치하실 수 있습니다.');
     }
   };
 
@@ -55,7 +65,7 @@ const InstallPrompt = () => {
     localStorage.setItem('pwa_prompt_dismissed', new Date().getTime().toString());
   };
 
-  if (!isVisible) return null;
+  if (isStandalone || !isVisible) return null;
 
   return (
     <AnimatePresence>
