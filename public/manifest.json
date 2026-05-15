@@ -1,0 +1,20 @@
+{
+  "short_name": "뉴진사이언스",
+  "name": "뉴진사이언스 주문 시스템",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#2D5A47",
+  "background_color": "#ffffff"
+}

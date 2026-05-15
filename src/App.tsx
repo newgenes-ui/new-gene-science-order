@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import QRManager from './pages/QRManager';
 import StatementViewer from './pages/StatementViewer';
 import QuoteViewer from './pages/QuoteViewer';
+import InstallPrompt from './components/InstallPrompt';
 
 function AdminNav() {
   const location = useLocation();
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/quote" element={<QuoteViewer />} />
       </Routes>
       <AdminNav />
+      <InstallPrompt />
     </BrowserRouter>
   );
 }
