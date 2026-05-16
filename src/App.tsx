@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { QrCode, BarChart3, ShoppingBag } from 'lucide-react';
 import { CLIENTS } from './data/products';

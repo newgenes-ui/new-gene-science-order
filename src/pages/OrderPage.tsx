@@ -6,7 +6,7 @@ import {
   User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw, Eye
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
-import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders } from '../store/orderStore';
+import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders, markOrdersAsInvoicedInSupabase } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 
 // ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
@@ -497,7 +497,7 @@ export default function OrderPage() {
   });
 
   const cartItems = PRODUCTS.filter(p => (quantities[p.id] || 0) > 0);
-  const cartCount = Object.values(quantities).reduce((s, v) => s + v, 0);
+  const cartCount = Object.values(quantities).reduce((s: number, v: number) => s + v, 0) as number;
   const subtotalAmount = cartItems.reduce((s, p) => s + (p.price as number) * (quantities[p.id] || 0), 0);
   const vatAmount = Math.floor(subtotalAmount * 0.1);
   const totalAmount = subtotalAmount + vatAmount;
