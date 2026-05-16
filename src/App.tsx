@@ -41,6 +41,30 @@ function AdminNav() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // [긴급 캐시 삭제] 배포 버전이 바뀌면 브라우저 캐시를 강제로 비우고 리로드
+    const CURRENT_VERSION = '1.0.5';
+    const savedVersion = localStorage.getItem('APP_VERSION');
+    if (savedVersion !== CURRENT_VERSION) {
+      localStorage.setItem('APP_VERSION', CURRENT_VERSION);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for(let registration of registrations) registration.unregister();
+        });
+      }
+      window.location.reload();
+    }
+
+    // [데이터 긴급 복구] 특정 주문 데이터 유실 방지
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+    let updated = false;
+    orders.forEach(order => {
+      if (order.id === 'ORDER-2024-001' && !order.client) { order.client = 'a'; updated = true; }
+      if (order.id === 'ORDER-2024-002' && !order.client) { order.client = 'b'; updated = true; }
+    });
+    if (updated) localStorage.setItem('orders', JSON.stringify(orders));
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
