@@ -42,8 +42,20 @@ function AdminNav() {
 
 export default function App() {
   useEffect(() => {
+    // [긴급 데이터 자가 복구] 특정 주문들이 서버에 발행 완료 상태가 아니라면 강제로 업데이트
+    const fixHistoricalData = async () => {
+      try {
+        const { markOrdersAsInvoicedInSupabase } = await import('./store/orderStore');
+        await markOrdersAsInvoicedInSupabase(['20260511-71659-084840', '20260511-1']);
+        console.log('✅ 서버 데이터 자가 복구 완료');
+      } catch (e) {
+        console.error('자가 복구 중 오류:', e);
+      }
+    };
+    fixHistoricalData();
+
     // [긴급 캐시 삭제] 배포 버전이 바뀌면 브라우저 캐시를 강제로 비우고 리로드
-    const CURRENT_VERSION = '1.0.5';
+    const CURRENT_VERSION = '1.0.6';
     const savedVersion = localStorage.getItem('APP_VERSION');
     if (savedVersion !== CURRENT_VERSION) {
       localStorage.setItem('APP_VERSION', CURRENT_VERSION);
