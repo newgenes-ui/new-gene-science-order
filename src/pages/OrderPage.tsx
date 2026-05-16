@@ -1173,39 +1173,36 @@ export default function OrderPage() {
                                   <div className="shrink-0 flex items-center gap-1.5">
                                     {order.status === 'shipped' && (
                                       <>
-                                        {(selectedOrderIds.includes(order.id) || statementRequestedOrderIds.includes(order.id) || order.otherRequest?.includes('[명세서발행]')) ? (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              window.open(`/statement?ids=${order.id}`, '_blank');
-                                            }}
-                                            className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                          >
-                                            <Eye className="w-3 h-3" />
-                                            명세서
-                                          </button>
-                                        ) : (
-                                          <input 
-                                            type="checkbox" 
-                                            checked={selectedOrderIds.includes(order.id)}
-                                            onChange={(e) => {
-                                              e.stopPropagation();
-                                              if (e.target.checked) {
-                                                setSelectedOrderIds(prev => [...prev, order.id]);
-                                                if (order.ordererName === '김기환' || order.ordererName === '이재명') {
-                                                  setOrdererName('김기환');
-                                                  setOrdererPhone('010-5882-4997');
-                                                  setTaxEmail('khkimjhs@naver.com');
-                                                } else if (order.ordererEmail) {
-                                                  setTaxEmail(order.ordererEmail);
-                                                }
-                                              } else {
-                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(`/statement?ids=${order.id}`, '_blank');
+                                          }}
+                                          className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                        >
+                                          <Eye className="w-3 h-3" />
+                                          명세서
+                                        </button>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={selectedOrderIds.includes(order.id)}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            if (e.target.checked) {
+                                              setSelectedOrderIds(prev => [...prev, order.id]);
+                                              if (order.ordererName === '김기환' || order.ordererName === '이재명') {
+                                                setOrdererName('김기환');
+                                                setOrdererPhone('010-5882-4997');
+                                                setTaxEmail('khkimjhs@naver.com');
+                                              } else if (order.ordererEmail) {
+                                                setTaxEmail(order.ordererEmail);
                                               }
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                          />
-                                        )}
+                                            } else {
+                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                            }
+                                          }}
+                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                        />
                                       </>
                                     )}
                                     <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
@@ -1307,35 +1304,32 @@ export default function OrderPage() {
                                   <div className="shrink-0 flex items-center gap-1.5">
                                     {order.status === 'shipped' && (
                                       <>
-                                        {(selectedOrderIds.includes(order.id) || statementRequestedOrderIds.includes(order.id) || order.otherRequest?.includes('[명세서발행]')) ? (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              window.open(`/statement?ids=${order.id}`, '_blank');
-                                            }}
-                                            className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                          >
-                                            <Eye className="w-3 h-3" />
-                                            명세서
-                                          </button>
-                                        ) : (
-                                          <input 
-                                            type="checkbox" 
-                                            checked={selectedOrderIds.includes(order.id)}
-                                            onChange={(e) => {
-                                              e.stopPropagation();
-                                              if (e.target.checked) {
-                                                setSelectedOrderIds(prev => [...prev, order.id]);
-                                                if (order.ordererEmail) {
-                                                  setTaxEmail(order.ordererEmail);
-                                                }
-                                              } else {
-                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(`/statement?ids=${order.id}`, '_blank');
+                                          }}
+                                          className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                        >
+                                          <Eye className="w-3 h-3" />
+                                          명세서
+                                        </button>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={selectedOrderIds.includes(order.id)}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            if (e.target.checked) {
+                                              setSelectedOrderIds(prev => [...prev, order.id]);
+                                              if (order.ordererEmail) {
+                                                setTaxEmail(order.ordererEmail);
                                               }
-                                            }}
-                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                          />
-                                        )}
+                                            } else {
+                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                            }
+                                          }}
+                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                        />
                                       </>
                                     )}
                                     {order.orderType === 'quote' && order.status === 'processing' ? (
