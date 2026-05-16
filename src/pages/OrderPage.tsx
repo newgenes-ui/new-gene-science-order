@@ -345,9 +345,13 @@ export default function OrderPage() {
         emailjsCustomerStatus = '⚠️ 설정누락';
       }
 
+      // 서버(Supabase)에 발행 상태 동기화 (PC/모바일/관리자 일치를 위한 핵심)
+      await markOrdersAsInvoicedInSupabase(selectedOrderIds);
+      
       markInvoiceRequested(selectedOrderIds);
       alert(`거래명세서 발행 요청이 완료되었습니다!\n\n수신 이메일: ${finalEmail}`);
       setSelectedOrderIds([]); 
+      loadUserOrders(); // 데이터 즉시 새로고침
     } catch (error) {
       alert('요청 처리 중 오류가 발생했습니다.');
     } finally {
@@ -455,21 +459,16 @@ export default function OrderPage() {
   }, [activeTab]);
 
   const filteredUserOrders = useMemo(() => {
+    // 1. 발주 내역: 처음부터 발주(order)로 생성된 것들만 (상태 무관)
     const ordersOnly = userOrders.filter(o => {
       const type = (o.orderType || '').toLowerCase().trim();
-      const status = (o.status || '').toLowerCase().trim();
-      const isQuoteStatus = ['order_requested', 'processing'].includes(status);
-      const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
-      
-      return type === 'order' && !isQuoteStatus && !isQuoteByAmount;
+      return type === 'order';
     });
+
+    // 2. 견적 내역: 견적(quote)으로 생성된 모든 것들 (상태 무관)
     const quotesOnly = userOrders.filter(o => {
       const type = (o.orderType || '').toLowerCase().trim();
-      const status = (o.status || '').toLowerCase().trim();
-      const isQuoteStatus = ['order_requested', 'processing'].includes(status);
-      const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
-      
-      return type === 'quote' || isQuoteStatus || isQuoteByAmount;
+      return type === 'quote';
     });
     
     return (historyTab === 'order' ? ordersOnly : quotesOnly)
@@ -902,25 +901,23 @@ export default function OrderPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 gap-6">
-                    <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
-                      <div className="min-w-[120px]">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
-                        <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                      </div>
-                      <div className="flex-1 min-w-[200px]">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">이메일</label>
-                        <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
-                      </div>
-                      <div className="min-w-[160px]">
-                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">연락처 *</label>
-                        <input 
-                          value={ordererPhone} 
-                          onChange={e => setOrdererPhone(e.target.value)} 
-                          placeholder="010-0000-0000" 
-                          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-800" 
-                        />
-                      </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">문의자 성함 *</label>
+                      <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">이메일</label>
+                      <input value={ordererEmail} onChange={e => setOrdererEmail(e.target.value)} placeholder="email@company.com" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">연락처 (휴대폰) *</label>
+                      <input 
+                        value={ordererPhone} 
+                        onChange={e => setOrdererPhone(e.target.value)} 
+                        placeholder="010-0000-0000" 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-slate-800" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -1086,13 +1083,30 @@ export default function OrderPage() {
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
-                    <button
-                      onClick={() => setAppliedRange(dateRange)}
-                      className="px-6 py-2.5 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-green-900/10 hover:bg-primary-dark transition-all active:scale-95 flex items-center gap-2"
-                    >
-                      <Search className="w-3.5 h-3.5" />
-                      조회
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setAppliedRange(dateRange)}
+                        className="flex-1 px-6 py-2.5 bg-primary text-white rounded-xl font-black text-xs shadow-lg shadow-green-900/10 hover:bg-primary-dark transition-all active:scale-95 flex items-center justify-center gap-2"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        조회
+                      </button>
+                      <button
+                        onClick={() => {
+                          loadUserOrders();
+                          // 강력한 동기화: 서비스 워커 업데이트 및 캐시 무시 리로드 시도
+                          if ('serviceWorker' in navigator) {
+                            navigator.serviceWorker.getRegistrations().then(registrations => {
+                              for(let registration of registrations) registration.update();
+                            });
+                          }
+                        }}
+                        className="p-2.5 bg-slate-100 text-slate-500 rounded-xl hover:bg-slate-200 transition-all active:scale-90"
+                        title="데이터 새로고침"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isOrdersLoading ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Order List */}
@@ -1150,56 +1164,57 @@ export default function OrderPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 justify-end flex-1">
-                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0">
-                                    <span className="hidden md:inline text-[10px] font-black text-slate-700 truncate max-w-[120px]">{summaryText}</span>
+                                <div className="flex items-center gap-2 justify-end flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mr-auto bg-white px-2 py-1.5 rounded-xl border border-slate-200 shadow-sm min-w-0">
                                     <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>
                                     <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
                                   </div>
 
-                                  <div className="shrink-0 flex flex-wrap items-center gap-2">
+                                  <div className="shrink-0 flex items-center gap-1.5">
                                     {order.status === 'shipped' && (
-                                      statementRequestedOrderIds.includes(order.id) ? (
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            window.open(`/statement?ids=${order.id}`, '_blank');
-                                          }}
-                                          className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                        >
-                                          <Eye className="w-3 h-3" />
-                                          거래명세서 보기
-                                        </button>
-                                      ) : (
-                                        <input 
-                                          type="checkbox" 
-                                          checked={selectedOrderIds.includes(order.id)}
-                                          onChange={(e) => {
-                                            e.stopPropagation(); // 접기 방지
-                                            if (e.target.checked) {
-                                              setSelectedOrderIds(prev => [...prev, order.id]);
-                                              if (order.ordererName === '김기환' || order.ordererName === '이재명') {
-                                                setOrdererName('김기환');
-                                                setOrdererPhone('010-5882-4997');
-                                                setTaxEmail('khkimjhs@naver.com');
-                                              } else if (order.ordererEmail) {
-                                                setTaxEmail(order.ordererEmail);
+                                      <>
+                                        {(selectedOrderIds.includes(order.id) || statementRequestedOrderIds.includes(order.id) || order.otherRequest?.includes('[명세서발행]')) ? (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              window.open(`/statement?ids=${order.id}`, '_blank');
+                                            }}
+                                            className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                          >
+                                            <Eye className="w-3 h-3" />
+                                            명세서
+                                          </button>
+                                        ) : (
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              if (e.target.checked) {
+                                                setSelectedOrderIds(prev => [...prev, order.id]);
+                                                if (order.ordererName === '김기환' || order.ordererName === '이재명') {
+                                                  setOrdererName('김기환');
+                                                  setOrdererPhone('010-5882-4997');
+                                                  setTaxEmail('khkimjhs@naver.com');
+                                                } else if (order.ordererEmail) {
+                                                  setTaxEmail(order.ordererEmail);
+                                                }
+                                              } else {
+                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                               }
-                                            } else {
-                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }
-                                          }}
-                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                        />
-                                      )
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                        )}
+                                      </>
                                     )}
-                                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
+                                    <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
                                       (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
                                       order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
                                     }`}>
                                       {STATUS_LABELS[order.status] || order.status}
                                     </span>
-                                    <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
+                                    <span className="text-slate-300 text-[10px] ml-0.5 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1274,95 +1289,96 @@ export default function OrderPage() {
                                 </div>
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-2 justify-end flex-1 min-w-0">
-                                {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
-                                {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
-                                  <div className="flex items-center gap-1.5 mr-auto md:mr-2 bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0">
-                                    <span className="hidden md:inline text-[10px] font-black text-slate-800 truncate max-w-[120px]">{summaryText}</span>
-                                    {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
-                                    <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
-                                  </div>
-                                )}
-                                {(order.orderType === 'quote' && order.status === 'pending') && (
-                                  <div className="mr-auto md:mr-2 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                                    <span className="text-[10px] font-bold text-slate-500 italic">견적 검토 중...</span>
-                                  </div>
-                                )}
+                                <div className="flex flex-wrap items-center gap-2 justify-end flex-1 min-w-0">
+                                  {/* 접기 모드에서 견적 금액 표시 (전송 전에는 숨김) */}
+                                  {dTotal > 0 && !(order.orderType === 'quote' && order.status === 'pending') && (
+                                    <div className="flex items-center gap-1.5 mr-auto bg-white px-2 py-1.5 rounded-xl border border-primary/20 shadow-sm min-w-0">
+                                      {totalQty > 0 && <span className="text-[10px] font-bold text-slate-400 shrink-0">{totalQty}개</span>}
+                                      <span className="text-[10px] font-black text-primary shrink-0">₩{dTotal.toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                  {(order.orderType === 'quote' && order.status === 'pending') && (
+                                    <div className="mr-auto bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                                      <span className="text-[10px] font-bold text-slate-500 italic">견적 검토 중...</span>
+                                    </div>
+                                  )}
 
-                                {/* 체크박스 (거래명세서 발행용) */}
-                                {order.status === 'shipped' && (order.items && order.items.length > 0) && (
-                                  statementRequestedOrderIds.includes(order.id) ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(`/statement?ids=${order.id}`, '_blank');
-                                      }}
-                                      className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                    >
-                                      <Eye className="w-3 h-3" />
-                                      거래명세서 보기
-                                    </button>
-                                  ) : (
-                                    <input 
-                                      type="checkbox" 
-                                      checked={selectedOrderIds.includes(order.id)}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        if (e.target.checked) {
-                                          setSelectedOrderIds(prev => [...prev, order.id]);
-                                          if (order.ordererEmail) {
-                                            setTaxEmail(order.ordererEmail);
-                                          }
-                                        } else {
-                                          setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                        }
-                                      }}
-                                      className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                    />
-                                  )
-                                )}
-                                {order.orderType === 'quote' && order.status === 'processing' ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        window.open(`/quote?ids=${order.id}`, '_blank');
-                                      }}
-                                      className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                                    >
-                                      <Eye className="w-3 h-3" />
-                                      견적서
-                                    </button>
-                                    <button
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
-                                          const success = await convertQuoteToOrder(order.id);
-                                          if (success) {
-                                            alert('발주 요청이 완료되었습니다.');
-                                            loadUserOrders(); // 목록 새로고침
-                                          }
-                                        }
-                                      }}
-                                      className="px-3 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
-                                    >
-                                      발주요청
-                                    </button>
+                                  {/* 체크박스 (거래명세서 발행용) */}
+                                  <div className="shrink-0 flex items-center gap-1.5">
+                                    {order.status === 'shipped' && (
+                                      <>
+                                        {(selectedOrderIds.includes(order.id) || statementRequestedOrderIds.includes(order.id) || order.otherRequest?.includes('[명세서발행]')) ? (
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              window.open(`/statement?ids=${order.id}`, '_blank');
+                                            }}
+                                            className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                          >
+                                            <Eye className="w-3 h-3" />
+                                            명세서
+                                          </button>
+                                        ) : (
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              if (e.target.checked) {
+                                                setSelectedOrderIds(prev => [...prev, order.id]);
+                                                if (order.ordererEmail) {
+                                                  setTaxEmail(order.ordererEmail);
+                                                }
+                                              } else {
+                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                                              }
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                        )}
+                                      </>
+                                    )}
+                                    {order.orderType === 'quote' && order.status === 'processing' ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(`/quote?ids=${order.id}`, '_blank');
+                                          }}
+                                          className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                        >
+                                          <Eye className="w-3 h-3" />
+                                          견적서
+                                        </button>
+                                        <button
+                                          onClick={async (e) => {
+                                            e.stopPropagation();
+                                            if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
+                                              const success = await convertQuoteToOrder(order.id);
+                                              if (success) {
+                                                alert('발주 요청이 완료되었습니다.');
+                                                loadUserOrders(); // 목록 새로고침
+                                              }
+                                            }
+                                          }}
+                                          className="px-3 py-1.5 rounded-full text-[10px] font-black bg-indigo-600 text-white shadow-md hover:bg-indigo-700 transition-all active:scale-95 shrink-0"
+                                        >
+                                          발주요청
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
+                                        (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
+                                        order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
+                                      }`}>
+                                        {order.orderType === 'quote' 
+                                          ? (quoteStatusLabels[order.status] || STATUS_LABELS[order.status] || order.status)
+                                          : (STATUS_LABELS[order.status] || order.status)}
+                                      </span>
+                                    )}
+                                    <span className="text-slate-300 text-[10px] ml-0.5 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                                   </div>
-                                ) : (
-                                  <span className={`px-3 py-1.5 rounded-full text-[10px] font-black shadow-sm shrink-0 ${
-                                    order.status === 'pending' ? 'bg-blue-500 text-white' :
-                                    (order.status === 'order_requested' || order.status === 'processing') ? 'bg-indigo-500 text-white' :
-                                    order.status === 'shipped' ? 'bg-blue-500 text-white' :
-                                    order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-slate-400 text-white'
-                                  }`}>
-                                    {order.orderType === 'quote' 
-                                      ? (quoteStatusLabels[order.status] || STATUS_LABELS[order.status] || order.status)
-                                      : (STATUS_LABELS[order.status] || order.status)}
-                                  </span>
-                                )}
-                                <span className="text-slate-300 text-xs ml-1 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
-                              </div>
+                                </div>
                             </div>
                             
                             {!isCollapsed && (

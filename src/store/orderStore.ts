@@ -130,6 +130,31 @@ export async function convertQuoteToOrder(orderId: string): Promise<boolean> {
   }
 }
 
+/** 명세서 발행 상태를 서버(Supabase)에 동기화 */
+export async function markOrdersAsInvoicedInSupabase(orderIds: string[]): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+
+  try {
+    const results = await Promise.all(orderIds.map(async (id) => {
+      const { data: order } = await supabase.from('orders').select('other_request').eq('id', id).single();
+      const currentReq = (order as any)?.other_request || '';
+      
+      if (!currentReq.includes('[명세서발행]')) {
+        const updatedReq = currentReq ? `${currentReq} [명세서발행]` : '[명세서발행]';
+        // updateOrderInSupabase가 정의되어 있다고 가정 (라인 101 참고)
+        const { error } = await supabase.from('orders').update({ other_request: updatedReq }).eq('id', id);
+        return !error;
+      }
+      return true;
+    }));
+    
+    return results.every(r => r === true);
+  } catch (e) {
+    console.error('Failed to sync invoice status to Supabase:', e);
+    return false;
+  }
+}
+
 export async function updateQuoteDetails(orderId: string, items: OrderItem[], subtotal: number, vat: number, total: number): Promise<boolean> {
   // 1) localStorage 업데이트
   const orders = getOrders();
