@@ -1185,7 +1185,7 @@ export default function OrderPage() {
                                           <Eye className="w-3 h-3" />
                                           명세서
                                         </button>
-                                        {!statementRequestedOrderIds.includes(order.id) && !(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
+                                        {!(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
                                           <input 
                                             type="checkbox" 
                                             checked={selectedOrderIds.includes(order.id)}
@@ -1319,7 +1319,7 @@ export default function OrderPage() {
                                           <Eye className="w-3 h-3" />
                                           명세서
                                         </button>
-                                        {!statementRequestedOrderIds.includes(order.id) && !(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
+                                        {!(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
                                           <input 
                                             type="checkbox" 
                                             checked={selectedOrderIds.includes(order.id)}
