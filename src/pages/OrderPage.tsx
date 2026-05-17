@@ -321,10 +321,11 @@ export default function OrderPage() {
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
         // [A] 본사 알림
         try {
+          const finalClientName = clientName || firstOrder?.clientName || '고객사';
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            order_title: `[${clientName} 거래명세서 발행 요청]`,
-            greeting: '관리자님, 거래명세서 발행 요청이 접수되었습니다.',
+            order_title: `[${finalClientName} 거래명세서 발행 요청]`,
+            items_text: `[관리자 알림] 거래명세서 발행 요청이 접수되었습니다.\n\n${emailParams.items_text}`,
             to_email: NGS_EMAIL,
           }, EMAILJS_PUBLIC_KEY);
           emailjsNgsStatus = '✅ 성공';
