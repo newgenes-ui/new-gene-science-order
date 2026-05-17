@@ -324,7 +324,7 @@ export default function OrderPage() {
           'Authorization': `Bearer ${anonKey}`
         },
         body: JSON.stringify({
-          to: ['ngs.202403@gmail.com', finalEmail], // 테스트용 및 실 수신용
+          to: finalEmail, // 샌드박스에서는 가입한 이메일만 가능
           subject: subject,
           html: htmlContent,
           pdfBase64: pdfBase64,
@@ -334,7 +334,9 @@ export default function OrderPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || '이메일 발송 실패 (Resend 도메인 인증이 필요할 수 있습니다)');
+        // Resend 에러 포맷 (errorData.message) 또는 Supabase 에러 대응
+        const exactError = errorData.message || errorData.error || JSON.stringify(errorData);
+        throw new Error(`이메일 발송 실패: ${exactError}`);
       }
 
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
