@@ -43,11 +43,13 @@ export interface Client {
 export const isBertis = (clientId: string) => clientId && clientId !== '';
 
 export const CLIENTS: Client[] = [
-  { id: 'bertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '양유지', phone: '000-0000-0000' },
+  { id: 'boryung', name: '(주)보령제약', email: 'ngs.202403@gmail.com', contactPerson: '이재명', phone: '000-0000-0000' }, // 기본 업체 유지
+  { id: 'vertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '양유지', phone: '000-0000-0000' },
   { id: 'samyang', name: '삼양사', email: '', contactPerson: '담당자', phone: '' },
+  { id: 'ajou', name: '아주대학교', email: '', contactPerson: '담당자', phone: '' },
+  { id: 'snu', name: '서울대학교', email: '', contactPerson: '담당자', phone: '' },
   { id: 'samsung', name: '삼성바이오로직스', email: '', contactPerson: '담당자', phone: '' },
   { id: 'lgchem', name: 'LG화학', email: '', contactPerson: '담당자', phone: '' },
-  { id: 'boryung', name: '(주)보령제약', email: 'ngs.202403@gmail.com', contactPerson: '이재명', phone: '000-0000-0000' },
 ];
 
 export const NGS_EMAIL = 'newgenes@newgenesci.com';

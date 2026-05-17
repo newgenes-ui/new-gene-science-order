@@ -443,13 +443,10 @@ export default function OrderPage() {
       
       const all = Array.from(mergedMap.values());
 
-      // 3. 업체별 필터링 (보령제약 및 데모 권한 강화)
+      // 3. 업체별 필터링 (본인 업체 내역만 보이도록 수정)
       const visibleOrders = all.filter(o => 
         clientId === 'demo' || 
-        clientId === 'boryung' ||
-        o.clientId === clientId ||
-        o.clientId === 'boryung' ||
-        o.clientName?.includes('보령')
+        o.clientId === clientId
       );
       
       // 4. 최신순 정렬 (ID 기준 내림차순)

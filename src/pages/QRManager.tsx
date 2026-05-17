@@ -152,7 +152,20 @@ export default function QRManager() {
                 <div className="flex flex-col items-center gap-2">
                   <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => setSelectedQR(getQRUrl(client.id))}>
-                    <QRCodeSVG value={getQRUrl(client.id)} size={90} level="H" />
+                    <QRCodeSVG 
+                      value={getQRUrl(client.id)} 
+                      size={90} 
+                      level="H" 
+                      fgColor="#1E3D30" // Brand primary color
+                      imageSettings={{
+                        src: "/logo.png",
+                        x: undefined,
+                        y: undefined,
+                        height: 20,
+                        width: 20,
+                        excavate: true,
+                      }}
+                    />
                   </div>
                   <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
                 </div>
@@ -210,7 +223,20 @@ export default function QRManager() {
                <button className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400"><X className="w-5 h-5" /></button>
             </div>
             {selectedQR.startsWith('http') && !selectedQR.startsWith('data') ? (
-              <QRCodeSVG value={selectedQR} size={240} level="H" />
+              <QRCodeSVG 
+                value={selectedQR} 
+                size={240} 
+                level="H" 
+                fgColor="#1E3D30"
+                imageSettings={{
+                  src: "/logo.png",
+                  x: undefined,
+                  y: undefined,
+                  height: 54,
+                  width: 54,
+                  excavate: true,
+                }}
+              />
             ) : (
               <img src={selectedQR} alt="QR" className="w-60 h-60 object-contain" />
             )}
