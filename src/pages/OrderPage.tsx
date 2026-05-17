@@ -323,6 +323,8 @@ export default function OrderPage() {
         try {
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
+            order_title: `[${clientName} 거래명세서 발행 요청]`,
+            greeting: '관리자님, 거래명세서 발행 요청이 접수되었습니다.',
             to_email: NGS_EMAIL,
           }, EMAILJS_PUBLIC_KEY);
           emailjsNgsStatus = '✅ 성공';
@@ -1183,26 +1185,29 @@ export default function OrderPage() {
                                           <Eye className="w-3 h-3" />
                                           명세서
                                         </button>
-                                        <input 
-                                          type="checkbox" 
-                                          checked={selectedOrderIds.includes(order.id)}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            if (e.target.checked) {
-                                              setSelectedOrderIds(prev => [...prev, order.id]);
-                                              if (order.ordererName === '김기환' || order.ordererName === '이재명') {
-                                                setOrdererName('김기환');
-                                                setOrdererPhone('010-5882-4997');
-                                                setTaxEmail('khkimjhs@naver.com');
-                                              } else if (order.ordererEmail) {
-                                                setTaxEmail(order.ordererEmail);
+                                        {!statementRequestedOrderIds.includes(order.id) && !(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              if (e.target.checked) {
+                                                setSelectedOrderIds(prev => [...prev, order.id]);
+                                                const staff = quickSelectOrderers.find(s => s.name === order.ordererName);
+                                                if (staff) {
+                                                  setOrdererName(staff.name);
+                                                  setOrdererPhone(staff.phone);
+                                                  setTaxEmail(staff.email);
+                                                } else if (order.ordererEmail) {
+                                                  setTaxEmail(order.ordererEmail);
+                                                }
+                                              } else {
+                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                               }
-                                            } else {
-                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }
-                                          }}
-                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                        />
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                        )}
                                       </>
                                     )}
                                     <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
@@ -1314,22 +1319,29 @@ export default function OrderPage() {
                                           <Eye className="w-3 h-3" />
                                           명세서
                                         </button>
-                                        <input 
-                                          type="checkbox" 
-                                          checked={selectedOrderIds.includes(order.id)}
-                                          onChange={(e) => {
-                                            e.stopPropagation();
-                                            if (e.target.checked) {
-                                              setSelectedOrderIds(prev => [...prev, order.id]);
-                                              if (order.ordererEmail) {
-                                                setTaxEmail(order.ordererEmail);
+                                        {!statementRequestedOrderIds.includes(order.id) && !(order.otherRequest && order.otherRequest.includes('[명세서발행]')) && (
+                                          <input 
+                                            type="checkbox" 
+                                            checked={selectedOrderIds.includes(order.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              if (e.target.checked) {
+                                                setSelectedOrderIds(prev => [...prev, order.id]);
+                                                const staff = quickSelectOrderers.find(s => s.name === order.ordererName);
+                                                if (staff) {
+                                                  setOrdererName(staff.name);
+                                                  setOrdererPhone(staff.phone);
+                                                  setTaxEmail(staff.email);
+                                                } else if (order.ordererEmail) {
+                                                  setTaxEmail(order.ordererEmail);
+                                                }
+                                              } else {
+                                                setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
                                               }
-                                            } else {
-                                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
-                                            }
-                                          }}
-                                          className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
-                                        />
+                                            }}
+                                            className="w-4 h-4 rounded border-slate-200 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                                          />
+                                        )}
                                       </>
                                     )}
                                     {order.orderType === 'quote' && order.status === 'processing' ? (
