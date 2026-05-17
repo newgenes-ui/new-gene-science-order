@@ -324,36 +324,20 @@ export default function OrderPage() {
 
       // ─── 2. EmailJS 발송 (주문 메일과 동일하게 본사+고객 발송) ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // [A] 고객 알림 (김기환 님 등) 먼저 발송
-        if (finalEmail && finalEmail.includes('@')) {
-          try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-              ...emailParams,
-              to_email: finalEmail,
-            }, EMAILJS_PUBLIC_KEY);
-            emailjsCustomerStatus = '✅ 성공';
-          } catch (e) { 
-            console.error('고객 이메일 발송 실패:', e);
-            emailjsCustomerStatus = '❌ 실패'; 
-          }
-        }
-
-        // 안정적인 연속 발송을 위해 2초 대기
-        await new Promise(r => setTimeout(r, 2000));
-
-        // [B] 본사 알림
+        // [통합 발송] 고객과 본사 대표 메일에 동시 발송 (수신 누락 방지)
         try {
           const finalClientName = clientName || firstOrder?.clientName || '고객사';
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
-            order_title: `[${finalClientName} 거래명세서 발행 요청]`,
-            items_text: `[관리자 알림] 거래명세서 발행 요청이 접수되었습니다.\n\n${emailParams.items_text}`,
-            to_email: NGS_EMAIL,
+            order_title: `[${finalClientName}] 거래명세서 발행 (고객 및 관리자 알림)`,
+            to_email: `${NGS_EMAIL}, ${finalEmail}`,
           }, EMAILJS_PUBLIC_KEY);
           emailjsNgsStatus = '✅ 성공';
+          emailjsCustomerStatus = '✅ 성공';
         } catch (e) { 
-          console.error('본사 이메일 발송 실패:', e);
+          console.error('이메일 동시 발송 실패:', e);
           emailjsNgsStatus = '❌ 실패'; 
+          emailjsCustomerStatus = '❌ 실패'; 
         }
       } else {
         emailjsNgsStatus = '⚠️ 설정누락';
