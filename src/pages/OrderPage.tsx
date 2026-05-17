@@ -1546,7 +1546,7 @@ export default function OrderPage() {
                               className="text-[9px] font-bold text-rose-400 hover:text-rose-600 flex items-center gap-1 transition-colors"
                             >
                               <RefreshCw className="w-2.5 h-2.5" />
-                              연습 데이터 초기화
+                              데이터 초기화
                             </button>
                           </div>
                           <input
