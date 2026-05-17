@@ -302,6 +302,11 @@ export default function OrderPage() {
         contact_number: finalPhone,
         reply_to: finalEmail,
         ngs_email: NGS_EMAIL,
+        subtotal_amount: '-',
+        vat_amount: '-',
+        total_amount: '-',
+        other_request: '명세서 발행 요청',
+        client_email: finalEmail,
       };
 
       // ─── 1. GAS 발송 (백업) ───
@@ -319,7 +324,24 @@ export default function OrderPage() {
 
       // ─── 2. EmailJS 발송 (주문 메일과 동일하게 본사+고객 발송) ───
       if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // [A] 본사 알림
+        // [A] 고객 알림 (김기환 님 등) 먼저 발송
+        if (finalEmail && finalEmail.includes('@')) {
+          try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+              ...emailParams,
+              to_email: finalEmail,
+            }, EMAILJS_PUBLIC_KEY);
+            emailjsCustomerStatus = '✅ 성공';
+          } catch (e) { 
+            console.error('고객 이메일 발송 실패:', e);
+            emailjsCustomerStatus = '❌ 실패'; 
+          }
+        }
+
+        // 안정적인 연속 발송을 위해 2초 대기
+        await new Promise(r => setTimeout(r, 2000));
+
+        // [B] 본사 알림
         try {
           const finalClientName = clientName || firstOrder?.clientName || '고객사';
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
@@ -329,19 +351,9 @@ export default function OrderPage() {
             to_email: NGS_EMAIL,
           }, EMAILJS_PUBLIC_KEY);
           emailjsNgsStatus = '✅ 성공';
-        } catch (e) { emailjsNgsStatus = '❌ 실패'; }
-        
-        await new Promise(r => setTimeout(r, 1000));
-
-        // [B] 고객 알림 (김기환 님 등)
-        if (finalEmail && finalEmail.includes('@')) {
-          try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-              ...emailParams,
-              to_email: finalEmail,
-            }, EMAILJS_PUBLIC_KEY);
-            emailjsCustomerStatus = '✅ 성공';
-          } catch (e) { emailjsCustomerStatus = '❌ 실패'; }
+        } catch (e) { 
+          console.error('본사 이메일 발송 실패:', e);
+          emailjsNgsStatus = '❌ 실패'; 
         }
       } else {
         emailjsNgsStatus = '⚠️ 설정누락';
