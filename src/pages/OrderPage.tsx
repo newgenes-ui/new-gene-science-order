@@ -244,7 +244,7 @@ export default function OrderPage() {
       .reduce((sum, o) => sum + o.totalAmount, 0);
   }, [selectedOrderIds, userOrders]);
 
-  // 거래명세서 발행 요청
+  // 거래명세서 발행 요청 (PDF 첨부)
   const handleStatementRequest = async () => {
     if (!taxEmail) {
       alert('명세서를 받으실 이메일 주소를 입력해주세요.');
@@ -259,118 +259,91 @@ export default function OrderPage() {
       return;
     }
 
-    /* [중복 방지 잠시 해제] 
-    const alreadyRequested = selectedOrderIds.filter(id => statementRequestedOrderIds.includes(id));
-    if (alreadyRequested.length > 0) {
-      alert(`⚠️ 선택하신 항목 중 이미 명세서가 발행(요청)된 내역이 포함되어 있습니다.\n(중복 발행 불가)`);
-      return;
-    }
-    */
-
-    // [DEBUG] 전송 결과 추적
-    let gasStatus = '대기';
-    let emailjsNgsStatus = '대기';
-    let emailjsCustomerStatus = '대기';
-
     setIsStatementSubmitting(true);
     try {
       const selectedOrders = userOrders.filter(o => selectedOrderIds.includes(o.id));
       const firstOrder = selectedOrders[0];
       
-      // 상단 입력칸이 비어있을 경우 선택한 내역에서 정보를 추출 (이재명 -> 김기환 보정 포함)
       const finalName = ordererName || (firstOrder?.ordererName === '이재명' ? '김기환' : firstOrder?.ordererName) || '김기환';
       const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
       const finalEmail = taxEmail || firstOrder?.ordererEmail || 'khkimjhs@naver.com';
 
-      const viewerUrl = `https://new-gene-science-order.vercel.app/statement?ids=${selectedOrderIds.join(',')}`;
-      const emailParams = {
-        order_title: `[(주)뉴진사이언스 거래명세서 발행]`,
-        order_type_text: '거래명세서 발행 요청',
-        detail_label: '명세서 요청 내역',
-        order_id: selectedOrderIds[0],
-        order_date: new Date().toISOString().split('T')[0],
-        client_name: clientName,
-        orderer_name: finalName,
-        orderer_phone: finalPhone,
-        orderer_email: finalEmail,
-        customer_name: finalName, // 템플릿 수신자 필드 대응
-        items_text: `기관명: ${clientName}\n주문자: ${finalName}\n연락처: ${finalPhone}\n발행 이메일: ${finalEmail}\n\n▶ [공식 거래명세서 확인 및 인쇄]\n${viewerUrl}\n\n--------------------------\n[요약]\n${selectedOrders.map(o => {
-          const itemsStr = o.items && o.items.length > 0 ? `${o.items[0].productName}${o.items.length > 1 ? ` 외 ${o.items.length - 1}건` : ''}` : '상세 참조';
-          return `- ${o.id} / ${itemsStr} / ₩${o.totalAmount.toLocaleString()}`;
-        }).join('\n')}`,
-        from_name: finalName,
-        contact_number: finalPhone,
-        reply_to: finalEmail,
-        ngs_email: NGS_EMAIL,
-        subtotal_amount: '-',
-        vat_amount: '-',
-        total_amount: '-',
-        other_request: '명세서 발행 요청',
-        client_email: finalEmail,
-      };
+      // 1. 숨김 iframe 생성하여 PDF base64 생성 요청
+      const iframe = document.createElement('iframe');
+      iframe.src = `/statement?ids=${selectedOrderIds.join(',')}&mode=base64`;
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
 
-      // ─── 1. GAS 발송 (백업) ───
-      if (SCRIPT_URL) {
-        try {
-          await fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(emailParams)
-          });
-          gasStatus = '✅ 성공';
-        } catch (e) { gasStatus = '❌ 실패'; }
-      }
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          window.removeEventListener('message', listener);
+          document.body.removeChild(iframe);
+          reject(new Error('PDF 생성 시간 초과'));
+        }, 20000); // PDF 렌더링을 위해 충분한 대기 시간 부여
 
-      // ─── 2. EmailJS 발송 (주문 메일과 동일하게 본사+고객 발송) ───
-      if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // [A] 고객 알림 먼저 발송
-        if (finalEmail && finalEmail.includes('@')) {
-          try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-              ...emailParams,
-              order_title: `[(주)뉴진사이언스 거래명세서 발행]`,
-              to_email: finalEmail,
-            }, EMAILJS_PUBLIC_KEY);
-            emailjsCustomerStatus = '✅ 성공';
-          } catch (e) { 
-            console.error('고객 이메일 발송 실패:', e);
-            emailjsCustomerStatus = '❌ 실패'; 
+        const listener = (e: MessageEvent) => {
+          if (e.data && e.data.type === 'PDF_BASE64') {
+            clearTimeout(timeout);
+            window.removeEventListener('message', listener);
+            document.body.removeChild(iframe);
+            // datauristring "data:image/jpeg;base64,..." 에서 순수 base64 추출
+            const base64Data = e.data.base64.split(',')[1];
+            resolve(base64Data);
           }
-        }
+        };
+        window.addEventListener('message', listener);
+      });
 
-        // 안정적인 연속 발송을 위해 2초 대기
-        await new Promise(r => setTimeout(r, 2000));
+      // 2. Supabase Edge Function 호출하여 PDF 메일 발송
+      const finalClientName = clientName || firstOrder?.clientName || '고객사';
+      const subject = `[${finalClientName}] 거래명세서 발행 (PDF 파일 첨부)`;
+      const htmlContent = `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>거래명세서 발행 안내</h2>
+          <p>안녕하세요, <strong>${finalClientName}</strong> 담당자님.</p>
+          <p>요청하신 거래명세서를 첨부파일(PDF)로 보내드립니다.</p>
+          <ul>
+            <li><strong>주문건수:</strong> ${selectedOrderIds.length}건</li>
+            <li><strong>합계금액:</strong> ₩${selectedTotalAmount.toLocaleString()}</li>
+          </ul>
+          <p>본 메일은 (주)뉴진사이언스 시스템에서 자동 발송되었습니다.</p>
+        </div>
+      `;
 
-        // [B] 본사 알림 (대표 메일 스팸 차단 우회 - 전용 Gmail 사용)
-        try {
-          const finalClientName = clientName || firstOrder?.clientName || '고객사';
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            order_title: `[${finalClientName} 거래명세서 발행 요청]`,
-            items_text: `[관리자 알림] 거래명세서 발행 요청이 접수되었습니다.\n\n${emailParams.items_text}`,
-            // 사내 보안서버 차단을 우회하기 위해 전용 Gmail로 수신
-            to_email: `ngs.202403@gmail.com`,
-          }, EMAILJS_PUBLIC_KEY);
-          emailjsNgsStatus = '✅ 성공';
-        } catch (e) { 
-          console.error('본사 이메일 발송 실패:', e);
-          emailjsNgsStatus = '❌ 실패'; 
-        }
-      } else {
-        emailjsNgsStatus = '⚠️ 설정누락';
-        emailjsCustomerStatus = '⚠️ 설정누락';
+      // Supabase Edge Function 엔드포인트
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+
+      // Resend 샌드박스 정책 우회(테스트용)로 관리자 이메일 동시 전송
+      const res = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`
+        },
+        body: JSON.stringify({
+          to: ['ngs.202403@gmail.com', finalEmail], // 테스트용 및 실 수신용
+          subject: subject,
+          html: htmlContent,
+          pdfBase64: pdfBase64,
+          fileName: `거래명세서_${finalClientName}.pdf`
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || '이메일 발송 실패 (Resend 도메인 인증이 필요할 수 있습니다)');
       }
 
-      // 서버(Supabase)에 발행 상태 동기화 (PC/모바일/관리자 일치를 위한 핵심)
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
-      
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 발행 요청이 완료되었습니다!\n\n수신 이메일: ${finalEmail}`);
+      alert(`거래명세서 PDF가 성공적으로 발송되었습니다!\\n\\n수신 이메일: ${finalEmail}`);
       setSelectedOrderIds([]); 
-      loadUserOrders(); // 데이터 즉시 새로고침
-    } catch (error) {
-      alert('요청 처리 중 오류가 발생했습니다.');
+      loadUserOrders(); 
+    } catch (error: any) {
+      alert('요청 처리 중 오류가 발생했습니다: ' + error.message);
     } finally {
       setIsStatementSubmitting(false);
     }

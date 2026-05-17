@@ -16,6 +16,7 @@ export default function StatementViewer() {
   const scaleWrapperRef = useRef<HTMLDivElement>(null);
 
   const idsParam = searchParams.get('ids') || '';
+  const modeParam = searchParams.get('mode') || '';
   const orderIds = idsParam.split(',').filter(Boolean);
 
   // 로고 및 직인 경로 (화면 출력용)
@@ -38,7 +39,7 @@ export default function StatementViewer() {
     setTimeout(() => setToastMsg(null), 4000);
   };
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = async (returnBase64 = false): Promise<string | void> => {
     if (isDownloading) return;
     setIsDownloading(true);
 
@@ -48,7 +49,7 @@ export default function StatementViewer() {
 
     // Android는 window.open() 절대 사용 금지 (백그라운드 탭 전환 → html2canvas 실패)
     let iosWin: Window | null = null;
-    if (isIOS) {
+    if (isIOS && !returnBase64) {
       iosWin = window.open('', '_blank');
       if (iosWin) {
         iosWin.document.write(
@@ -63,7 +64,7 @@ export default function StatementViewer() {
       }
     }
 
-    if (isAndroid) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
+    if (isAndroid && !returnBase64) showToast('📄 PDF를 생성하고 있습니다... 잠시만 기다려 주세요.');
 
     // ── oklch → hex 변환 (Canvas 2D fillStyle은 모든 색상을 #rrggbb로 정규화) ──
     const colorCvs = document.createElement('canvas');
@@ -138,6 +139,10 @@ export default function StatementViewer() {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
+      if (returnBase64) {
+        return pdf.output('datauristring');
+      }
+
       if (isIOS) {
         if (iosWin) {
           const dataUri = pdf.output('datauristring');
@@ -197,6 +202,16 @@ export default function StatementViewer() {
       setIsLoading(false);
     }
   }, [idsParam]);
+
+  useEffect(() => {
+    if (modeParam === 'base64' && !isLoading && orders.length > 0) {
+      handleDownloadPDF(true).then((base64) => {
+        if (base64) {
+          window.parent.postMessage({ type: 'PDF_BASE64', base64 }, '*');
+        }
+      });
+    }
+  }, [modeParam, isLoading, orders]);
 
   if (isLoading) {
     return <div className="p-10 text-center">불러오는 중...</div>;
