@@ -272,7 +272,13 @@ export default function OrderPage() {
       // 1. 숨김 iframe 생성하여 PDF base64 생성 요청
       const iframe = document.createElement('iframe');
       iframe.src = `/statement?ids=${selectedOrderIds.join(',')}&mode=base64`;
-      iframe.style.display = 'none';
+      // html2canvas는 display: none인 요소를 캡처할 수 없으므로 화면 밖으로 숨김 처리
+      iframe.style.position = 'absolute';
+      iframe.style.width = '1000px';
+      iframe.style.height = '1500px';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.opacity = '0';
       document.body.appendChild(iframe);
 
       const pdfBase64 = await new Promise<string>((resolve, reject) => {
