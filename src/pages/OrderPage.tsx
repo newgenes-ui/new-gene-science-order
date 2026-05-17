@@ -311,25 +311,36 @@ export default function OrderPage() {
         </div>
       `;
 
-      if (!supabase) {
-        throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
-      }
+      // Supabase Edge Function 엔드포인트
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-      // supabase.functions.invoke를 사용하면 인증(JWT) 및 URL 처리를 자동으로 해줍니다.
-      const { data, error } = await supabase.functions.invoke('send-statement', {
-        body: {
+      const res = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`
+        },
+        body: JSON.stringify({
           to: finalEmail, // 샌드박스에서는 가입한 이메일만 가능
           subject: subject,
           html: htmlContent,
           pdfBase64: pdfBase64,
           fileName: `거래명세서_${finalClientName}.pdf`
-        }
+        })
       });
 
-      if (error) {
-        // Resend 에러 포맷 또는 Supabase 내부 에러 메시지 추출
-        const exactError = error.message || JSON.stringify(error);
-        throw new Error(`이메일 발송 실패: ${exactError}`);
+      if (!res.ok) {
+        let exactError = '알 수 없는 오류';
+        try {
+          const errorData = await res.json();
+          exactError = errorData.message || errorData.error || JSON.stringify(errorData);
+        } catch(e) {
+          exactError = await res.text();
+        }
+        throw new Error(`${exactError}`);
       }
 
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
