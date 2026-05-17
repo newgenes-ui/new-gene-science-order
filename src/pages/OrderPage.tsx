@@ -8,6 +8,7 @@ import {
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
 import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders, markOrdersAsInvoicedInSupabase } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
+import { supabase } from '../lib/supabase';
 
 // ─── EmailJS 설정 (Vercel 환경변수로 관리) ───────────────────────
 const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || '';
@@ -310,32 +311,24 @@ export default function OrderPage() {
         </div>
       `;
 
-      // Supabase Edge Function 엔드포인트
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
-      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+      if (!supabase) {
+        throw new Error('Supabase 클라이언트가 초기화되지 않았습니다.');
+      }
 
-      // Resend 샌드박스 정책 우회(테스트용)로 관리자 이메일 동시 전송
-      const res = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`
-        },
-        body: JSON.stringify({
+      // supabase.functions.invoke를 사용하면 인증(JWT) 및 URL 처리를 자동으로 해줍니다.
+      const { data, error } = await supabase.functions.invoke('send-statement', {
+        body: {
           to: finalEmail, // 샌드박스에서는 가입한 이메일만 가능
           subject: subject,
           html: htmlContent,
           pdfBase64: pdfBase64,
           fileName: `거래명세서_${finalClientName}.pdf`
-        })
+        }
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        // Resend 에러 포맷 (errorData.message) 또는 Supabase 에러 대응
-        const exactError = errorData.message || errorData.error || JSON.stringify(errorData);
+      if (error) {
+        // Resend 에러 포맷 또는 Supabase 내부 에러 메시지 추출
+        const exactError = error.message || JSON.stringify(error);
         throw new Error(`이메일 발송 실패: ${exactError}`);
       }
 
