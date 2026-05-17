@@ -342,15 +342,15 @@ export default function OrderPage() {
         // 안정적인 연속 발송을 위해 2초 대기
         await new Promise(r => setTimeout(r, 2000));
 
-        // [B] 본사 알림 (대표 메일 + Gmail 우회 테스트용 동시 발송)
+        // [B] 본사 알림 (대표 메일 스팸 차단 우회 - 전용 Gmail 사용)
         try {
           const finalClientName = clientName || firstOrder?.clientName || '고객사';
           await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
             ...emailParams,
             order_title: `[${finalClientName} 거래명세서 발행 요청]`,
             items_text: `[관리자 알림] 거래명세서 발행 요청이 접수되었습니다.\n\n${emailParams.items_text}`,
-            // 만약 대표 도메인이 외부 발송을 차단한다면, gmail로는 도착해야 합니다.
-            to_email: `${NGS_EMAIL}, ngs.202403@gmail.com`,
+            // 사내 보안서버 차단을 우회하기 위해 전용 Gmail로 수신
+            to_email: `ngs.202403@gmail.com`,
           }, EMAILJS_PUBLIC_KEY);
           emailjsNgsStatus = '✅ 성공';
         } catch (e) { 
