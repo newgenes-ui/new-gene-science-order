@@ -331,7 +331,7 @@ export default function OrderPage() {
         },
         body: JSON.stringify({
           to: finalEmail, 
-          bcc: 'newgenes@newgenesci.com', // 관리자 사본 수신
+          bcc: 'ngs.202403@gmail.com', // 관리자 사본 수신
           subject: subject,
           html: htmlContent,
           pdfBase64: pdfBase64,
