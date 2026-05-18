@@ -339,97 +339,186 @@ export default function StatementViewer() {
       <div 
         ref={statementRef}
         id="statement-container"
-        style={{
-          width: '800px',
-          height: '1131px',
-          backgroundImage: 'url(/statement_template.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          position: 'relative',
-          overflow: 'hidden',
-          color: 'black',
-          fontFamily: 'sans-serif',
-          fontSize: '12px'
-        }}
-        className="shadow-2xl print:shadow-none border border-gray-200 print:border-none"
+        className="w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] overflow-hidden text-[13px] leading-tight border border-gray-200"
       >
-        {/* 거래일자 */}
-        <div style={{ position: 'absolute', top: '154px', left: '154px', width: '236px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-          {todayStr}
-        </div>
         
-        {/* 견적번호 */}
-        <div style={{ position: 'absolute', top: '177px', left: '154px', width: '236px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-          {todayStr.replace(/-/g, '')}-1
+        {/* 제목 */}
+        <div className="text-center text-4xl font-black tracking-[1em] mb-6">거래명세서</div>
+        
+        {/* 상단 정보 영역 */}
+        <div className="flex justify-between items-stretch gap-2 mb-4">
+          
+          {/* 왼쪽: 수신자 정보 */}
+          <table className="border-collapse border-[2px] border-black w-[45%] text-sm">
+            <tbody>
+              <tr>
+                <th className="border border-black p-1.5 w-24 tracking-[0.5em]">발행일자</th>
+                <td className="border border-black p-1.5 text-center font-bold">{todayStr}</td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1.5 tracking-[0.5em]">주문번호</th>
+                <td className="border border-black p-1.5 text-center font-bold">{todayStr.replace(/-/g, '')}-1</td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1.5 tracking-[0.5em]">수 신</th>
+                <td className="border border-black p-1.5 text-center font-bold">{clientName}</td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1.5 tracking-[0.5em]">담 당</th>
+                <td className="border border-black p-1.5 text-center font-bold">{ordererName} 귀하</td>
+              </tr>
+              <tr>
+                <td colSpan={2} className="border border-black p-4 text-left h-32 align-top text-xs leading-relaxed">
+                  1. 귀사의 일익 번창하심을 기원합니다.<br/><br/>
+                  2. 거래해주셔서 감사합니다.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* 오른쪽: 공급자 정보 */}
+          <table className="border-collapse border-[2px] border-black w-[54%] text-[11px] text-center">
+            <tbody>
+              <tr>
+                <td colSpan={4} className="border border-black p-2 relative h-[70px]">
+                  <img src={LOGO_PATH} crossOrigin="anonymous" className="h-10 mx-auto object-contain" alt="New Gene Science Logo"/>
+                </td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1 w-[22%] tracking-widest">사업자번호</th>
+                <td colSpan={3} className="border border-black p-1 font-bold text-sm tracking-widest">595-81-02960</td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1 tracking-widest">상 호</th>
+                <td className="border border-black p-1 font-bold">(주) 뉴진사이언스</td>
+                <th className="border border-black p-1 w-[18%] tracking-widest">대 표 자</th>
+                <td className="border border-black p-1 font-bold relative w-[25%]">
+                  김 기 환 <span className="text-[10px] ml-1">(인)</span>
+                  {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
+                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-90 pointer-events-none" alt="직인" />
+                </td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1 tracking-widest">주 소</th>
+                <td colSpan={3} className="border border-black p-1 text-[10px] leading-tight">경기도 광명시 소하로 190, 비동 9층 21호(소하동, 광명G타워)</td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1 tracking-widest">업 태</th>
+                <td className="border border-black p-1 text-[10px] leading-tight">서비스<br/>제조업<br/>도매 및 소매업</td>
+                <th className="border border-black p-1 tracking-widest">종 목</th>
+                <td className="border border-black p-1 text-[9px] leading-tight whitespace-nowrap">
+                  생물학 연구개발업<br/>
+                  의학 및 약학 연구개발업<br/>
+                  의학약학 관련<br/>
+                  연구개발컨설팅업
+                </td>
+              </tr>
+              <tr>
+                <th className="border border-black p-1 tracking-widest">연 락 처</th>
+                <td className="border border-black p-1">02-898-8805</td>
+                <th className="border border-black p-1 tracking-widest">팩 스</th>
+                <td className="border border-black p-1">02-898-8806</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* 수신 */}
-        <div style={{ position: 'absolute', top: '200px', left: '154px', width: '236px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '13px' }}>
-          {clientName}
-        </div>
+        {/* 품목 테이블 */}
+        <table className="border-collapse border-[2px] border-black w-full text-xs">
+          <thead>
+            <tr>
+              <th colSpan={7} className="border border-black p-2 text-left bg-[#f4f7f5]">
+                <div className="flex justify-between items-center w-full px-2">
+                  <span className="font-bold text-sm tracking-widest">합계 :</span>
+                  <span className="font-bold text-base tracking-widest underline underline-offset-4">{totalAmountKorean} 원정 (₩{totalAmount.toLocaleString()} 원)</span>
+                  <span className="text-[10px] text-gray-600">(VAT포함)</span>
+                </div>
+              </th>
+            </tr>
+            <tr className="bg-[#E4EAF2] text-center font-bold">
+              <th className="border border-black p-1.5 w-10">No</th>
+              <th className="border border-black p-1.5 w-24">품목코드</th>
+              <th className="border border-black p-1.5">품 명 (제품명 / 규격)</th>
+              <th className="border border-black p-1.5 w-12">수량</th>
+              <th className="border border-black p-1.5 w-24">단 가</th>
+              <th className="border border-black p-1.5 w-24">금 액</th>
+              <th className="border border-black p-1.5 w-16">비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allItems.map((item, idx) => (
+              <tr key={idx} className="text-center h-8">
+                <td className="border border-black p-1">{idx + 1}</td>
+                <td className="border border-black p-1 text-center font-mono text-[10px]">{item.productCode}</td>
+                <td className="border border-black p-1 text-left px-2 truncate max-w-[250px] text-[11px]">
+                  {item.productName} {item.spec ? `(${item.spec})` : ''}
+                </td>
+                <td className="border border-black p-1">{item.quantity}</td>
+                <td className="border border-black p-1 text-right px-2">{item.unitPrice.toLocaleString()}</td>
+                <td className="border border-black p-1 text-right px-2 font-bold">{item.subtotal.toLocaleString()}</td>
+                <td className="border border-black p-1 text-[10px]">{item.remarks || ''}</td>
+              </tr>
+            ))}
+            
+            {/* 빈 행 채우기 */}
+            {Array.from({ length: emptyRows }).map((_, idx) => (
+              <tr key={`empty-${idx}`} className="text-center h-8">
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+                <td className="border border-black p-1"></td>
+              </tr>
+            ))}
 
-        {/* 참조 */}
-        <div style={{ position: 'absolute', top: '223px', left: '154px', width: '236px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-          {ordererName} 귀하
-        </div>
+            {/* 하단 집계표 */}
+            <tr className="font-bold h-8">
+              <td colSpan={5} rowSpan={3} className="border border-black p-3 text-left align-top text-xs font-normal">
+                해외 발주 품목은 배송 사정에 따라 다소 지연 될 수 있음을 양해 바랍니다.
+              </td>
+              <th className="border border-black p-1 text-center bg-[#f4f7f5] tracking-[0.5em]">금 액</th>
+              <td className="border border-black p-1 text-right px-2">{totalSubtotal.toLocaleString()}</td>
+            </tr>
+            <tr className="font-bold h-8">
+              <th className="border border-black p-1 text-center bg-[#f4f7f5] tracking-[0.5em]">부가세</th>
+              <td className="border border-black p-1 text-right px-2">{totalVat.toLocaleString()}</td>
+            </tr>
+            <tr className="font-bold h-8">
+              <th className="border border-black p-1 text-center bg-[#f4f7f5] tracking-[0.5em]">합 계</th>
+              <td className="border border-black p-1 text-right px-2 text-primary">{totalAmount.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* 합계금액 한글 */}
-        <div style={{ position: 'absolute', top: '346px', left: '210px', width: '455px', height: '24px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'black', fontSize: '14px', letterSpacing: '0.1em' }}>
-          {totalAmountKorean} 원정
-        </div>
+        {/* 최하단 안내사항 */}
+        <table className="border-collapse border-[2px] border-black w-full text-[11px] mt-0 border-t-0">
+          <tbody>
+            <tr>
+              <td className="border border-black p-1.5 w-[75%]">
+                ▶ 납기 유효기간 : 주문 발행일로 부터 30일 이내입니다.
+              </td>
+              <td rowSpan={2} className="border border-black p-1.5 align-top">
+                {'<비 고>'}
+              </td>
+            </tr>
+            <tr>
+              <td className="border border-black p-1.5">
+                ▶ 결제계좌 : 기업은행 699-037504-04-022 예금주 ㈜ 뉴진사이언스
+              </td>
+            </tr>
+            <tr>
+              <td className="border border-black p-1.5 text-red-500 font-bold">
+                ☆ 수입발주 품목은 발주 진행 후 취소 불가합니다.
+              </td>
+              <td className="border border-black p-1.5 text-right bg-[#f4f7f5]">
+                ◆ 작성자 : 김기환 // 영업담당자 : 010-5882-4997
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* 합계금액 숫자 */}
-        <div style={{ position: 'absolute', top: '346px', left: '665px', width: '100px', height: '24px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'right', fontWeight: 'bold', fontSize: '12px', paddingRight: '4px' }}>
-          {totalAmount.toLocaleString()}
-        </div>
-
-        {/* 품목 리스트 오버레이 (최대 11줄) */}
-        {allItems.slice(0, 11).map((item, idx) => {
-          const rowTop = 404 + idx * 25.5;
-          return (
-            <div key={idx} style={{ position: 'absolute', top: `${rowTop}px`, left: '0px', width: '800px', height: '24px', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
-              {/* 품명 */}
-              <div style={{ position: 'absolute', left: '92px', width: '280px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', textAlign: 'left', paddingLeft: '4px' }}>
-                {item.productName}
-              </div>
-              {/* 규격 */}
-              <div style={{ position: 'absolute', left: '380px', width: '74px', textAlign: 'center', fontSize: '11px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                {item.spec || item.productCode}
-              </div>
-              {/* 수량 */}
-              <div style={{ position: 'absolute', left: '458px', width: '40px', textAlign: 'center', fontWeight: 'bold' }}>
-                {item.quantity}
-              </div>
-              {/* 단가 */}
-              <div style={{ position: 'absolute', left: '502px', width: '74px', textAlign: 'right', paddingRight: '4px' }}>
-                {item.unitPrice.toLocaleString()}
-              </div>
-              {/* 금액 */}
-              <div style={{ position: 'absolute', left: '580px', width: '86px', textAlign: 'right', paddingRight: '4px', fontWeight: 'bold' }}>
-                {item.subtotal.toLocaleString()}
-              </div>
-              {/* 비고 */}
-              <div style={{ position: 'absolute', left: '670px', width: '72px', textAlign: 'center', fontSize: '10px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                {item.remarks || ''}
-              </div>
-            </div>
-          );
-        })}
-
-        {/* 집계표 오버레이 */}
-        {/* 금액 (공급가액 합계) */}
-        <div style={{ position: 'absolute', top: '763px', left: '654px', width: '115px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'right', paddingRight: '4px', fontWeight: 'bold' }}>
-          {totalSubtotal.toLocaleString()}
-        </div>
-        {/* 부가세 합계 */}
-        <div style={{ position: 'absolute', top: '788px', left: '654px', width: '115px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'right', paddingRight: '4px', fontWeight: 'bold' }}>
-          {totalVat.toLocaleString()}
-        </div>
-        {/* 합계금액 (총 합계) */}
-        <div style={{ position: 'absolute', top: '813px', left: '654px', width: '115px', height: '22px', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'right', paddingRight: '4px', fontWeight: 'bold', color: '#B91C1C', fontSize: '13px' }}>
-          {totalAmount.toLocaleString()}
-        </div>
       </div>
       </div>  {/* scale wrapper 닫기 */}
     </div>
