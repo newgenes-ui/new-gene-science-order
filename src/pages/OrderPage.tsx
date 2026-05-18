@@ -1129,7 +1129,7 @@ export default function OrderPage() {
                           processing: '발주요청',
                           order_requested: '준비중',
                           shipped: '납품완료',
-                          cancelled: '주문취소'
+                          cancelled: '견적취소'
                         };
 
                         // 부가세 강제 역산 로직 (데이터 오류 대응)
