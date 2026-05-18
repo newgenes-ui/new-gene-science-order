@@ -148,7 +148,7 @@ export default function OrderPage() {
         }
       }
       
-      alert('발주 요청이 완료되었습니다. 감사합니다!');
+      alert('해당 상품은 발주 후 주문 취소가 불가한 점 양해 부탁드립니다.');
       // 3. 상태 업데이트 및 주문으로 변환
       const success = await convertQuoteToOrder(order.id);
       if (success) {
@@ -1376,7 +1376,7 @@ export default function OrderPage() {
                                             if (window.confirm('해당 견적내용으로 발주를 요청하시겠습니까?')) {
                                               const success = await convertQuoteToOrder(order.id);
                                               if (success) {
-                                                alert('발주 요청이 완료되었습니다.');
+                                                alert('해당 상품은 발주 후 주문 취소가 불가한 점 양해 부탁드립니다.');
                                                 loadUserOrders(); // 목록 새로고침
                                               }
                                             }
