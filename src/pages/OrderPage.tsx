@@ -267,7 +267,7 @@ export default function OrderPage() {
       
       const finalName = ordererName || (firstOrder?.ordererName === '이재명' ? '김기환' : firstOrder?.ordererName) || '김기환';
       const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
-      const finalEmail = taxEmail || firstOrder?.ordererEmail || 'khkimjhs@naver.com';
+      const finalEmail = taxEmail || firstOrder?.ordererEmail || 'newgenes@newgenesci.com';
 
       // 1. 숨김 iframe 생성하여 PDF base64 생성 요청
       const iframe = document.createElement('iframe');
@@ -329,7 +329,8 @@ export default function OrderPage() {
           // Authorization 헤더 생략 (서버에서 --no-verify-jwt 설정됨)
         },
         body: JSON.stringify({
-          to: finalEmail, // 샌드박스에서는 가입한 이메일만 가능
+          to: finalEmail, 
+          bcc: 'newgenes@newgenesci.com', // 관리자 사본 수신
           subject: subject,
           html: htmlContent,
           pdfBase64: pdfBase64,

@@ -17,7 +17,7 @@ serve(async (req) => {
       throw new Error('RESEND_API_KEY가 설정되지 않았습니다.')
     }
 
-    const { to, subject, html, pdfBase64, fileName } = await req.json()
+    const { to, bcc, subject, html, pdfBase64, fileName } = await req.json()
 
     // Resend API 호출
     const res = await fetch('https://api.resend.com/emails', {
@@ -30,6 +30,7 @@ serve(async (req) => {
         // 도메인 인증이 완료되었으므로 회사 메일 주소로 발송 (발신자 이름 추가)
         from: '뉴진사이언스 <order@newgenesci.com>', 
         to: to, // 수신자 (어떤 메일로든 발송 가능)
+        bcc: bcc || undefined, // 관리자 참조용
         subject: subject,
         html: html,
         attachments: [
