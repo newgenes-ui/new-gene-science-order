@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Search, Plus, Minus, ShoppingCart, FileText,
-  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw, Eye
+  User, Phone, Mail, Building2, MessageSquare, ChevronDown, ChevronUp, X, CreditCard, Copy, Clock, CheckCircle2, RefreshCw, Eye,
+  Trash2
 } from 'lucide-react';
 import { PRODUCTS, CLIENTS, NGS_EMAIL, NGS_BANK } from '../data/products';
-import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders, markOrdersAsInvoicedInSupabase } from '../store/orderStore';
+import { Order, OrderItem, generateOrderId, saveOrder, getOrders, getOrdersFromSupabase, updateOrderStatus, convertQuoteToOrder, STATUS_LABELS, subscribeToOrders, markOrdersAsInvoicedInSupabase, deleteOrder } from '../store/orderStore';
 import emailjs from '@emailjs/browser';
 import { supabase } from '../lib/supabase';
 
@@ -1213,6 +1214,22 @@ export default function OrderPage() {
                                     }`}>
                                       {STATUS_LABELS[order.status] || order.status}
                                     </span>
+                                    {order.status === 'cancelled' && (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          if (window.confirm('이 내역을 영구히 삭제하시겠습니까?')) {
+                                            deleteOrder(order.id);
+                                            alert('삭제가 완료되었습니다.');
+                                            loadUserOrders();
+                                          }
+                                        }}
+                                        className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors border border-rose-100 shrink-0"
+                                        title="삭제"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
                                     <span className="text-slate-300 text-[10px] ml-0.5 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                                   </div>
                                 </div>
@@ -1370,14 +1387,32 @@ export default function OrderPage() {
                                         </button>
                                       </div>
                                     ) : (
-                                      <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
-                                        (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
-                                        order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
-                                      }`}>
-                                        {order.orderType === 'quote' 
-                                          ? (quoteStatusLabels[order.status] || STATUS_LABELS[order.status] || order.status)
-                                          : (STATUS_LABELS[order.status] || order.status)}
-                                      </span>
+                                      <>
+                                        <span className={`px-2.5 py-1.5 rounded-full text-[9px] font-black shadow-sm shrink-0 ${
+                                          (order.status === 'shipped' || order.status === 'payment_waiting') ? 'bg-blue-500 text-white' :
+                                          order.status === 'cancelled' ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-500 text-white'
+                                        }`}>
+                                          {order.orderType === 'quote' 
+                                            ? (quoteStatusLabels[order.status] || STATUS_LABELS[order.status] || order.status)
+                                            : (STATUS_LABELS[order.status] || order.status)}
+                                        </span>
+                                        {order.status === 'cancelled' && (
+                                          <button
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              if (window.confirm('이 내역을 영구히 삭제하시겠습니까?')) {
+                                                deleteOrder(order.id);
+                                                alert('삭제가 완료되었습니다.');
+                                                loadUserOrders();
+                                              }
+                                            }}
+                                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-500 rounded-lg transition-colors border border-rose-100 shrink-0"
+                                            title="삭제"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                      </>
                                     )}
                                     <span className="text-slate-300 text-[10px] ml-0.5 shrink-0">{isCollapsed ? '▼' : '▲'}</span>
                                   </div>
