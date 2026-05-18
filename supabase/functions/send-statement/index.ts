@@ -27,9 +27,9 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        // 현재는 샌드박스 모드이므로 보내는 사람은 Resend 기본 주소 사용
-        from: 'onboarding@resend.dev', 
-        to: to, // 수신자 (현재는 ngs.202403@gmail.com 만 가능)
+        // 도메인 인증이 완료되었으므로 회사 메일 주소로 발송 (발신자 이름 추가)
+        from: '뉴진사이언스 <order@newgenesci.com>', 
+        to: to, // 수신자 (어떤 메일로든 발송 가능)
         subject: subject,
         html: html,
         attachments: [
