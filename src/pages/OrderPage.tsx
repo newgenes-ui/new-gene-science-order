@@ -750,7 +750,7 @@ export default function OrderPage() {
             className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'order' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Package className="w-4 h-4" />
-            발주제출
+            뉴진스제품
           </button>
           <button
             onClick={() => setActiveTab('payment')}
