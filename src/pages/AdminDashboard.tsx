@@ -642,32 +642,38 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
-                      {deletingId === order.id ? (
-                        <div className="flex items-center gap-1">
+                      {order.status !== 'shipped' && order.status !== 'cancelled' && (
+                        cancellingId === order.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={async (e) => { 
+                                e.stopPropagation(); 
+                                await handleStatusUpdate(order.id, 'cancelled'); 
+                                setCancellingId(null); 
+                              }}
+                              className="px-2.5 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm whitespace-nowrap"
+                            >
+                              진짜 취소
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setCancellingId(null); }}
+                              className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200 whitespace-nowrap"
+                            >
+                              닫기
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleDelete(order.id); }}
-                            className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded-lg hover:bg-red-600 transition-all shadow-sm"
-                          >
-                            진짜 삭제
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
-                            className="px-2 py-1 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-lg hover:bg-slate-200"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCancellingId(order.id);
+                            }}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition-colors rounded-xl text-[10px] font-black whitespace-nowrap"
+                            title="취소"
                           >
                             취소
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingId(order.id);
-                          }}
-                          className="p-2 hover:bg-red-50 text-slate-200 hover:text-red-500 transition-colors rounded-lg"
-                          title="삭제"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        )
                       )}
                       {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
                     </div>
