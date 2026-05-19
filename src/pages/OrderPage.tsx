@@ -270,37 +270,7 @@ export default function OrderPage() {
       const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
       const finalEmail = taxEmail || firstOrder?.ordererEmail || 'newgenes@newgenesci.com';
 
-      // 1. 숨김 iframe 생성하여 PDF base64 생성 요청
-      const iframe = document.createElement('iframe');
-      iframe.src = `/statement?ids=${selectedOrderIds.join(',')}&mode=base64`;
-      // html2canvas는 display: none인 요소를 캡처할 수 없으므로 화면 밖으로 숨김 처리
-      iframe.style.position = 'absolute';
-      iframe.style.width = '1000px';
-      iframe.style.height = '1500px';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '-9999px';
-      iframe.style.opacity = '0';
-      document.body.appendChild(iframe);
-
-      const pdfBase64 = await new Promise<string>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          window.removeEventListener('message', listener);
-          document.body.removeChild(iframe);
-          reject(new Error('PDF 생성 시간 초과'));
-        }, 20000); // PDF 렌더링을 위해 충분한 대기 시간 부여
-
-        const listener = (e: MessageEvent) => {
-          if (e.data && e.data.type === 'PDF_BASE64') {
-            clearTimeout(timeout);
-            window.removeEventListener('message', listener);
-            document.body.removeChild(iframe);
-            // datauristring "data:image/jpeg;base64,..." 에서 순수 base64 추출
-            const base64Data = e.data.base64.split(',')[1];
-            resolve(base64Data);
-          }
-        };
-        window.addEventListener('message', listener);
-      });
+      // PDF 첨부 없이 본문 상세 내역 메일 발송으로 즉시 처리
 
       // 2. Supabase Edge Function 호출하여 PDF 메일 발송
       const finalClientName = clientName || firstOrder?.clientName || '고객사';
@@ -396,9 +366,7 @@ export default function OrderPage() {
           to: finalEmail, 
           bcc: 'newgenes@newgenesci.com', // 관리자 사본 수신
           subject: subject,
-          html: htmlContent,
-          pdfBase64: pdfBase64,
-          fileName: `거래명세서_${finalClientName}.pdf`
+          html: htmlContent
         })
       });
 
@@ -415,7 +383,7 @@ export default function OrderPage() {
 
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
       markInvoiceRequested(selectedOrderIds);
-      alert(`거래명세서 PDF가 성공적으로 발송되었습니다!\\n\\n수신 이메일: ${finalEmail}`);
+      alert(`거래명세서 상세 내역이 성공적으로 발송되었습니다!\\n\\n수신 이메일: ${finalEmail}`);
       setSelectedOrderIds([]); 
       loadUserOrders(); 
     } catch (error: any) {
