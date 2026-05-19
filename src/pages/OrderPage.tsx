@@ -351,10 +351,8 @@ export default function OrderPage() {
         </div>
       `;
 
-      // Supabase Edge Function 엔드포인트
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+      // Vercel Serverless Function 엔드포인트
+      const functionUrl = "/api/send-statement";
 
       const res = await fetch(functionUrl, {
         method: 'POST',
