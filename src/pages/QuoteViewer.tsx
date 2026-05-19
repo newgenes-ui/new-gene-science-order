@@ -5,6 +5,17 @@ import { Printer, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
+const toDataURL = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export default function QuoteViewer() {
   const [searchParams] = useSearchParams();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -40,6 +51,20 @@ export default function QuoteViewer() {
   const handleDownloadPDF = async () => {
     if (isDownloading) return;
     setIsDownloading(true);
+
+    // Fetch and convert images to Base64 in parallel to bypass CORS/SecurityError on mobile
+    let logoBase64 = '';
+    let stampBase64 = '';
+    try {
+      const [logoRes, stampRes] = await Promise.all([
+        toDataURL('/logo.png'),
+        toDataURL('/stamp.png')
+      ]);
+      logoBase64 = logoRes;
+      stampBase64 = stampRes;
+    } catch (e) {
+      console.error('Base64 image conversion failed:', e);
+    }
 
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
@@ -126,6 +151,20 @@ export default function QuoteViewer() {
         imageTimeout: 15000,
         width: 800,
         height: source.offsetHeight || 1131,
+        onclone: (clonedDoc) => {
+          const imgs = Array.from(clonedDoc.querySelectorAll('img'));
+          imgs.forEach(img => {
+            const src = img.getAttribute('src') || '';
+            if (src.includes('logo') && logoBase64) {
+              img.src = logoBase64;
+              img.removeAttribute('crossorigin');
+            } else if (src.includes('stamp') && stampBase64) {
+              img.src = stampBase64;
+              img.removeAttribute('crossorigin');
+              img.style.mixBlendMode = 'normal';
+            }
+          });
+        }
       });
 
       document.body.removeChild(cloneEl);
