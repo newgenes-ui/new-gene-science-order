@@ -169,24 +169,8 @@ export default function StatementViewer() {
           pdf.save(fileName);
         }
       } else {
-        // Desktop & Android: Use unified blob link click to bypass sandboxed download constraints
-        try {
-          const blob = pdf.output('blob');
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = fileName;
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => { 
-            document.body.removeChild(a); 
-            URL.revokeObjectURL(url); 
-          }, 5000);
-          showToast('📥 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
-        } catch (e) {
-          pdf.save(fileName);
-        }
+        // Desktop & Android: Native direct save (bypasses Chrome dynamic download block)
+        pdf.save(fileName);
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
