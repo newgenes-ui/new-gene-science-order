@@ -304,17 +304,80 @@ export default function OrderPage() {
 
       // 2. Supabase Edge Function 호출하여 PDF 메일 발송
       const finalClientName = clientName || firstOrder?.clientName || '고객사';
-      const subject = `[${finalClientName}] 거래명세서 발행 (PDF 파일 첨부)`;
+      const subject = `[${finalClientName}] 거래명세서 발행 및 상세 내역`;
+      
+      const allItems = selectedOrders.flatMap(o => o.items);
+      const totalSubtotal = selectedOrders.reduce((sum, o) => sum + o.subtotalAmount, 0);
+      const totalVat = selectedOrders.reduce((sum, o) => sum + o.vatAmount, 0);
+      const totalAmount = selectedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+
+      const itemsRowsHtml = allItems.map((item, idx) => `
+        <tr style="border-bottom: 1px solid #E2E8E4; text-align: center; height: 35px; font-size: 13px;">
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center;">${idx + 1}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center; font-family: monospace;">${item.productCode || '-'}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: left;">${item.productName} ${item.spec ? `(${item.spec})` : ''}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center;">${item.quantity}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: right;">₩${(item.unitPrice || 0).toLocaleString()}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: right; font-weight: bold;">₩${(item.subtotal || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
+
       const htmlContent = `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>거래명세서 발행 안내</h2>
-          <p>안녕하세요, <strong>${finalClientName}</strong> 담당자님.</p>
-          <p>요청하신 거래명세서를 첨부파일(PDF)로 보내드립니다.</p>
-          <ul>
-            <li><strong>주문건수:</strong> ${selectedOrderIds.length}건</li>
-            <li><strong>합계금액:</strong> ₩${selectedTotalAmount.toLocaleString()}</li>
-          </ul>
-          <p>본 메일은 (주)뉴진사이언스 시스템에서 자동 발송되었습니다.</p>
+        <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #2C3E50; line-height: 1.6;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
+            <h1 style="color: #27AE60; margin: 0; font-size: 26px;">(주)뉴진사이언스 거래명세서</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #7F8C8D;">요청하신 거래명세서 상세 내역입니다.</p>
+          </div>
+          
+          <div style="margin-top: 25px; padding: 15px; background-color: #F8F9FA; border-radius: 10px; border: 1px solid #E2E8E4; font-size: 14px;">
+            <p style="margin: 5px 0;"><strong>수신처:</strong> ${finalClientName} 귀하</p>
+            <p style="margin: 5px 0;"><strong>담당자:</strong> ${finalName} 님</p>
+            <p style="margin: 5px 0;"><strong>발행일자:</strong> ${new Date().toISOString().slice(0, 10)}</p>
+            <p style="margin: 5px 0;"><strong>발행 주문건수:</strong> ${selectedOrderIds.length}건</p>
+          </div>
+
+          <h3 style="margin-top: 30px; margin-bottom: 10px; color: #2C3E50; border-left: 4px solid #2ECC71; padding-left: 8px;">거래 상세 내역</h3>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #E2E8E4; font-size: 13px;">
+            <thead>
+              <tr style="background-color: #ECF0F1; font-weight: bold; text-align: center; color: #2C3E50;">
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 40px;">No</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 100px;">품목코드</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4;">품명 (제품명 / 규격)</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 50px;">수량</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 90px;">단가</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 100px;">공급가액</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRowsHtml}
+              <tr style="background-color: #FAF9F6; font-weight: bold; font-size: 13px;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D;">
+                  ※ 해외 발주 품목은 배송 사정에 따라 지연될 수 있습니다.
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #EAEDED;">공급가액</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; color: #2C3E50;">₩${totalSubtotal.toLocaleString()}</td>
+              </tr>
+              <tr style="background-color: #FAF9F6; font-weight: bold; font-size: 13px;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D;">
+                  <strong>결제계좌:</strong> 기업은행 699-037504-04-022 (주)뉴진사이언스
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #EAEDED;">부가세</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; color: #2C3E50;">₩${totalVat.toLocaleString()}</td>
+              </tr>
+              <tr style="background-color: #E8F8F5; font-weight: bold; font-size: 14px; color: #16A085;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #E74C3C;">
+                  ★ 수입발주 품목은 발주 완료 후 취소 불가합니다.
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #A3E4D7; color: #16A085;">합계금액</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; font-size: 16px; color: #27AE60;">₩${totalAmount.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 30px; border-top: 1px solid #E2E8E4; padding-top: 15px; font-size: 12px; color: #95A5A6; text-align: center;">
+            <p style="margin: 2px 0;">본 메일은 (주)뉴진사이언스 시스템에서 거래명세서 발행 요청에 따라 자동 발송되었습니다.</p>
+            <p style="margin: 2px 0;">문의사항이 있으시면 영업담당자(010-5882-4997)에게 연락해 주시기 바랍니다.</p>
+          </div>
         </div>
       `;
 

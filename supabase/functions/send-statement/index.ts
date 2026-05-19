@@ -44,6 +44,7 @@ serve(async (req) => {
     const data = await res.json()
 
     // 2. 관리자 참조용(BCC) 주소가 있으면, 본사 메일함으로 '단독 메일(To)'로 1통 더 직접 발송하여 메일플러그 차단 우회
+    // 본사 보관용 메일은 첨부파일(PDF)을 제외하고 텍스트/HTML 상세 내역표만 전송하여 메일플러그 스팸 차단을 원천 우회합니다.
     if (res.ok && bcc) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -55,13 +56,7 @@ serve(async (req) => {
           from: '뉴진사이언스 <order@newgenesci.com>', 
           to: bcc, // 본사 메일을 직접 수신처(To)로 지정하여 내부 1:1 메일로 필터 통과
           subject: `[본사 보관용] ${subject}`, // 본사 메일함 분류가 용이하도록 머리말 추가
-          html: html,
-          attachments: [
-            {
-              filename: fileName || '거래명세서.pdf',
-              content: pdfBase64
-            }
-          ]
+          html: html
         })
       })
     }
