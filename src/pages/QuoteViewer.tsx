@@ -43,13 +43,14 @@ export default function QuoteViewer() {
     if (isDownloading) return;
     setIsDownloading(true);
 
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(navigator.userAgent);
+    const isMacSafari = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent) && /Mac/i.test(navigator.userAgent);
     const isMobile = isIOS || isAndroid;
 
-    // iOS: 팝업 차단 우회 - 버튼 클릭 직후 동기적으로 창 열기
+    // iOS/Safari: 팝업 차단 우회 - 버튼 클릭 직후 동기적으로 창 열기
     let iosWin: Window | null = null;
-    if (isIOS) {
+    if ((isIOS || isMacSafari)) {
       iosWin = window.open('', '_blank');
       if (iosWin) {
         iosWin.document.write(
@@ -149,7 +150,7 @@ export default function QuoteViewer() {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
-      if (isIOS) {
+      if (isIOS || isMacSafari) {
         if (iosWin) {
           const dataUri = pdf.output('datauristring');
           iosWin.document.write(
@@ -161,20 +162,28 @@ export default function QuoteViewer() {
           );
           iosWin.document.close();
           showToast('📥 PDF가 열렸습니다. 공유 버튼(□↑)을 눌러 "파일에 저장"하세요.');
+        } else {
+          pdf.save(fileName);
         }
-      } else if (isAndroid) {
-        const blob = pdf.output('blob');
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 5000);
-        showToast('📥 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
       } else {
-        pdf.save(fileName);
+        // Desktop & Android: Use unified blob link click to bypass sandboxed download constraints
+        try {
+          const blob = pdf.output('blob');
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => { 
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url); 
+          }, 5000);
+          showToast('📥 다운로드가 시작됐습니다. 알림창 또는 다운로드 폴더를 확인하세요.');
+        } catch (e) {
+          pdf.save(fileName);
+        }
       }
     } catch (error) {
       console.error('PDF 생성 에러:', error);
