@@ -4,17 +4,8 @@ import { getOrdersFromSupabase, Order } from '../store/orderStore';
 import { Printer, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-
-const toDataURL = async (url: string): Promise<string> => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
+import { LOGO_BASE64 } from '../assets/logoBase64';
+import { STAMP_BASE64 } from '../assets/stampBase64';
 
 export default function StatementViewer() {
   const [searchParams] = useSearchParams();
@@ -30,9 +21,9 @@ export default function StatementViewer() {
   const modeParam = searchParams.get('mode') || '';
   const orderIds = idsParam.split(',').filter(Boolean);
 
-  // 로고 및 직인 경로 (화면 출력용)
-  const LOGO_PATH = "/logo.png";
-  const STAMP_PATH = "/stamp.png";
+  // 로고 및 직인 경로 (Base64로 직접 연동하여 CORS 및 캔버스 보안 에러 완벽 해결)
+  const LOGO_PATH = LOGO_BASE64;
+  const STAMP_PATH = STAMP_BASE64;
 
   // 모바일에서 800px 문서를 화면에 맞게 축소 비율 계산
   useEffect(() => {
@@ -53,20 +44,6 @@ export default function StatementViewer() {
   const handleDownloadPDF = async (returnBase64 = false): Promise<string | void> => {
     if (isDownloading) return;
     setIsDownloading(true);
-
-    // Fetch and convert images to Base64 in parallel to bypass CORS/SecurityError on mobile
-    let logoBase64 = '';
-    let stampBase64 = '';
-    try {
-      const [logoRes, stampRes] = await Promise.all([
-        toDataURL('/logo.png'),
-        toDataURL('/stamp.png')
-      ]);
-      logoBase64 = logoRes;
-      stampBase64 = stampRes;
-    } catch (e) {
-      console.error('Base64 image conversion failed:', e);
-    }
 
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isAndroid = /Android/i.test(navigator.userAgent);
@@ -151,18 +128,11 @@ export default function StatementViewer() {
         width: 800,
         height: source.offsetHeight || 1131,
         onclone: (clonedDoc) => {
-          const imgs = Array.from(clonedDoc.querySelectorAll('img'));
-          imgs.forEach(img => {
-            const src = img.getAttribute('src') || '';
-            if (src.includes('logo') && logoBase64) {
-              img.src = logoBase64;
-              img.removeAttribute('crossorigin');
-            } else if (src.includes('stamp') && stampBase64) {
-              img.src = stampBase64;
-              img.removeAttribute('crossorigin');
-              img.style.mixBlendMode = 'normal';
-            }
-          });
+          // mix-blend-mode만 normal로 변경하여 캔버스 렌더링 검은 상자 방지
+          const stamp = clonedDoc.querySelector('img[alt="직인"]');
+          if (stamp) {
+            (stamp as HTMLElement).style.mixBlendMode = 'normal';
+          }
         }
       });
 
