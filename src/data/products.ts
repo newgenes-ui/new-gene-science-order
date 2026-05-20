@@ -50,6 +50,7 @@ export const CLIENTS: Client[] = [
   { id: 'snu', name: '서울대학교', email: '', contactPerson: '담당자', phone: '' },
   { id: 'samsung', name: '삼성바이오로직스', email: '', contactPerson: '담당자', phone: '' },
   { id: 'lgchem', name: 'LG화학', email: '', contactPerson: '담당자', phone: '' },
+  { id: 'immuno', name: '(주)이뮤노디자이너스', email: '', contactPerson: '담당자', phone: '' },
 ];
 
 export const NGS_EMAIL = 'newgenes@newgenesci.com';

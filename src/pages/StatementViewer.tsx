@@ -149,7 +149,7 @@ export default function StatementViewer() {
       const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
-      if (returnBase64) {
+      if (returnBase64 === true) {
         return pdf.output('datauristring');
       }
 
