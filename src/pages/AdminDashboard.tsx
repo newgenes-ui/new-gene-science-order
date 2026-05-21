@@ -113,6 +113,9 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    // 브라우저 탭 타이틀 설정
+    document.title = "관리자 대시보드 | 뉴진사이언스";
+
     // EmailJS 초기화 (OrderPage와 동일하게)
     if (EMAILJS_PUBLIC_KEY) {
       emailjs.init(EMAILJS_PUBLIC_KEY);

@@ -17,6 +17,7 @@ export default function PaymentPage() {
   const order = orders.find(o => o.id === orderId);
 
   useEffect(() => {
+    document.title = "발주 완료 | 뉴진사이언스";
     if (!order) {
       navigate('/');
     }

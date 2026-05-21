@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X } from 'lucide-react';
@@ -26,6 +26,10 @@ function removeImage(clientId: string) {
 }
 
 export default function QRManager() {
+  useEffect(() => {
+    document.title = "QR 코드 관리 | 뉴진사이언스";
+  }, []);
+
   const [clients, setClients] = useState<Client[]>(CLIENTS);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');

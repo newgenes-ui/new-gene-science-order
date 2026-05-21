@@ -39,6 +39,7 @@ export default function OrderPage() {
       localStorage.removeItem('ngs_last_statement_total');
       localStorage.removeItem('ngs_last_statement_ids');
       localStorage.removeItem('ngs_statement_history');
+      localStorage.removeItem('pwa_prompt_dismissed');
       setStatementRequestedOrderIds([]);
       setSelectedOrderIds([]);
       alert('연습용 발행 요청 기록이 모두 초기화되었습니다!');
@@ -54,6 +55,7 @@ export default function OrderPage() {
       localStorage.removeItem('ngs_last_statement_ids');
       localStorage.removeItem('ngs_statement_history');
       localStorage.removeItem('ngs_orders');
+      localStorage.removeItem('pwa_prompt_dismissed');
       setStatementRequestedOrderIds([]);
       setSelectedOrderIds([]);
       alert('초기화되었습니다. 다시 연습해보세요!');
@@ -71,11 +73,18 @@ export default function OrderPage() {
   const isBertis = true; 
 
   // 빠른 선택을 위한 주문자 정보 리스트
-  const quickSelectOrderers = [
-    { name: '김기환', email: 'khkimjhs@naver.com', phone: '010-5882-4997' },
-    { name: '양유지', email: 'newgenesci@gmail.com', phone: '010-7169-8805' },
-    { name: '나혜원', email: 'ngs.202403@gmail.com', phone: '010-9915-5974' },
-  ];
+  const quickSelectOrderers = useMemo(() => {
+    if (clientId === 'immuno') {
+      return [
+        { name: '신효진', email: 'hjshin@immunodesigners.com', phone: '010-3580-1714' }
+      ];
+    }
+    return [
+      { name: '김기환', email: 'khkimjhs@naver.com', phone: '010-5882-4997' },
+      { name: '양유지', email: 'newgenesci@gmail.com', phone: '010-7169-8805' },
+      { name: '나혜원', email: 'ngs.202403@gmail.com', phone: '010-9915-5974' },
+    ];
+  }, [clientId]);
 
   const [clientName, setClientName] = useState(clientData.name);
   const [ordererName, setOrdererName] = useState('');
@@ -188,6 +197,9 @@ export default function OrderPage() {
       setOrdererName('');
       setOrdererPhone('');
       setOrdererEmail('');
+      
+      // 브라우저 탭 타이틀 동적 업데이트 (업체 구분용)
+      document.title = `${clientData.name} | 뉴진사이언스 전용 주문 시스템`;
     }
   }, [clientData]);
 
@@ -515,9 +527,61 @@ export default function OrderPage() {
   }, [userOrders, appliedRange, historyTab]);
 
 
-  const categories = ['전체', ...Array.from(new Set(PRODUCTS.map(p => p.category)))];
+  const clientProducts = useMemo(() => {
+    if (clientId === 'ajou' || clientId === 'immuno' || clientId === 'vertis') {
+      return PRODUCTS.map(p => {
+        let customPrice = p.price;
+        if (clientId === 'ajou') {
+          switch (p.code) {
+            case 'NGS-STAG-10-RTS': customPrice = 27500; break;
+            case 'NGS-STAG-200-RTS': customPrice = 27500; break;
+            case 'NGS-STAG-1250-RTS': customPrice = 20000; break;
+            case 'NGS-STAG-10-RS': customPrice = 40000; break;
+            case 'NGS-STAG-10L-RS': customPrice = 40000; break;
+            case 'NGS-STAG-200-RS': customPrice = 40000; break;
+            case 'NGS-STAG-1250-RS': customPrice = 45000; break;
+            case 'NGS-SEP-5': customPrice = 37800; break;
+            case 'NGS-SEP-10': customPrice = 37800; break;
+            case 'NGS-SEP-25': customPrice = 36000; break;
+            case 'NGS-SEP-50': customPrice = 70000; break;
+            case 'NGS-SEP-100': customPrice = 85000; break;
+            case 'NGS-CT-3015-S': customPrice = 70400; break;
+            case 'NGS-CT-3050-S': customPrice = 94600; break;
+          }
+        } else if (clientId === 'immuno') {
+          switch (p.code) {
+            case 'NGS-STAG-10-RTS': customPrice = 27500; break;
+            case 'NGS-STAG-200-RTS': customPrice = 27500; break;
+            case 'NGS-STAG-1250-RTS': customPrice = 20000; break;
+            case 'NGS-STAG-10-RS': customPrice = 40000; break;
+            case 'NGS-STAG-10L-RS': customPrice = 40000; break;
+            case 'NGS-STAG-200-RS': customPrice = 40000; break;
+            case 'NGS-STAG-1250-RS': customPrice = 45000; break;
+            case 'NGS-SEP-5': customPrice = 40000; break;
+            case 'NGS-SEP-10': customPrice = 40000; break;
+            case 'NGS-SEP-25': customPrice = 40000; break;
+            case 'NGS-SEP-50': customPrice = 70000; break;
+            case 'NGS-SEP-100': customPrice = 85000; break;
+            case 'NGS-CT-3015-S': customPrice = 70400; break;
+            case 'NGS-CT-3050-S': customPrice = 94600; break;
+          }
+        } else if (clientId === 'vertis') {
+          switch (p.code) {
+            case 'NGS-STAG-10-RS': customPrice = 40000; break;
+            case 'NGS-STAG-10L-RS': customPrice = 40000; break;
+            case 'NGS-STAG-200-RS': customPrice = 40000; break;
+            case 'NGS-STAG-1250-RS': customPrice = 45000; break;
+          }
+        }
+        return { ...p, price: customPrice };
+      });
+    }
+    return PRODUCTS;
+  }, [clientId]);
 
-  const filteredProducts = PRODUCTS.filter(p => {
+  const categories = ['전체', ...Array.from(new Set(clientProducts.map(p => p.category)))];
+
+  const filteredProducts = clientProducts.filter(p => {
     const matchCat = selectedCategory === '전체' || p.category === selectedCategory;
     const search = searchTerm.trim().toLowerCase();
     const matchSearch = !search || 
@@ -527,7 +591,7 @@ export default function OrderPage() {
     return matchCat && matchSearch;
   });
 
-  const cartItems = PRODUCTS.filter(p => (quantities[p.id] || 0) > 0);
+  const cartItems = clientProducts.filter(p => (quantities[p.id] || 0) > 0);
   const cartCount = Object.values(quantities).reduce((s: number, v: number) => s + v, 0) as number;
   const subtotalAmount = cartItems.reduce((s, p) => s + (p.price as number) * (quantities[p.id] || 0), 0);
   const vatAmount = Math.floor(subtotalAmount * 0.1);

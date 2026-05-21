@@ -25,6 +25,7 @@ export default function QuoteViewer() {
 
   // 모바일에서 800px 문서를 화면에 맞게 축소 비율 계산
   useEffect(() => {
+    document.title = "견적서 | 뉴진사이언스";
     const calcScale = () => {
       const available = window.innerWidth - 16; // 좌우 여백 8px씩
       setDocScale(Math.min(1, available / 800));

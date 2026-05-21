@@ -30,6 +30,9 @@ export const PRODUCTS: Product[] = [
   { id: 'p15', code: 'NGS-STAG-10-RTS-ER', name: 'NuGens AG Tip, Empty rack, 10ul', spec: '10 racks/Pack, 5 Packs/Case', price: 2500, category: '랙' },
   { id: 'p16', code: 'NGS-STAG-200-TRS-ER', name: 'NuGens AG Tip, Empty rack, 200ul', spec: '10 racks/Pack, 5 Packs/Case', price: 2500, category: '랙' },
   { id: 'p17', code: 'NGS-STAG-1250-RTS-ER', name: 'NuGens AG Tip, Empty rack, 1250ul', spec: '10 racks/Pack, 5 Packs/Case', price: 3000, category: '랙' },
+  // 1250ul Pipette Tip Rack & Refill
+  { id: 'p18', code: 'NGS-STAG1250-RS-1', name: 'NuGens 1250ul Pipette Tip, Rack', spec: '[10 Racks/Pack, 5 Packs/Carton]', price: 50000, category: 'AG Tip' },
+  { id: 'p19', code: 'NGS-STAG1250-RS-2', name: 'Nugens 1250 μl Pipette Tip, Refilltype', spec: '[768 Tips/Pack, 10 Packs/Carton]', price: 30000, category: 'AG Tip' },
 ];
 
 export interface Client {
@@ -46,7 +49,7 @@ export const CLIENTS: Client[] = [
   { id: 'boryung', name: '(주)보령제약', email: 'ngs.202403@gmail.com', contactPerson: '이재명', phone: '000-0000-0000' }, // 기본 업체 유지
   { id: 'vertis', name: '(주)베르티스', email: 'hugyoung@naver.com', contactPerson: '양유지', phone: '000-0000-0000' },
   { id: 'samyang', name: '삼양사', email: '', contactPerson: '담당자', phone: '' },
-  { id: 'ajou', name: '아주대학교', email: '', contactPerson: '담당자', phone: '' },
+  { id: 'ajou', name: '아주대(이광교수실)', email: '', contactPerson: '담당자', phone: '' },
   { id: 'snu', name: '서울대학교', email: '', contactPerson: '담당자', phone: '' },
   { id: 'samsung', name: '삼성바이오로직스', email: '', contactPerson: '담당자', phone: '' },
   { id: 'lgchem', name: 'LG화학', email: '', contactPerson: '담당자', phone: '' },
