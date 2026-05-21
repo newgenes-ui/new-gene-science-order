@@ -665,6 +665,18 @@ export default function AdminDashboard() {
                         )
                       )}
                       {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm('이 발주 내역을 삭제하시겠습니까?\n삭제 후 복구가 불가능합니다.')) {
+                            await handleDelete(order.id);
+                          }
+                        }}
+                        title="삭제"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                   {expandedOrder === order.id && (
@@ -886,6 +898,18 @@ export default function AdminDashboard() {
                         )
                       )}
                       {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 text-slate-300" /> : <ChevronDown className="w-4 h-4 text-slate-300" />}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm('이 견적 문의를 삭제하시겠습니까?\n삭제 후 복구가 불가능합니다.')) {
+                            await handleDelete(order.id);
+                          }
+                        }}
+                        title="삭제"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-all"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                   {expandedOrder === order.id && (
