@@ -56,6 +56,8 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeListTab, setActiveListTab] = useState<'order' | 'quote'>('order');
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
   const loadOrders = async () => {
@@ -173,6 +175,54 @@ export default function AdminDashboard() {
       setDeletingId(null);
     } catch (err: any) {
       alert('삭제 중 오류가 발생했습니다: ' + err.message);
+    }
+  };
+
+  const toggleSelectId = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const currentList = activeListTab === 'order' ? ordersList : quotesList;
+
+  const isAllSelected = currentList.length > 0 && currentList.every(o => selectedIds.has(o.id));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        currentList.forEach(o => next.delete(o.id));
+        return next;
+      });
+    } else {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        currentList.forEach(o => next.add(o.id));
+        return next;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`선택한 ${selectedIds.size}건을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`);
+    if (!confirmed) return;
+    setIsBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        deleteOrder(id);
+      }
+      setAllOrders(prev => prev.filter(o => !selectedIds.has(o.id)));
+      setSelectedIds(new Set());
+    } catch (err: any) {
+      alert('일괄 삭제 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -521,14 +571,14 @@ export default function AdminDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-[#E2E8E4] shadow-sm w-full md:w-auto">
             <button
-              onClick={() => setActiveListTab('order')}
+              onClick={() => { setActiveListTab('order'); setSelectedIds(new Set()); }}
               className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               발주 내역 ({ordersList.length})
             </button>
             <button
-              onClick={() => setActiveListTab('quote')}
+              onClick={() => { setActiveListTab('quote'); setSelectedIds(new Set()); }}
               className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
@@ -537,6 +587,40 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Bulk Delete Action Bar */}
+        {selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            className="flex items-center justify-between gap-3 bg-rose-50 border border-rose-200 rounded-2xl px-5 py-3"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-rose-500 rounded-lg flex items-center justify-center">
+                <Trash2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="text-sm font-black text-rose-700">{selectedIds.size}건 선택됨</span>
+              <span className="text-xs text-rose-400">— 삭제 후 복구가 불가능합니다</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
+              >
+                선택 해제
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={isBulkDeleting}
+                className="px-4 py-2 bg-rose-500 text-white rounded-xl text-xs font-black hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {isBulkDeleting ? '삭제 중...' : `${selectedIds.size}건 일괄 삭제`}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Conditional Table Rendering */}
         {activeListTab === 'order' ? (
           <div className="bg-white rounded-3xl shadow-sm border border-[#E2E8E4] overflow-hidden">
@@ -544,6 +628,17 @@ export default function AdminDashboard() {
               <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-primary" /> 발주 목록
                 <span className="ml-auto text-xs font-bold text-slate-400">{ordersList.length}건</span>
+                {ordersList.length > 0 && (
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-2">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer"
+                    />
+                    <span className="text-[10px] font-bold text-slate-400">전체선택</span>
+                  </label>
+                )}
               </h2>
             </div>
             <div className="divide-y divide-slate-50">
@@ -555,9 +650,16 @@ export default function AdminDashboard() {
               ) : ordersList.map(order => (
                 <div key={order.id}>
                   <div
-                    className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                    className={`flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedIds.has(order.id) ? 'bg-rose-50/60' : ''}`}
                     onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                   >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(order.id)}
+                      onChange={() => toggleSelectId(order.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer shrink-0"
+                    />
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
                       {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
@@ -719,6 +821,17 @@ export default function AdminDashboard() {
               <h2 className="font-extrabold text-slate-800 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-primary" /> 견적문의 목록
                 <span className="ml-auto text-xs font-bold text-slate-400">{quotesList.length}건</span>
+                {quotesList.length > 0 && (
+                  <label className="flex items-center gap-1.5 cursor-pointer ml-2">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer"
+                    />
+                    <span className="text-[10px] font-bold text-slate-400">전체선택</span>
+                  </label>
+                )}
               </h2>
             </div>
             <div className="divide-y divide-slate-50">
@@ -730,7 +843,7 @@ export default function AdminDashboard() {
               ) : quotesList.map(order => (
                 <div key={order.id}>
                   <div
-                    className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                    className={`flex items-center gap-4 px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors ${selectedIds.has(order.id) ? 'bg-rose-50/60' : ''}`}
                     onClick={() => {
                       const isExpanding = expandedOrder !== order.id;
                       setExpandedOrder(isExpanding ? order.id : null);
@@ -744,6 +857,13 @@ export default function AdminDashboard() {
                       }
                     }}
                   >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(order.id)}
+                      onChange={() => toggleSelectId(order.id)}
+                      onClick={e => e.stopPropagation()}
+                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer shrink-0"
+                    />
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
                       {/* 기본 정보 영역 (6칸 그리드로 재배치) */}
