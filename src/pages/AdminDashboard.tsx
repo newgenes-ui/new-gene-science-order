@@ -588,38 +588,42 @@ export default function AdminDashboard() {
         </div>
 
         {/* Bulk Delete Action Bar */}
-        {selectedIds.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            className="flex items-center justify-between gap-3 bg-rose-50 border border-rose-200 rounded-2xl px-5 py-3"
-          >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-rose-500 rounded-lg flex items-center justify-center">
-                <Trash2 className="w-3.5 h-3.5 text-white" />
+        <AnimatePresence>
+          {selectedIds.size > 0 && (
+            <motion.div
+              key="bulk-action-bar"
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-between gap-3 bg-rose-50 border-2 border-rose-300 rounded-2xl px-5 py-3 shadow-lg shadow-rose-100"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-rose-500 rounded-xl flex items-center justify-center shadow-sm">
+                  <Trash2 className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-black text-rose-700">{selectedIds.size}건 선택됨</span>
+                <span className="text-xs text-rose-400 hidden sm:inline">— 삭제 후 복구가 불가능합니다</span>
               </div>
-              <span className="text-sm font-black text-rose-700">{selectedIds.size}건 선택됨</span>
-              <span className="text-xs text-rose-400">— 삭제 후 복구가 불가능합니다</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSelectedIds(new Set())}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
-              >
-                선택 해제
-              </button>
-              <button
-                onClick={handleBulkDelete}
-                disabled={isBulkDeleting}
-                className="px-4 py-2 bg-rose-500 text-white rounded-xl text-xs font-black hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                {isBulkDeleting ? '삭제 중...' : `${selectedIds.size}건 일괄 삭제`}
-              </button>
-            </div>
-          </motion.div>
-        )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all"
+                >
+                  선택 해제
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isBulkDeleting}
+                  className="px-5 py-2 bg-rose-500 text-white rounded-xl text-xs font-black hover:bg-rose-600 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-md shadow-rose-200"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {isBulkDeleting ? '삭제 중...' : `${selectedIds.size}건 일괄 삭제`}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Conditional Table Rendering */}
         {activeListTab === 'order' ? (
@@ -634,7 +638,7 @@ export default function AdminDashboard() {
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer"
+                      className="w-5 h-5 rounded accent-rose-500 cursor-pointer"
                     />
                     <span className="text-[10px] font-bold text-slate-400">전체선택</span>
                   </label>
@@ -656,9 +660,9 @@ export default function AdminDashboard() {
                     <input
                       type="checkbox"
                       checked={selectedIds.has(order.id)}
-                      onChange={() => toggleSelectId(order.id)}
+                      onChange={e => { e.stopPropagation(); toggleSelectId(order.id); }}
                       onClick={e => e.stopPropagation()}
-                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer shrink-0"
+                      className="w-5 h-5 rounded accent-rose-500 cursor-pointer shrink-0"
                     />
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
@@ -827,7 +831,7 @@ export default function AdminDashboard() {
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer"
+                      className="w-5 h-5 rounded accent-rose-500 cursor-pointer"
                     />
                     <span className="text-[10px] font-bold text-slate-400">전체선택</span>
                   </label>
@@ -860,9 +864,9 @@ export default function AdminDashboard() {
                     <input
                       type="checkbox"
                       checked={selectedIds.has(order.id)}
-                      onChange={() => toggleSelectId(order.id)}
+                      onChange={e => { e.stopPropagation(); toggleSelectId(order.id); }}
                       onClick={e => e.stopPropagation()}
-                      className="w-4 h-4 rounded accent-rose-500 cursor-pointer shrink-0"
+                      className="w-5 h-5 rounded accent-rose-500 cursor-pointer shrink-0"
                     />
                     <div className="flex-1 flex flex-col md:flex-row md:items-center gap-4">
                       {/* 기본 정보 영역 */}
