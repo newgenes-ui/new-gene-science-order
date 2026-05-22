@@ -5,7 +5,7 @@ import { Printer, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { LOGO_BASE64 } from '../assets/logoBase64';
-import { STAMP_BASE64 } from '../assets/stampBase64';
+const STAMP_PATH = '/stamp.png';
 
 export default function QuoteViewer() {
   const [searchParams] = useSearchParams();
@@ -21,7 +21,7 @@ export default function QuoteViewer() {
   const orderIds = idsParam.split(',').filter(Boolean);
 
   const LOGO_PATH = LOGO_BASE64;
-  const STAMP_PATH = STAMP_BASE64;
+  // stamp.png는 상단에서 const로 선언
 
   // 모바일에서 800px 문서를 화면에 맞게 축소 비율 계산
   useEffect(() => {
@@ -134,7 +134,8 @@ export default function QuoteViewer() {
           // mix-blend-mode만 normal로 변경하여 캔버스 렌더링 검은 상자 방지
           const stamp = clonedDoc.querySelector('img[alt="Stamp"]');
           if (stamp) {
-            (stamp as HTMLElement).style.mixBlendMode = 'normal';
+            // multiply 유지: 흰 배경을 투명하게 처리
+            (stamp as HTMLElement).style.mixBlendMode = 'multiply';
           }
         }
       });
@@ -356,7 +357,7 @@ export default function QuoteViewer() {
                 <th className="border border-black p-1 bg-gray-50">대 표 자</th>
                 <td className="border border-black p-1 font-bold relative">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
-                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-14 w-auto opacity-90 pointer-events-none" alt="Stamp" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" style={{ mixBlendMode: 'multiply' }} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-14 w-auto opacity-95 pointer-events-none" alt="Stamp" />
                 </td>
               </tr>
               <tr className="h-8">
