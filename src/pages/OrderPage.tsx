@@ -1266,6 +1266,18 @@ export default function OrderPage() {
                                   </div>
 
                                   <div className="shrink-0 flex items-center gap-1.5">
+                                    {order.status === 'pending' && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(`/quote?ids=${order.id}`, '_blank');
+                                        }}
+                                        className="px-2.5 py-1.5 rounded-lg text-[9px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        견적서
+                                      </button>
+                                    )}
                                     {order.status === 'shipped' && (
                                       <>
                                         <button
