@@ -16,6 +16,14 @@ const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
 const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
 // ─── 백업용 Google Apps Script 설정 ───────────────────────────
+// 주문번호 표시용: NGS-20260522-201005-201040 → 20260522-201040
+const formatOrderId = (id: string): string => {
+  const parts = id.replace('NGS-', '').split('-');
+  if (parts.length >= 3) {
+    return `${parts[0]}-${parts[parts.length - 1]}`;
+  }
+  return id.replace('NGS-', '');
+};
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJULS6NUUGQIjlwXxhzld9LfwMo_22evJbjwrDtE697Oze5iV1rog/exec";
 // ─────────────────────────────────────────────────────────────────
 export default function OrderPage() {
@@ -1248,7 +1256,7 @@ export default function OrderPage() {
                                 <div className="flex items-center gap-3">
                                   <div className="flex flex-col">
                                     <span className="text-[11px] font-black text-slate-700 tracking-tight">
-                                      {order.id.replace('NGS-', '')}
+                                      {formatOrderId(order.id)}
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-400">
                                       {order.items && order.items.length > 0 ? order.items[0].productCode : '상세 내역'}
@@ -1401,7 +1409,7 @@ export default function OrderPage() {
                               <div className="flex items-center gap-3">
                                   <div className="flex flex-col">
                                     <span className="text-[11px] font-black text-slate-700 tracking-tight">
-                                      {order.id.replace('NGS-', '')}
+                                      {formatOrderId(order.id)}
                                     </span>
                                     <span className="text-[10px] font-bold text-slate-400">
                                       {summaryText}
