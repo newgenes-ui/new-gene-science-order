@@ -254,6 +254,29 @@ export default function QuoteViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 print:py-0 print:bg-white flex flex-col items-center">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #quote-container {
+            width: 210mm !important;
+            max-width: 210mm !important;
+            padding: 8mm 10mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            overflow: visible !important;
+            aspect-ratio: auto !important;
+          }
+        }
+      `}</style>
       {/* iOS 안내 Toast */}
       {toastMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-sm px-5 py-3 rounded-xl shadow-2xl max-w-[90vw] text-center animate-fade-in print:hidden">
@@ -282,7 +305,7 @@ export default function QuoteViewer() {
         className="print:w-full print:transform-none"
         ref={scaleWrapperRef}
       >
-      <div ref={quoteRef} id="quote-container" className="w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] overflow-hidden text-[12px] leading-tight border border-gray-200">
+      <div ref={quoteRef} id="quote-container" className="w-[800px] bg-white p-10 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] print:overflow-visible overflow-hidden text-[12px] leading-tight border border-gray-200 print:border-none">
         <div className="text-center text-4xl font-black tracking-[1em] mb-6 underline underline-offset-8">견 적 서</div>
         
         <div className="flex justify-between items-stretch gap-2 mb-4">
