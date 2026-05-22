@@ -306,7 +306,7 @@ export default function QuoteViewer() {
         ref={scaleWrapperRef}
       >
       <div ref={quoteRef} id="quote-container" className="w-[800px] bg-white p-10 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] print:overflow-visible overflow-hidden text-[12px] leading-tight border border-gray-200 print:border-none">
-        <div className="text-center text-4xl font-black tracking-[1em] mb-2 underline underline-offset-8">견 적 서</div>
+        <div className="text-center text-4xl font-black tracking-[1em] mb-2">견 적 서</div>
         
         <div className="flex justify-between items-stretch gap-2 mb-4">
           <table className="border-collapse border-[2px] border-black w-[48%] text-xs">
