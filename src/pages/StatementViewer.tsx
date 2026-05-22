@@ -296,6 +296,29 @@ export default function StatementViewer() {
 
   return (
     <div className="min-h-screen bg-gray-100 py-10 print:py-0 print:bg-white flex flex-col items-center">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          #statement-container {
+            width: 210mm !important;
+            max-width: 210mm !important;
+            padding: 8mm 10mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            overflow: visible !important;
+            aspect-ratio: auto !important;
+          }
+        }
+      `}</style>
 
       {/* iOS 안내 Toast */}
       {toastMsg && (
@@ -338,11 +361,10 @@ export default function StatementViewer() {
         className="print:w-full print:transform-none"
         ref={scaleWrapperRef}
       >
-      {/* A4 용지 컨테이너 */}
       <div 
         ref={statementRef}
         id="statement-container"
-        className="w-[800px] bg-white p-10 print:p-0 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] overflow-hidden text-[13px] leading-tight border border-gray-200"
+        className="w-[800px] bg-white p-10 shadow-2xl print:shadow-none text-black font-sans aspect-[1/1.414] print:overflow-visible overflow-hidden text-[13px] leading-tight border border-gray-200 print:border-none"
       >
         
         {/* 제목 */}
