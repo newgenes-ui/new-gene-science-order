@@ -5,7 +5,7 @@ import { Printer, Download, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { LOGO_BASE64 } from '../assets/logoBase64';
-import { STAMP_BASE64 } from '../assets/stampBase64';
+const STAMP_PATH = '/stamp.png';
 
 export default function StatementViewer() {
   const [searchParams] = useSearchParams();
@@ -23,7 +23,7 @@ export default function StatementViewer() {
 
   // 로고 및 직인 경로 (Base64로 직접 연동하여 CORS 및 캔버스 보안 에러 완벽 해결)
   const LOGO_PATH = LOGO_BASE64;
-  const STAMP_PATH = STAMP_BASE64;
+  // stamp.png는 상단에서 const로 선언
 
   // 모바일에서 800px 문서를 화면에 맞게 축소 비율 계산
   useEffect(() => {
@@ -133,7 +133,7 @@ export default function StatementViewer() {
           // mix-blend-mode만 normal로 변경하여 캔버스 렌더링 검은 상자 방지
           const stamp = clonedDoc.querySelector('img[alt="직인"]');
           if (stamp) {
-            (stamp as HTMLElement).style.mixBlendMode = 'normal';
+            (stamp as HTMLElement).style.mixBlendMode = 'multiply';
           }
         }
       });
@@ -398,7 +398,7 @@ export default function StatementViewer() {
                 <td className="border border-black p-1 font-bold relative w-[25%]">
                   김 기 환 <span className="text-[10px] ml-1">(인)</span>
                   {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src={STAMP_PATH} crossOrigin="anonymous" className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-90 pointer-events-none" alt="직인" />
+                  <img src={STAMP_PATH} crossOrigin="anonymous" style={{ mixBlendMode: 'multiply' }} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-95 pointer-events-none" alt="직인" />
                 </td>
               </tr>
               <tr>
