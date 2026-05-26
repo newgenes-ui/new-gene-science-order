@@ -106,23 +106,6 @@ export default function AdminDashboard() {
       });
 
       const merged = Array.from(mergedMap.values());
-      
-      // [임시 자동 삭제] 목록에 나타나지 않는 (주)베르티스의 2건 무효 데이터 자동 삭제
-      const problematicOrders = merged.filter(o => 
-        o.clientName === '(주)베르티스' && 
-        !(o.orderType === 'order' || o.orderType === 'quote')
-      );
-      if (problematicOrders.length > 0) {
-        console.log('목록에 나타나지 않는 베르티스 주문 발견, 자동 삭제 진행:', problematicOrders);
-        problematicOrders.forEach(o => {
-          deleteOrder(o.id);
-        });
-        // 삭제 후 대시보드 화면을 다시 동기화하여 갱신합니다.
-        setTimeout(() => {
-          loadOrders();
-        }, 800);
-      }
-
       setAllOrders(merged.length > 0 ? merged : []);
     } catch {
       setAllOrders(getOrders());
@@ -164,14 +147,18 @@ export default function AdminDashboard() {
   }, [allOrders, fromDate, toDate, searchTerm, clientFilter]);
 
   const ordersList = useMemo(() => filteredOrders.filter(o => {
-    // orderType이 'order'이면 무조건 발주 목록에 표시 (status/quoteAmount 무관)
     const type = (o.orderType || '').toLowerCase().trim();
-    return type === 'order' || type === '';
+    const status = (o.status || '').toLowerCase().trim();
+    const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+    const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+    return type === 'order' && !isQuoteStatus && !isQuoteByAmount;
   }), [filteredOrders]);
   const quotesList = useMemo(() => filteredOrders.filter(o => {
-    // orderType이 'quote'이면 견적 문의 목록에 표시
     const type = (o.orderType || '').toLowerCase().trim();
-    return type === 'quote';
+    const status = (o.status || '').toLowerCase().trim();
+    const isQuoteStatus = ['order_requested', 'processing'].includes(status);
+    const isQuoteByAmount = Number(o.quoteAmount || 0) > 0;
+    return type === 'quote' || isQuoteStatus || isQuoteByAmount;
   }), [filteredOrders]);
 
   const totalRevenue = filteredOrders.reduce((s, o) => s + o.totalAmount, 0);
@@ -527,7 +514,7 @@ export default function AdminDashboard() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={<ShoppingBag className="w-4 h-4" />} label="총 주문 건수" value={`${filteredOrders.length}건`} sub={`발주 ${ordersList.length}건 / 견적 ${quotesList.length}건`} />
+          <StatCard icon={<ShoppingBag className="w-4 h-4" />} label="총 주문 건수" value={`${filteredOrders.length}건`} />
           <StatCard icon={<DollarSign className="w-4 h-4" />} label="총 매출" value={`₩${totalRevenue.toLocaleString()}`} />
           <StatCard icon={<Package className="w-4 h-4" />} label="총 판매 수량" value={`${totalItems.toLocaleString()}개`} />
           <StatCard icon={<TrendingUp className="w-4 h-4" />} label="건당 평균" value={filteredOrders.length > 0 ? `₩${Math.floor(totalRevenue / filteredOrders.length).toLocaleString()}` : '-'} />
