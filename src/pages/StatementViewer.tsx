@@ -147,7 +147,7 @@ export default function StatementViewer() {
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH);
 
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const dateStr = todayStr.replace(/-/g, '');
       const fileName = `거래명세서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (returnBase64 === true) {
@@ -229,8 +229,18 @@ export default function StatementViewer() {
   const ordererName = orders[0].ordererName;
   const orderDateStr = orders[0].orderDate; // 가장 첫번째 주문의 날짜를 기준 (혹은 오늘 날짜)
   
+  // orders[0].otherRequest에서 [납품완료:YYYY-MM-DD] 추출 시도
+  let shippedDateStr = '';
+  for (const o of orders) {
+    const match = o.otherRequest?.match(/\[납품완료:(\d{4}-\d{2}-\d{2})\]/);
+    if (match) {
+      shippedDateStr = match[1];
+      break;
+    }
+  }
+
   const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = shippedDateStr || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   const allItems = orders.flatMap(o => o.items);
   

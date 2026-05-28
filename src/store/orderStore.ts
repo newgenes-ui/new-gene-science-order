@@ -90,15 +90,46 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   // 1) localStorage 업데이트
   const orders = getOrders();
   const idx = orders.findIndex(o => o.id === orderId);
+  let updatedOtherRequest = '';
   if (idx !== -1) {
     orders[idx].status = status;
+    if (status === 'shipped') {
+      const today = new Date();
+      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
+      const todayStr = kstDate.toISOString().slice(0, 10);
+      
+      let currentReq = orders[idx].otherRequest || '';
+      currentReq = currentReq.replace(/\[납품완료:\d{4}-\d{2}-\d{2}\]/g, '').trim();
+      currentReq = currentReq ? `${currentReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+      orders[idx].otherRequest = currentReq;
+      updatedOtherRequest = currentReq;
+    }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }
   
   // 2) Supabase 업데이트
   try {
     if (isSupabaseConfigured && supabase) {
-      await updateOrderInSupabase(orderId, { status });
+      const updates: any = { status };
+      if (status === 'shipped') {
+        try {
+          const { data: dbOrder } = await supabase.from('orders').select('other_request').eq('id', orderId).single();
+          let dbReq = (dbOrder as any)?.other_request || '';
+          dbReq = dbReq.replace(/\[납품완료:\d{4}-\d{2}-\d{2}\]/g, '').trim();
+          
+          const today = new Date();
+          const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
+          const todayStr = kstDate.toISOString().slice(0, 10);
+          dbReq = dbReq ? `${dbReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+          updates.other_request = dbReq;
+        } catch (dbErr) {
+          console.warn('Failed to fetch other_request from Supabase, using local value', dbErr);
+          if (updatedOtherRequest) {
+            updates.other_request = updatedOtherRequest;
+          }
+        }
+      }
+      await updateOrderInSupabase(orderId, updates);
     }
     return true;
   } catch (e) {

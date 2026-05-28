@@ -295,6 +295,16 @@ export default function OrderPage() {
       const selectedOrders = userOrders.filter(o => selectedOrderIds.includes(o.id));
       const firstOrder = selectedOrders[0];
       
+      let shippedDateStr = '';
+      for (const o of selectedOrders) {
+        const match = o.otherRequest?.match(/\[납품완료:(\d{4}-\d{2}-\d{2})\]/);
+        if (match) {
+          shippedDateStr = match[1];
+          break;
+        }
+      }
+      const finalIssuedDate = shippedDateStr || new Date().toISOString().slice(0, 10);
+
       const finalName = ordererName || (firstOrder?.ordererName === '이재명' ? '김기환' : firstOrder?.ordererName) || '김기환';
       const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
       const finalEmail = taxEmail || firstOrder?.ordererEmail || 'newgenes@newgenesci.com';
@@ -331,7 +341,7 @@ export default function OrderPage() {
           <div style="margin-top: 25px; padding: 15px; background-color: #F8F9FA; border-radius: 10px; border: 1px solid #E2E8E4; font-size: 14px;">
             <p style="margin: 5px 0;"><strong>수신처:</strong> ${finalClientName} 귀하</p>
             <p style="margin: 5px 0;"><strong>담당자:</strong> ${finalName} 님</p>
-            <p style="margin: 5px 0;"><strong>발행일자:</strong> ${new Date().toISOString().slice(0, 10)}</p>
+            <p style="margin: 5px 0;"><strong>발행일자:</strong> ${finalIssuedDate}</p>
             <p style="margin: 5px 0;"><strong>발행 주문건수:</strong> ${selectedOrderIds.length}건</p>
           </div>
 

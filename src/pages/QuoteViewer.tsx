@@ -149,7 +149,7 @@ export default function QuoteViewer() {
       const imgData = canvas.toDataURL('image/jpeg', 0.92);
       pdf.addImage(imgData, 'JPEG', 0, 0, pageW, pageH);
 
-      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const dateStr = (orders[0]?.orderDate || new Date().toISOString().slice(0, 10)).replace(/-/g, '');
       const fileName = `견적서_${orders[0]?.clientName || 'NGS'}_${dateStr}.pdf`;
 
       if (isIOS || isMacSafari) {
@@ -209,8 +209,7 @@ export default function QuoteViewer() {
 
   const clientName = orders[0].clientName;
   const ordererName = orders[0].ordererName;
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = orders[0]?.orderDate || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
   const quoteNo = todayStr.replace(/-/g, '') + "-01";
 
   const allItems = orders.flatMap(o => o.items);
