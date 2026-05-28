@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
@@ -7,6 +7,7 @@ import {
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
+import AdminPinLock from '../components/AdminPinLock';
 
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
@@ -30,6 +31,32 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
       {sub && <p className="text-[10px] text-primary font-bold mt-1">{sub}</p>}
     </motion.div>
   );
+}
+
+// ── 알림음 재생 함수 (Web Audio API 기반) ──────────────────────────────
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const playTone = (freq: number, start: number, duration: number, type: OscillatorType = 'sine') => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+      gain.gain.setValueAtTime(0, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + start + 0.05);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + duration);
+    };
+    // 3음 멜로디 알림 (도-미-솔)
+    playTone(523.25, 0, 0.2);      // C5
+    playTone(659.25, 0.2, 0.2);    // E5
+    playTone(783.99, 0.4, 0.35);   // G5
+  } catch (e) {
+    console.warn('알림음 재생 실패:', e);
+  }
 }
 
 export default function AdminDashboard() {
@@ -56,6 +83,8 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeListTab, setActiveListTab] = useState<'order' | 'quote'>('order');
   const [isSaving, setIsSaving] = useState(false);
+  const prevOrderCountRef = useRef<number>(0);
+  const isFirstLoadRef = useRef(true);
 
 
   // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
@@ -123,10 +152,29 @@ export default function AdminDashboard() {
     }
 
     loadOrders();
-    // Supabase 실시간 구독 설정 (데이터 변경 시 즉시 갱신)
-    const unsubscribe = subscribeToOrders(() => {
+    // Supabase 실시간 구독 설정 (데이터 변경 시 즉시 갱신 + 알림음)
+    const unsubscribe = subscribeToOrders((payload: any) => {
+      // INSERT 이벤트(새 주문/견적)일 때만 알림음 재생
+      if (payload?.eventType === 'INSERT') {
+        playNotificationSound();
+        // 브라우저 알림도 시도 (권한이 있는 경우)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const orderType = payload.new?.order_type === 'quote' ? '견적문의' : '새 주문';
+          const clientName = payload.new?.client_name || '';
+          new Notification('관리자대시보드', {
+            body: `${clientName} - ${orderType}이(가) 접수되었습니다.`,
+            icon: '/icon-192.png',
+            tag: 'new-order'
+          });
+        }
+      }
       loadOrders();
     });
+
+    // 브라우저 알림 권한 요청
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     
     return () => unsubscribe();
   }, []);
@@ -437,6 +485,7 @@ export default function AdminDashboard() {
   };
 
   return (
+    <AdminPinLock>
     <div className="min-h-screen bg-[#F0F4F1] pb-40">
       <header className="bg-white/80 backdrop-blur-xl border-b border-[#E2E8E4] sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -1128,5 +1177,6 @@ export default function AdminDashboard() {
 
       </main>
     </div>
+    </AdminPinLock>
   );
 }

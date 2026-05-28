@@ -1,0 +1,21 @@
+{
+  "short_name": "관리자대시보드",
+  "name": "관리자대시보드",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/admin",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#2D5A47",
+  "background_color": "#F0F4F1"
+}
