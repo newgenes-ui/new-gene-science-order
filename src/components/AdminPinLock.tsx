@@ -54,7 +54,7 @@ export default function AdminPinLock({ children }: AdminPinLockProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1a3a2a] via-[#2D5A47] to-[#1a3a2a] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[99999] bg-gradient-to-br from-[#1a3a2a] via-[#2D5A47] to-[#1a3a2a] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
