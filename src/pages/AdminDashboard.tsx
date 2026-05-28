@@ -92,6 +92,7 @@ export default function AdminDashboard() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isInApp, setIsInApp] = useState(false);
 
 
   // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
@@ -188,6 +189,8 @@ export default function AdminDashboard() {
     setIsStandalone(standalone);
     const iosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iosDevice);
+    const inApp = /KAKAOTALK|NAVER|Line|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
+    setIsInApp(inApp);
 
     if (!standalone) {
       const handleBeforeInstall = (e: any) => {
@@ -220,6 +223,35 @@ export default function AdminDashboard() {
         setShowInstallBanner(false);
       }
       setDeferredPrompt(null);
+    } else {
+      const userAgent = navigator.userAgent || '';
+      const isKakaotalk = /KAKAOTALK/i.test(userAgent);
+      const isNaver = /NAVER/i.test(userAgent);
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+
+      if (isKakaotalk || isNaver) {
+        alert(
+          "📲 카카오톡/네이버 브라우저 안내\n\n" +
+          "현재 보시는 브라우저(인앱)에서는 보안 정책상 앱 직접 설치가 차단되어 있습니다.\n\n" +
+          "오른쪽 맨 위(또는 맨 아래)의 메뉴(⋮)를 누르신 후 [다른 브라우저로 열기] (또는 기본 브라우저로 열기)를 선택해 주세요!\n\n" +
+          "그 후 열리는 크롬이나 삼성 인터넷에서 '앱 설치하기'를 누르시면 즉시 정상 설치가 진행됩니다."
+        );
+      } else if (isIOS) {
+        alert(
+          "📲 아이폰(Safari) 설치 안내\n\n" +
+          "1. Safari 브라우저 하단의 [공유] 버튼(⬆️)을 누릅니다.\n" +
+          "2. 메뉴에서 [홈 화면에 추가]를 선택합니다.\n" +
+          "3. 우측 상단의 [추가]를 누르면 즉시 휴대폰에 설치됩니다!"
+        );
+      } else {
+        alert(
+          "📲 관리자대시보드 즉시 설치 방법:\n\n" +
+          "1. 화면 맨 아래 오른쪽 메뉴(⋮)를 탭하세요.\n" +
+          "2. [현재 페이지 추가] 또는 [앱 설치]를 선택하세요.\n" +
+          "3. [홈 화면]을 누르고 [추가]를 선택하면 휴대폰에 즉시 설치됩니다!\n\n" +
+          "※ 크롬(Chrome) 브라우저인 경우: 우측 상단 메뉴(⋮) → [홈 화면에 추가] 또는 [앱 설치]"
+        );
+      }
     }
   };
 
@@ -582,7 +614,9 @@ export default function AdminDashboard() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-black text-white">📲 관리자대시보드 앱 설치</h3>
                 <p className="text-[11px] text-white/70 font-medium mt-0.5">
-                  홈 화면에 설치하면 앱처럼 바로 접속할 수 있습니다
+                  {isInApp 
+                    ? "⚠️ 카카오톡/네이버 브라우저에서는 외부 브라우저 이동이 필요합니다." 
+                    : "홈 화면에 설치하면 앱처럼 바로 접속하고 푸시 알림을 받을 수 있습니다."}
                 </p>
               </div>
               <button
@@ -593,29 +627,13 @@ export default function AdminDashboard() {
               </button>
             </div>
             <div className="mt-3 flex gap-2">
-              {deferredPrompt ? (
-                <button
-                  onClick={handleInstallClick}
-                  className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  앱 설치하기
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (isIOS) {
-                      alert('아이폰 설치 방법:\n\n1. 하단의 [공유] 버튼(⬆️)을 탭하세요\n2. [홈 화면에 추가]를 선택하세요\n3. [추가]를 누르면 설치 완료!');
-                    } else {
-                      alert('앱 설치 방법:\n\n1. 화면 맨 아래 오른쪽 메뉴(⋮)를 탭하세요\n2. [현재 페이지 추가] → [홈 화면]을 선택하세요\n3. [추가]를 누르면 설치 완료!\n\n※ Chrome인 경우: 우측 상단 메뉴(⋮) → [홈 화면에 추가]');
-                    }
-                  }}
-                  className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  앱 설치 방법 보기
-                </button>
-              )}
+              <button
+                onClick={handleInstallClick}
+                className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                앱 설치하기
+              </button>
             </div>
           </div>
         </motion.div>
