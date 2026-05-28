@@ -574,38 +574,49 @@ export default function AdminDashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="max-w-6xl mx-auto px-4 pt-4"
         >
-          <div className="bg-gradient-to-r from-[#2D5A47] to-[#3a7a5f] rounded-2xl p-4 flex items-center gap-4 shadow-lg border border-[#4a8a6f]/30">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
-              <Smartphone className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-black text-white">📲 관리자대시보드 앱 설치</h3>
-              <p className="text-[11px] text-white/70 font-medium mt-0.5">
-                {isIOS
-                  ? '하단 공유 버튼 → [홈 화면에 추가]를 눌러주세요'
-                  : '홈 화면에 설치하면 알림을 받을 수 있습니다'}
-              </p>
-            </div>
-            {!isIOS && deferredPrompt && (
-              <button
-                onClick={handleInstallClick}
-                className="px-5 py-2.5 bg-white text-[#2D5A47] rounded-xl font-black text-xs shadow-md hover:bg-white/90 transition-all active:scale-95 shrink-0"
-              >
-                <Download className="w-3.5 h-3.5 inline mr-1" />
-                설치
-              </button>
-            )}
-            {isIOS && (
-              <div className="bg-white/20 p-2 rounded-lg shrink-0">
-                <Share className="w-5 h-5 text-white" />
+          <div className="bg-gradient-to-r from-[#2D5A47] to-[#3a7a5f] rounded-2xl p-4 shadow-lg border border-[#4a8a6f]/30">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+                <Smartphone className="w-6 h-6 text-white" />
               </div>
-            )}
-            <button
-              onClick={() => setShowInstallBanner(false)}
-              className="p-1.5 hover:bg-white/20 rounded-full transition-colors shrink-0"
-            >
-              <X className="w-4 h-4 text-white/60" />
-            </button>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-black text-white">📲 관리자대시보드 앱 설치</h3>
+                <p className="text-[11px] text-white/70 font-medium mt-0.5">
+                  홈 화면에 설치하면 앱처럼 바로 접속할 수 있습니다
+                </p>
+              </div>
+              <button
+                onClick={() => setShowInstallBanner(false)}
+                className="p-1.5 hover:bg-white/20 rounded-full transition-colors shrink-0"
+              >
+                <X className="w-4 h-4 text-white/60" />
+              </button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              {deferredPrompt ? (
+                <button
+                  onClick={handleInstallClick}
+                  className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  앱 설치하기
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    if (isIOS) {
+                      alert('아이폰 설치 방법:\n\n1. 하단의 [공유] 버튼(⬆️)을 탭하세요\n2. [홈 화면에 추가]를 선택하세요\n3. [추가]를 누르면 설치 완료!');
+                    } else {
+                      alert('앱 설치 방법:\n\n1. 브라우저 우측 상단 메뉴(⋮)를 탭하세요\n2. [홈 화면에 추가] 또는 [앱 설치]를 선택하세요\n3. [설치] 또는 [추가]를 누르면 완료!');
+                    }
+                  }}
+                  className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  앱 설치 방법 보기
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
       )}
