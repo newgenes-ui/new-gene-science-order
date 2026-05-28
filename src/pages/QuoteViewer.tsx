@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { getOrdersFromSupabase, Order } from '../store/orderStore';
-import { Printer, Download, Loader2 } from 'lucide-react';
+import { Printer, Download, Loader2, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { LOGO_BASE64 } from '../assets/logoBase64';
@@ -284,15 +284,30 @@ export default function QuoteViewer() {
           {toastMsg}
         </div>
       )}
-      <div className="w-full max-w-[800px] flex justify-end gap-3 mb-4 print:hidden px-4">
-        <button onClick={handleDownloadPDF} disabled={isDownloading} className="flex items-center gap-2 bg-[#2D5A27] text-white px-5 py-2.5 rounded-lg font-bold shadow-lg disabled:opacity-70">
-          {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-          PDF 다운로드
+      <div className="w-full max-w-[800px] flex justify-between items-center mb-4 print:hidden px-4">
+        <button 
+          onClick={() => {
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = '/';
+            }
+          }} 
+          className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-bold shadow-md transition-all active:scale-95 text-xs"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          뒤로가기
         </button>
-        <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg">
-          <Printer className="w-5 h-5" />
-          인쇄하기
-        </button>
+        <div className="flex gap-3">
+          <button onClick={handleDownloadPDF} disabled={isDownloading} className="flex items-center gap-2 bg-[#2D5A27] text-white px-5 py-2.5 rounded-lg font-bold shadow-lg disabled:opacity-70 text-xs">
+            {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+            PDF 다운로드
+          </button>
+          <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-800 text-white px-5 py-2.5 rounded-lg font-bold shadow-lg text-xs">
+            <Printer className="w-5 h-5" />
+            인쇄하기
+          </button>
+        </div>
       </div>
 
       {/* 모바일: 800px 고정폭 문서를 CSS scale로 축소 → 레이아웃 깨짐 방지 */}

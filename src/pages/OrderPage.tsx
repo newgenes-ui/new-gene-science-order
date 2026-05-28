@@ -260,6 +260,16 @@ export default function OrderPage() {
     localStorage.setItem('ngs_statement_requested', JSON.stringify(newStatement));
   };
 
+  const openViewer = (url: string) => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isStandalone || isMobile) {
+      window.location.href = url;
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
   const selectedTotalAmount = useMemo(() => {
     return userOrders
       .filter(o => selectedOrderIds.includes(o.id))
@@ -1278,7 +1288,7 @@ export default function OrderPage() {
                                       <button
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          window.open(`/quote?ids=${order.id}`, '_blank');
+                                          openViewer(`/quote?ids=${order.id}`);
                                         }}
                                         className="px-2.5 py-1.5 rounded-lg text-[9px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                       >
@@ -1291,7 +1301,7 @@ export default function OrderPage() {
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            window.open(`/statement?ids=${order.id}`, '_blank');
+                                            openViewer(`/statement?ids=${order.id}`);
                                           }}
                                           className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                         >
@@ -1441,7 +1451,7 @@ export default function OrderPage() {
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            window.open(`/statement?ids=${order.id}`, '_blank');
+                                            openViewer(`/statement?ids=${order.id}`);
                                           }}
                                           className="px-2 py-1.5 rounded-lg text-[9px] font-black bg-white text-blue-500 border border-blue-500 shadow-sm hover:bg-blue-50 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                         >
@@ -1478,7 +1488,7 @@ export default function OrderPage() {
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            window.open(`/quote?ids=${order.id}`, '_blank');
+                                            openViewer(`/quote?ids=${order.id}`);
                                           }}
                                           className="px-2.5 py-1.5 rounded-full text-[10px] font-black bg-white text-primary border border-primary shadow-sm hover:bg-primary/5 transition-all active:scale-95 shrink-0 flex items-center gap-1"
                                         >
