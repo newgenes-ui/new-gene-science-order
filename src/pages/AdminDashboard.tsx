@@ -93,6 +93,8 @@ export default function AdminDashboard() {
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isInApp, setIsInApp] = useState(false);
+  const [isWakeLockActive, setIsWakeLockActive] = useState(false);
+  const wakeLockRef = useRef<any>(null);
 
 
   // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
@@ -254,6 +256,42 @@ export default function AdminDashboard() {
       }
     }
   };
+
+  // 화면 켜짐 유지(Wake Lock) 제어 함수
+  const toggleWakeLock = async () => {
+    if ('wakeLock' in navigator) {
+      try {
+        if (!isWakeLockActive) {
+          const lock = await (navigator as any).wakeLock.request('screen');
+          wakeLockRef.current = lock;
+          setIsWakeLockActive(true);
+          
+          lock.addEventListener('release', () => {
+            setIsWakeLockActive(false);
+          });
+        } else {
+          if (wakeLockRef.current) {
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+          }
+          setIsWakeLockActive(false);
+        }
+      } catch (err) {
+        console.error('화면 켜짐 유지 설정 실패:', err);
+      }
+    } else {
+      alert('죄송합니다. 현재 기기 및 브라우저는 화면 항상 켜짐 기능을 지원하지 않습니다.\n크롬 또는 삼성 인터넷 최신 버전을 사용해 주세요.');
+    }
+  };
+
+  // 컴포넌트 해제 시 Wake Lock 락 해제
+  useEffect(() => {
+    return () => {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch((e: any) => console.log('WakeLock 해제 오류:', e));
+      }
+    };
+  }, []);
 
   const filteredOrders = useMemo(() => {
     // 기본 필터링 및 날짜 정렬 적용
@@ -580,6 +618,18 @@ export default function AdminDashboard() {
               {allOrders.length > 0 ? 'DB 연결됨' : '로컬 모드'}
             </div>
               v2.1.0 Official
+            <button
+              onClick={toggleWakeLock}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 ${
+                isWakeLockActive 
+                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 hover:bg-amber-600' 
+                  : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+              }`}
+              title="실시간 소리 알림 수신을 위해 모바일이나 PC 화면이 꺼지지 않도록 유지합니다."
+            >
+              <Smartphone className={`w-3.5 h-3.5 ${isWakeLockActive ? 'animate-pulse' : ''}`} />
+              {isWakeLockActive ? '화면 켜짐 유지됨' : '실시간 알림 켜둠'}
+            </button>
             <button
               onClick={loadOrders}
               disabled={isLoading}
