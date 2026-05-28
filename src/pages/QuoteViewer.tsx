@@ -189,8 +189,10 @@ export default function QuoteViewer() {
     const loadOrders = async () => {
       try {
         const allOrders = await getOrdersFromSupabase();
-        const matched = allOrders.filter(o => orderIds.includes(o.id));
-        setOrders(matched);
+        if (allOrders) {
+          const matched = allOrders.filter(o => orderIds.includes(o.id));
+          setOrders(matched);
+        }
       } catch (error) {
         console.error('Failed to load orders for quote', error);
       } finally {

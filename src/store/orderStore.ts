@@ -437,8 +437,8 @@ async function deleteOrderFromSupabase(orderId: string): Promise<void> {
 }
 
 /** Supabase에서 모든 주문 로드 (관리자 대시보드용) */
-export async function getOrdersFromSupabase(): Promise<Order[]> {
-  if (!isSupabaseConfigured || !supabase) return [];
+export async function getOrdersFromSupabase(): Promise<Order[] | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -447,7 +447,7 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
 
     if (error) {
       console.error('Supabase 조회 오류:', error.message);
-      return [];
+      return null;
     }
 
     return (data || []).map((row: any) => ({
@@ -480,7 +480,7 @@ export async function getOrdersFromSupabase(): Promise<Order[]> {
     }));
   } catch (e) {
     console.error('Supabase 조회 실패:', e);
-    return [];
+    return null;
   }
 }
 

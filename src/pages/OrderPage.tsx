@@ -457,11 +457,27 @@ export default function OrderPage() {
       const remoteOrders = await getOrdersFromSupabase();
       const localOrders = getOrders();
       
+      let finalRemoteOrders: Order[] = [];
+      if (remoteOrders !== null) {
+        finalRemoteOrders = remoteOrders;
+        
+        // Supabase에 저장되어 있는 주문들만 남기고 로컬 스토리지에서 동기화 청소
+        const remoteIds = new Set(remoteOrders.map(o => o.id));
+        const filteredLocal = localOrders.filter(o => remoteIds.has(o.id));
+        if (filteredLocal.length !== localOrders.length) {
+          localStorage.setItem('ngs_orders', JSON.stringify(filteredLocal));
+        }
+      }
+
       // 2. ID를 기준으로 중복을 제거하며 병합 (로컬 최신 데이터 우선)
       const mergedMap = new Map<string, Order>();
       
-      // 로컬 데이터를 먼저 담기
-      localOrders.forEach(o => mergedMap.set(o.id, o));
+      // 로컬 데이터를 먼저 담기 (Supabase 연결에 성공했다면 필터링된 데이터만, 실패했다면 전체 로컬 데이터 사용)
+      const activeLocalOrders = remoteOrders !== null
+        ? localOrders.filter(o => new Set(remoteOrders.map(r => r.id)).has(o.id))
+        : localOrders;
+
+      activeLocalOrders.forEach(o => mergedMap.set(o.id, o));
       
       // 서버 데이터를 병합하되, "진행도가 더 높은 상태"와 "더 큰 금액"을 유지하는 스마트 병합
       const statusRank: Record<string, number> = {
@@ -473,7 +489,7 @@ export default function OrderPage() {
         'cancelled': 6
       };
       
-      remoteOrders.forEach(remote => {
+      finalRemoteOrders.forEach(remote => {
         const local = mergedMap.get(remote.id);
         if (!local) {
           mergedMap.set(remote.id, remote);
