@@ -262,8 +262,7 @@ export default function OrderPage() {
 
   const openViewer = (url: string) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isStandalone || isMobile) {
+    if (isStandalone) {
       window.location.href = url;
     } else {
       window.open(url, '_blank');
