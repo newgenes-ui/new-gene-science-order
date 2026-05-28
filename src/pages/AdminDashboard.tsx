@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, TrendingUp, Package,
-  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2
+  DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
+  Smartphone, Share, X
 } from 'lucide-react';
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
@@ -85,6 +86,12 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const prevOrderCountRef = useRef<number>(0);
   const isFirstLoadRef = useRef(true);
+
+  // PWA 앱 설치 관련 상태
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
 
   // Supabase + localStorage 병합 로드 (주문자 화면과 동일한 방식)
@@ -175,9 +182,46 @@ export default function AdminDashboard() {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+
+    // PWA 설치 프롬프트 감지
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    setIsStandalone(standalone);
+    const iosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    setIsIOS(iosDevice);
+
+    if (!standalone) {
+      const handleBeforeInstall = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setShowInstallBanner(true);
+      };
+      window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+      // iOS이거나 이벤트가 발생하지 않는 경우 2초 후 배너 표시
+      const fallback = setTimeout(() => {
+        if (!standalone) setShowInstallBanner(true);
+      }, 2000);
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+        clearTimeout(fallback);
+        unsubscribe();
+      };
+    }
     
-    return () => unsubscribe();
+    return () => { unsubscribe(); };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+      }
+      setDeferredPrompt(null);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     // 기본 필터링 및 날짜 정렬 적용
@@ -523,8 +567,50 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+      {/* 앱 설치 배너 */}
+      {showInstallBanner && !isStandalone && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-6xl mx-auto px-4 pt-4"
+        >
+          <div className="bg-gradient-to-r from-[#2D5A47] to-[#3a7a5f] rounded-2xl p-4 flex items-center gap-4 shadow-lg border border-[#4a8a6f]/30">
+            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shrink-0">
+              <Smartphone className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-black text-white">📲 관리자대시보드 앱 설치</h3>
+              <p className="text-[11px] text-white/70 font-medium mt-0.5">
+                {isIOS
+                  ? '하단 공유 버튼 → [홈 화면에 추가]를 눌러주세요'
+                  : '홈 화면에 설치하면 알림을 받을 수 있습니다'}
+              </p>
+            </div>
+            {!isIOS && deferredPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="px-5 py-2.5 bg-white text-[#2D5A47] rounded-xl font-black text-xs shadow-md hover:bg-white/90 transition-all active:scale-95 shrink-0"
+              >
+                <Download className="w-3.5 h-3.5 inline mr-1" />
+                설치
+              </button>
+            )}
+            {isIOS && (
+              <div className="bg-white/20 p-2 rounded-lg shrink-0">
+                <Share className="w-5 h-5 text-white" />
+              </div>
+            )}
+            <button
+              onClick={() => setShowInstallBanner(false)}
+              className="p-1.5 hover:bg-white/20 rounded-full transition-colors shrink-0"
+            >
+              <X className="w-4 h-4 text-white/60" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
-        {/* Practice Mode Banner 제거됨 */}
         {/* Filters */}
         <div className="bg-white rounded-2xl p-4 border border-[#E2E8E4] flex flex-wrap gap-3 items-end">
           <div>
