@@ -607,7 +607,7 @@ export default function AdminDashboard() {
                     if (isIOS) {
                       alert('아이폰 설치 방법:\n\n1. 하단의 [공유] 버튼(⬆️)을 탭하세요\n2. [홈 화면에 추가]를 선택하세요\n3. [추가]를 누르면 설치 완료!');
                     } else {
-                      alert('앱 설치 방법:\n\n1. 브라우저 우측 상단 메뉴(⋮)를 탭하세요\n2. [홈 화면에 추가] 또는 [앱 설치]를 선택하세요\n3. [설치] 또는 [추가]를 누르면 완료!');
+                      alert('앱 설치 방법:\n\n1. 화면 맨 아래 오른쪽 메뉴(⋮)를 탭하세요\n2. [현재 페이지 추가] → [홈 화면]을 선택하세요\n3. [추가]를 누르면 설치 완료!\n\n※ Chrome인 경우: 우측 상단 메뉴(⋮) → [홈 화면에 추가]');
                     }
                   }}
                   className="flex-1 py-3 bg-white text-[#2D5A47] rounded-xl font-black text-sm shadow-md hover:bg-white/90 transition-all active:scale-95 flex items-center justify-center gap-2"
