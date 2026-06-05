@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X, GripVertical } from 'lucide-react';
+import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X, GripVertical, Download } from 'lucide-react';
 import { CLIENTS, Client } from '../data/products';
 
 const QR_IMAGES_KEY = 'ngs_qr_images'; // localStorage key
@@ -147,6 +147,47 @@ export default function QRManager() {
       delete next[clientId];
       return next;
     });
+  };
+
+  // ── QR 이미지 다운로드 ──
+  const downloadQR = (clientId: string) => {
+    const client = orderedClients.find(c => c.id === clientId);
+    const safeName = client?.name?.replace(/[^a-zA-Z0-9가-힣]/g, '_') || clientId;
+
+    // 업로드된 캔바 이미지가 있으면 그것을 다운로드
+    if (uploadedImages[clientId]) {
+      const link = document.createElement('a');
+      link.download = `QR_${safeName}.png`;
+      link.href = uploadedImages[clientId];
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
+    // 시스템 생성 QR (SVG → PNG 변환 후 다운로드)
+    const svgEl = document.querySelector(`[data-qid="${clientId}"] svg`);
+    if (!svgEl) return;
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const canvas = document.createElement('canvas');
+    const size = 512;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new Image();
+    img.onload = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      const link = document.createElement('a');
+      link.download = `QR_${safeName}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   return (
@@ -344,6 +385,10 @@ export default function QRManager() {
                     <button onClick={() => copyUrl(client.id)}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all active:scale-95">
                       <Copy className="w-3 h-3" /> URL 복사
+                    </button>
+                    <button onClick={() => downloadQR(client.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all active:scale-95">
+                      <Download className="w-3 h-3" /> {uploadedImages[client.id] ? 'QR 다운로드' : 'QR 다운로드'}
                     </button>
                     <button onClick={() => fileInputRefs.current[client.id]?.click()}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all active:scale-95">
