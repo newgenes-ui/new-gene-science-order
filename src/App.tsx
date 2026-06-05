@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useLocation, useSearchParams } from 'react-router-dom';
-import { QrCode, BarChart3, ShoppingBag, ArrowLeft } from 'lucide-react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, NavLink, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { QrCode, BarChart3, ShoppingBag } from 'lucide-react';
 import { CLIENTS } from './data/products';
 import OrderPage from './pages/OrderPage';
 import PaymentPage from './pages/PaymentPage';
@@ -11,18 +11,85 @@ import QuoteViewer from './pages/QuoteViewer';
 import InstallPrompt from './components/InstallPrompt';
 
 function AdminNav() {
+  // ── Hooks (must be before any conditional return) ──
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const isAdminPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/qr');
   const isFromAdmin = searchParams.get('from') === 'admin';
   const currentClientId = searchParams.get('client') || '';
-  
-  // Show admin nav on admin pages OR when viewing client pages from admin context
+
+  // ── 업체 순서 상태 (localStorage 영속) ──
+  const [orderedIds, setOrderedIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('admin_nav_order');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
+  });
+
+  const orderedClients = useMemo(() => {
+    const valid = CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
+    const ordered = orderedIds.filter(id => valid.includes(id));
+    const missing = valid.filter(id => !ordered.includes(id));
+    return [...ordered, ...missing]
+      .map(id => CLIENTS.find(c => c.id === id)!)
+      .filter(Boolean);
+  }, [orderedIds]);
+
+  // ── 드래그 상태 ──
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const draggedRef = useRef(false);
+  const touchRef = useRef({ id: '', timer: 0, dragging: false, sx: 0, sy: 0 });
+  const navRef = useRef<HTMLElement>(null);
+
+  // ── 모바일 터치 드래그용 non-passive 리스너 ──
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const handler = (e: TouchEvent) => {
+      const tr = touchRef.current;
+      const t = e.touches[0];
+      // 롱프레스 전 이동 → 타이머 취소 (일반 스크롤 허용)
+      if (!tr.dragging && tr.timer) {
+        if (Math.abs(t.clientX - tr.sx) > 10 || Math.abs(t.clientY - tr.sy) > 10) {
+          clearTimeout(tr.timer);
+          tr.timer = 0;
+        }
+        return;
+      }
+      if (!tr.dragging) return;
+      e.preventDefault();
+      const target = document.elementFromPoint(t.clientX, t.clientY)?.closest('[data-cid]');
+      setOverId(target ? target.getAttribute('data-cid') : null);
+    };
+    el.addEventListener('touchmove', handler, { passive: false });
+    return () => el.removeEventListener('touchmove', handler);
+  }, []);
+
+  // ── 조건부 렌더링 (hooks 이후) ──
   if (!isAdminPath && !isFromAdmin) return null;
 
+  // ── 순서 변경 로직 ──
+  const doReorder = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const ids = orderedClients.map(c => c.id);
+    const fi = ids.indexOf(fromId);
+    const ti = ids.indexOf(toId);
+    if (fi < 0 || ti < 0) return;
+    const next = [...ids];
+    next.splice(fi, 1);
+    next.splice(ti, 0, fromId);
+    setOrderedIds(next);
+    localStorage.setItem('admin_nav_order', JSON.stringify(next));
+  };
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-[#E2E8E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-      <div className="flex items-center justify-around px-2 py-2 max-w-4xl mx-auto overflow-x-auto scrollbar-hide">
+    <nav ref={navRef} className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-[#E2E8E4] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center px-2 py-2 max-w-4xl mx-auto overflow-x-auto scrollbar-hide">
+        {/* 고정 메뉴: 대시보드 / QR */}
         <NavLink to="/admin" className={({ isActive }) =>
           `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all shrink-0 ${isActive && !isFromAdmin ? 'text-primary font-bold bg-primary/5' : 'text-slate-400 hover:text-slate-600'}`
         }>
@@ -35,21 +102,82 @@ function AdminNav() {
           <QrCode className="w-5 h-5" />
           <span className="text-[10px] font-bold">QR 관리</span>
         </NavLink>
-        {CLIENTS.filter(c => c.id !== 'demo').map(client => {
-          const isActiveClient = isFromAdmin && currentClientId === client.id;
+
+        {/* 구분선 */}
+        <div className="w-px h-8 bg-slate-200/60 shrink-0 mx-1" />
+
+        {/* 드래그 가능한 업체 탭 */}
+        {orderedClients.map(client => {
+          const isActive = isFromAdmin && currentClientId === client.id;
+          const isDragging = dragId === client.id;
+          const isDropTarget = overId === client.id && dragId != null && dragId !== client.id;
+
           return (
-            <NavLink 
-              key={client.id} 
-              to={`/?client=${client.id}&from=admin`} 
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all shrink-0 ${
-                isActiveClient 
-                  ? 'text-primary font-bold bg-primary/10 ring-1 ring-primary/20' 
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-              }`}
+            <div
+              key={client.id}
+              data-cid={client.id}
+              draggable
+              /* ── 데스크톱 HTML5 DnD ── */
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', client.id);
+                setTimeout(() => setDragId(client.id), 0);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragId && dragId !== client.id) setOverId(client.id);
+              }}
+              onDragLeave={() => setOverId(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragId) doReorder(dragId, client.id);
+                setDragId(null); setOverId(null);
+              }}
+              onDragEnd={() => { setDragId(null); setOverId(null); }}
+              /* ── 모바일 터치 (롱프레스 → 드래그) ── */
+              onTouchStart={(e) => {
+                const t = e.touches[0];
+                const tr = touchRef.current;
+                tr.id = client.id; tr.sx = t.clientX; tr.sy = t.clientY; tr.dragging = false;
+                tr.timer = window.setTimeout(() => {
+                  tr.dragging = true;
+                  setDragId(client.id);
+                  if (navigator.vibrate) navigator.vibrate(30);
+                }, 400);
+              }}
+              onTouchEnd={() => {
+                const tr = touchRef.current;
+                if (tr.timer) clearTimeout(tr.timer);
+                if (tr.dragging && dragId && overId) {
+                  doReorder(dragId, overId);
+                  draggedRef.current = true;
+                  setTimeout(() => { draggedRef.current = false; }, 300);
+                }
+                tr.dragging = false; tr.id = '';
+                setDragId(null); setOverId(null);
+              }}
+              /* ── 클릭 네비게이션 (드래그 중이면 무시) ── */
+              onClick={() => {
+                if (!draggedRef.current && !touchRef.current.dragging) {
+                  navigate(`/?client=${client.id}&from=admin`);
+                }
+              }}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl shrink-0 select-none
+                transition-all duration-200 cursor-grab active:cursor-grabbing
+                ${isDragging
+                  ? 'opacity-30 scale-75'
+                  : isDropTarget
+                    ? 'bg-primary/15 scale-110 ring-2 ring-primary/40 text-primary'
+                    : isActive
+                      ? 'text-primary font-bold bg-primary/10 ring-1 ring-primary/20'
+                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
             >
-              <ShoppingBag className={`w-5 h-5 ${isActiveClient ? 'text-primary' : ''}`} />
-              <span className={`text-[9px] font-bold truncate max-w-[60px] ${isActiveClient ? 'text-primary' : ''}`}>{client.name.replace('(주)', '')}</span>
-            </NavLink>
+              <ShoppingBag className={`w-5 h-5 transition-colors ${isActive || isDropTarget ? 'text-primary' : ''}`} />
+              <span className={`text-[9px] font-bold truncate max-w-[60px] transition-colors ${isActive ? 'text-primary' : ''}`}>
+                {client.name.replace('(주)', '')}
+              </span>
+            </div>
           );
         })}
       </div>
