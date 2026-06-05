@@ -241,8 +241,8 @@ export default function StatementViewer() {
     }
   }
 
-  const today = new Date();
-  const todayStr = shippedDateStr || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  // 납품완료 날짜가 있으면 그 날짜, 없으면 주문일자를 사용 (new Date()로 오늘 날짜가 매번 바뀌는 문제 방지)
+  const todayStr = shippedDateStr || orderDateStr;
 
   const allItems = orders.flatMap(o => o.items);
   

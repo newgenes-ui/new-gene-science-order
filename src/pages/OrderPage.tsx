@@ -303,7 +303,7 @@ export default function OrderPage() {
           break;
         }
       }
-      const finalIssuedDate = shippedDateStr || new Date().toISOString().slice(0, 10);
+      const finalIssuedDate = shippedDateStr || firstOrder?.orderDate || new Date().toISOString().slice(0, 10);
 
       const finalName = ordererName || (firstOrder?.ordererName === '이재명' ? '김기환' : firstOrder?.ordererName) || '김기환';
       const finalPhone = ordererPhone || (firstOrder?.ordererName === '이재명' ? '010-5882-4997' : firstOrder?.ordererPhone) || '010-5882-4997';
@@ -845,7 +845,33 @@ export default function OrderPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      {/* Admin Context - Back to Dashboard Banner */}
+      {searchParams.get('from') === 'admin' && (
+        <div className="sticky top-16 z-30 bg-gradient-to-r from-[#2D5A47] to-[#3a7a5f] border-b border-[#4a8a6f]/30 shadow-lg">
+          <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/admin')}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-xl font-bold text-xs transition-all active:scale-95 backdrop-blur-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                대시보드로 돌아가기
+              </button>
+              <div className="hidden sm:block border-l border-white/20 pl-3">
+                <p className="text-[10px] text-white/60 font-medium">관리자 미리보기</p>
+                <p className="text-xs text-white font-bold">{clientData.name} 주문 페이지</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-lg text-[10px] text-white/80 font-bold">
+                👁️ 관리자 모드
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className={`max-w-5xl mx-auto px-4 py-6 space-y-6 ${searchParams.get('from') === 'admin' ? 'pb-24' : ''}`}>
         {/* Welcome Banner */}
         <motion.div
           layout

@@ -5,7 +5,7 @@ import {
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
   Smartphone, Share, X
 } from 'lucide-react';
-import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders } from '../store/orderStore';
+import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders, fixShippedDates } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 import AdminPinLock from '../components/AdminPinLock';
@@ -176,7 +176,13 @@ export default function AdminDashboard() {
       emailjs.init(EMAILJS_PUBLIC_KEY);
     }
 
-    loadOrders();
+    // 납품완료 날짜가 오늘로 잘못 기록된 주문을 자동 수정 후 데이터 로드
+    fixShippedDates().then(logs => {
+      const fixes = logs.filter(l => l.startsWith('✅'));
+      if (fixes.length > 0) console.log('🔧 납품완료 날짜 자동 수정:', fixes);
+    }).finally(() => {
+      loadOrders();
+    });
     // Supabase 실시간 구독 설정 (데이터 변경 시 즉시 갱신 + 알림음)
     const unsubscribe = subscribeToOrders((payload: any) => {
       // INSERT 이벤트(새 주문/견적)일 때만 알림음 재생

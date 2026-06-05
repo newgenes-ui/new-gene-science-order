@@ -94,15 +94,16 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   if (idx !== -1) {
     orders[idx].status = status;
     if (status === 'shipped') {
-      const today = new Date();
-      const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
-      const todayStr = kstDate.toISOString().slice(0, 10);
-      
       let currentReq = orders[idx].otherRequest || '';
-      currentReq = currentReq.replace(/\[납품완료:\d{4}-\d{2}-\d{2}\]/g, '').trim();
-      currentReq = currentReq ? `${currentReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
-      orders[idx].otherRequest = currentReq;
-      updatedOtherRequest = currentReq;
+      // 이미 납품완료 날짜가 기록되어 있으면 기존 날짜를 유지
+      if (!/\[납품완료:\d{4}-\d{2}-\d{2}\]/.test(currentReq)) {
+        const today = new Date();
+        const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
+        const todayStr = kstDate.toISOString().slice(0, 10);
+        currentReq = currentReq ? `${currentReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+        orders[idx].otherRequest = currentReq;
+      }
+      updatedOtherRequest = orders[idx].otherRequest;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(orders));
   }
@@ -113,19 +114,36 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
       const updates: any = { status };
       if (status === 'shipped') {
         try {
-          const { data: dbOrder } = await supabase.from('orders').select('other_request').eq('id', orderId).single();
+          const { data: dbOrder, error: selectError } = await supabase.from('orders').select('other_request').eq('id', orderId).single();
+          if (selectError) {
+            console.warn('DB other_request 조회 실패:', selectError.message);
+            throw selectError; // catch 블록으로 이동
+          }
           let dbReq = (dbOrder as any)?.other_request || '';
-          dbReq = dbReq.replace(/\[납품완료:\d{4}-\d{2}-\d{2}\]/g, '').trim();
-          
-          const today = new Date();
-          const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
-          const todayStr = kstDate.toISOString().slice(0, 10);
-          dbReq = dbReq ? `${dbReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+          // 이미 납품완료 날짜가 기록되어 있으면 기존 날짜를 절대 변경하지 않음
+          if (!/\[납품완료:\d{4}-\d{2}-\d{2}\]/.test(dbReq)) {
+            const today = new Date();
+            const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
+            const todayStr = kstDate.toISOString().slice(0, 10);
+            dbReq = dbReq ? `${dbReq} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+          }
           updates.other_request = dbReq;
         } catch (dbErr) {
           console.warn('Failed to fetch other_request from Supabase, using local value', dbErr);
-          if (updatedOtherRequest) {
+          if (updatedOtherRequest && /\[납품완료:\d{4}-\d{2}-\d{2}\]/.test(updatedOtherRequest)) {
+            // localStorage에 이미 납품완료 태그가 있으면 기존 날짜를 절대 변경하지 않음
             updates.other_request = updatedOtherRequest;
+          } else if (updatedOtherRequest) {
+            // localStorage에 주문은 있지만 태그가 없는 경우
+            const today = new Date();
+            const kstDate = new Date(today.getTime() + (9 * 60 * 60 * 1000));
+            const todayStr = kstDate.toISOString().slice(0, 10);
+            updates.other_request = updatedOtherRequest ? `${updatedOtherRequest} [납품완료:${todayStr}]` : `[납품완료:${todayStr}]`;
+          } else {
+            // localStorage에도 주문이 없는 경우(관리자 브라우저)
+            // DB에서 읽기도 실패했으므로, 기존 값 보존을 위해 other_request는 업데이트하지 않음
+            // status만 shipped로 변경
+            console.warn('DB/로컬 모두 other_request를 읽을 수 없어 납품완료 태그 추가 건너뜀');
           }
         }
       }
@@ -167,16 +185,24 @@ export async function markOrdersAsInvoicedInSupabase(orderIds: string[]): Promis
 
   try {
     const results = await Promise.all(orderIds.map(async (id) => {
-      const { data: order } = await supabase.from('orders').select('other_request').eq('id', id).single();
-      const currentReq = (order as any)?.other_request || '';
-      
-      if (!currentReq.includes('[명세서발행]')) {
-        const updatedReq = currentReq ? `${currentReq} [명세서발행]` : '[명세서발행]';
-        // updateOrderInSupabase가 정의되어 있다고 가정 (라인 101 참고)
-        const { error } = await supabase.from('orders').update({ other_request: updatedReq }).eq('id', id);
-        return !error;
+      try {
+        const { data: order, error: selectError } = await supabase.from('orders').select('other_request').eq('id', id).single();
+        if (selectError || !order) {
+          console.warn(`[명세서발행] 태그 추가 건너뜀 (DB 조회 실패): ${id}`, selectError);
+          return true; // DB 조회 실패 시 기존 other_request를 덮어쓰지 않기 위해 건너뜀
+        }
+        const currentReq = (order as any)?.other_request || '';
+        
+        if (!currentReq.includes('[명세서발행]')) {
+          const updatedReq = currentReq ? `${currentReq} [명세서발행]` : '[명세서발행]';
+          const { error } = await supabase.from('orders').update({ other_request: updatedReq }).eq('id', id);
+          return !error;
+        }
+        return true;
+      } catch (innerErr) {
+        console.warn(`[명세서발행] 태그 추가 중 오류 (건너뜀): ${id}`, innerErr);
+        return true; // 개별 실패 시에도 기존 데이터 보존을 위해 업데이트하지 않음
       }
-      return true;
     }));
     
     return results.every(r => r === true);
@@ -503,4 +529,75 @@ export function subscribeToOrders(callback: (payload: any) => void) {
   return () => {
     supabase.removeChannel(channel);
   };
+}
+
+/** 납품완료 날짜가 오늘 날짜로 잘못 기록된 주문을 원래 주문일자 기준으로 수정 */
+export async function fixShippedDates(): Promise<string[]> {
+  if (!isSupabaseConfigured || !supabase) return ['Supabase 미설정'];
+
+  const logs: string[] = [];
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('id, order_date, other_request, status')
+      .eq('status', 'shipped');
+
+    if (error || !data) {
+      logs.push(`❌ DB 조회 실패: ${error?.message}`);
+      return logs;
+    }
+
+    const now = new Date();
+    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    const todayStr = kstDate.toISOString().slice(0, 10);
+
+    for (const row of data) {
+      const req = row.other_request || '';
+      const match = req.match(/\[납품완료:(\d{4}-\d{2}-\d{2})\]/);
+      
+      if (match) {
+        const shippedDate = match[1];
+        const orderDate = row.order_date;
+        
+        // 납품완료 태그의 날짜가 오늘인데, 주문 생성일은 다른 날인 경우 → 잘못된 것
+        if (shippedDate === todayStr && orderDate !== todayStr) {
+          const fixedReq = req.replace(
+            /\[납품완료:\d{4}-\d{2}-\d{2}\]/,
+            `[납품완료:${orderDate}]`
+          );
+          const { error: updateErr } = await supabase
+            .from('orders')
+            .update({ other_request: fixedReq })
+            .eq('id', row.id);
+          
+          if (updateErr) {
+            logs.push(`❌ ${row.id}: 수정 실패 - ${updateErr.message}`);
+          } else {
+            logs.push(`✅ ${row.id}: ${shippedDate} → ${orderDate} 수정완료`);
+          }
+        } else {
+          logs.push(`ℹ️ ${row.id}: 날짜 정상 (${shippedDate})`);
+        }
+      } else if (row.status === 'shipped') {
+        // 납품완료 상태인데 태그가 없는 경우 → 주문일자로 태그 추가
+        const orderDate = row.order_date;
+        const fixedReq = req ? `${req} [납품완료:${orderDate}]` : `[납품완료:${orderDate}]`;
+        const { error: updateErr } = await supabase
+          .from('orders')
+          .update({ other_request: fixedReq })
+          .eq('id', row.id);
+        
+        if (updateErr) {
+          logs.push(`❌ ${row.id}: 태그추가 실패 - ${updateErr.message}`);
+        } else {
+          logs.push(`✅ ${row.id}: 태그 없음 → [납품완료:${orderDate}] 추가완료`);
+        }
+      }
+    }
+
+    if (logs.length === 0) logs.push('수정할 항목이 없습니다.');
+  } catch (e: any) {
+    logs.push(`❌ 오류: ${e.message}`);
+  }
+  return logs;
 }

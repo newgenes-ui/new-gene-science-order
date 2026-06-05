@@ -38,3 +38,12 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #D1E0D5; border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: #2D5A47; }
+
+/* Hide scrollbar utility (for horizontal-scroll nav) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
