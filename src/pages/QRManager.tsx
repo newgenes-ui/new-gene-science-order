@@ -1,10 +1,11 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X } from 'lucide-react';
+import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X, GripVertical } from 'lucide-react';
 import { CLIENTS, Client } from '../data/products';
 
 const QR_IMAGES_KEY = 'ngs_qr_images'; // localStorage key
+const NAV_ORDER_KEY = 'admin_nav_order'; // 하단 네비와 공유
 
 function loadSavedImages(): Record<string, string> {
   try {
@@ -30,7 +31,24 @@ export default function QRManager() {
     document.title = "QR 코드 관리 | 뉴진사이언스";
   }, []);
 
-  const [clients, setClients] = useState<Client[]>(CLIENTS);
+  // ── 업체 순서 상태 (하단 네비바와 공유) ──
+  const [orderedIds, setOrderedIds] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(NAV_ORDER_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
+  });
+
+  const orderedClients = useMemo(() => {
+    const valid = CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
+    const ordered = orderedIds.filter(id => valid.includes(id));
+    const missing = valid.filter(id => !ordered.includes(id));
+    return [...ordered, ...missing]
+      .map(id => CLIENTS.find(c => c.id === id)!)
+      .filter(Boolean);
+  }, [orderedIds]);
+
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newId, setNewId] = useState('');
@@ -41,16 +59,64 @@ export default function QRManager() {
   const [uploadedImages, setUploadedImages] = useState<Record<string, string>>(loadSavedImages);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // ── 드래그 상태 ──
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const draggedRef = useRef(false);
+  const touchRef = useRef({ id: '', timer: 0, dragging: false, sx: 0, sy: 0 });
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // ── 모바일 터치 드래그용 non-passive 리스너 ──
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const handler = (e: TouchEvent) => {
+      const tr = touchRef.current;
+      const t = e.touches[0];
+      if (!tr.dragging && tr.timer) {
+        if (Math.abs(t.clientX - tr.sx) > 10 || Math.abs(t.clientY - tr.sy) > 10) {
+          clearTimeout(tr.timer);
+          tr.timer = 0;
+        }
+        return;
+      }
+      if (!tr.dragging) return;
+      e.preventDefault();
+      const target = document.elementFromPoint(t.clientX, t.clientY)?.closest('[data-qid]');
+      setOverId(target ? target.getAttribute('data-qid') : null);
+    };
+    el.addEventListener('touchmove', handler, { passive: false });
+    return () => el.removeEventListener('touchmove', handler);
+  }, []);
+
+  // ── 순서 변경 ──
+  const doReorder = (fromId: string, toId: string) => {
+    if (fromId === toId) return;
+    const ids = orderedClients.map(c => c.id);
+    const fi = ids.indexOf(fromId);
+    const ti = ids.indexOf(toId);
+    if (fi < 0 || ti < 0) return;
+    const next = [...ids];
+    next.splice(fi, 1);
+    next.splice(ti, 0, fromId);
+    setOrderedIds(next);
+    localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(next));
+  };
+
   const addClient = () => {
     if (!newName || !newId) { alert('업체명과 ID를 입력해주세요.'); return; }
-    if (clients.find(c => c.id === newId)) { alert('이미 존재하는 ID입니다.'); return; }
-    setClients(prev => [...prev, { id: newId, name: newName, email: newEmail, contactPerson: '', phone: '' }]);
+    if (orderedClients.find(c => c.id === newId)) { alert('이미 존재하는 ID입니다.'); return; }
+    const newIds = [...orderedIds, newId];
+    setOrderedIds(newIds);
+    localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(newIds));
     setNewName(''); setNewEmail(''); setNewId('');
   };
 
   const removeClient = (id: string) => {
     if (confirm('삭제하시겠습니까?')) {
-      setClients(prev => prev.filter(c => c.id !== id));
+      const newIds = orderedIds.filter(i => i !== id);
+      setOrderedIds(newIds);
+      localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(newIds));
       handleRemoveImage(id);
     }
   };
@@ -92,7 +158,7 @@ export default function QRManager() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-extrabold text-primary">QR코드 관리</p>
-            <p className="text-[10px] text-slate-400">업체별 전용 QR 코드 관리</p>
+            <p className="text-[10px] text-slate-400">업체별 전용 QR 코드 관리 · 드래그로 순서 변경</p>
           </div>
           <button onClick={() => setShowUrlEdit(!showUrlEdit)}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-100 text-amber-600 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors">
@@ -108,7 +174,7 @@ export default function QRManager() {
             <p className="text-sm font-bold text-blue-800">🔗 각 업체 QR 코드 URL 목록</p>
             <p className="text-xs text-blue-600">캔바에서 QR 만들 때 아래 URL을 사용하세요</p>
             <div className="space-y-2">
-              {clients.map(c => (
+              {orderedClients.map(c => (
                 <div key={c.id} className="flex items-center gap-2 bg-white rounded-xl p-3 border border-blue-100">
                   <span className="text-xs font-bold text-slate-600 w-24 shrink-0">{c.name}</span>
                   <code className="text-xs text-primary font-mono flex-1 break-all">{getQRUrl(c.id)}</code>
@@ -137,83 +203,158 @@ export default function QRManager() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {clients.map(client => (
-            <motion.div key={client.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-3xl p-5 border border-[#E2E8E4] shadow-sm relative overflow-hidden group">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="font-extrabold text-slate-800">{client.name}</p>
-                  <p className="text-xs font-mono text-slate-400 mt-0.5">?client={client.id}</p>
-                </div>
-                <button onClick={() => removeClient(client.id)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-200 hover:text-red-400 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
+        <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {orderedClients.map(client => {
+            const isDragging = dragId === client.id;
+            const isDropTarget = overId === client.id && dragId != null && dragId !== client.id;
 
-              <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => setSelectedQR(getQRUrl(client.id))}>
-                    <QRCodeSVG 
-                      value={getQRUrl(client.id)} 
-                      size={90} 
-                      level="H" 
-                      fgColor="#1E3D30" // Brand primary color
-                      imageSettings={{
-                        src: "/logo.png",
-                        x: undefined,
-                        y: undefined,
-                        height: 20,
-                        width: 20,
-                        excavate: true,
-                      }}
-                    />
-                  </div>
-                  <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
+            return (
+              <motion.div
+                key={client.id}
+                data-qid={client.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: isDragging ? 0.4 : 1, scale: isDragging ? 0.95 : isDropTarget ? 1.02 : 1 }}
+                transition={{ duration: 0.2 }}
+                className={`bg-white rounded-3xl p-5 border shadow-sm relative overflow-hidden group select-none
+                  transition-all duration-200
+                  ${isDropTarget
+                    ? 'border-primary ring-2 ring-primary/30 shadow-lg shadow-primary/10'
+                    : 'border-[#E2E8E4]'
+                  }`}
+              >
+                {/* 드래그 핸들 */}
+                <div
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', client.id);
+                    setTimeout(() => setDragId(client.id), 0);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragId && dragId !== client.id) setOverId(client.id);
+                  }}
+                  onDragLeave={() => setOverId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragId) doReorder(dragId, client.id);
+                    setDragId(null); setOverId(null);
+                  }}
+                  onDragEnd={() => { setDragId(null); setOverId(null); }}
+                  onTouchStart={(e) => {
+                    const t = e.touches[0];
+                    const tr = touchRef.current;
+                    tr.id = client.id; tr.sx = t.clientX; tr.sy = t.clientY; tr.dragging = false;
+                    tr.timer = window.setTimeout(() => {
+                      tr.dragging = true;
+                      setDragId(client.id);
+                      if (navigator.vibrate) navigator.vibrate(30);
+                    }, 400);
+                  }}
+                  onTouchEnd={() => {
+                    const tr = touchRef.current;
+                    if (tr.timer) clearTimeout(tr.timer);
+                    if (tr.dragging && dragId && overId) {
+                      doReorder(dragId, overId);
+                    }
+                    tr.dragging = false; tr.id = '';
+                    setDragId(null); setOverId(null);
+                  }}
+                  className="absolute top-4 right-12 w-7 h-7 flex items-center justify-center rounded-full
+                    text-slate-200 hover:text-slate-500 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition-colors z-10"
+                  title="드래그하여 순서 변경"
+                >
+                  <GripVertical className="w-4 h-4" />
                 </div>
 
-                <div className="flex flex-col items-center gap-2">
-                  {uploadedImages[client.id] ? (
-                    <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages[client.id])}>
-                      <img src={uploadedImages[client.id]} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
-                      <button onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                {/* 드롭 영역 (카드 전체) */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragId && dragId !== client.id) setOverId(client.id);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragId) doReorder(dragId, client.id);
+                    setDragId(null); setOverId(null);
+                  }}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <p className="font-extrabold text-slate-800">{client.name}</p>
+                      <p className="text-xs font-mono text-slate-400 mt-0.5">?client={client.id}</p>
                     </div>
-                  ) : (
-                    <button onClick={() => fileInputRefs.current[client.id]?.click()}
-                      className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
-                      <ImageIcon className="w-6 h-6" />
-                      <span className="text-[10px] font-bold">이미지 업로드</span>
+                    <button onClick={() => removeClient(client.id)}
+                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-200 hover:text-red-400 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  )}
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                        onClick={() => setSelectedQR(getQRUrl(client.id))}>
+                        <QRCodeSVG 
+                          value={getQRUrl(client.id)} 
+                          size={90} 
+                          level="H" 
+                          fgColor="#1E3D30"
+                          imageSettings={{
+                            src: "/logo.png",
+                            x: undefined,
+                            y: undefined,
+                            height: 20,
+                            width: 20,
+                            excavate: true,
+                          }}
+                        />
+                      </div>
+                      <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2">
+                      {uploadedImages[client.id] ? (
+                        <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages[client.id])}>
+                          <img src={uploadedImages[client.id]} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
+                          <button onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button onClick={() => fileInputRefs.current[client.id]?.click()}
+                          className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
+                          <ImageIcon className="w-6 h-6" />
+                          <span className="text-[10px] font-bold">이미지 업로드</span>
+                        </button>
+                      )}
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
+                    </div>
+                  </div>
+
+                  <input ref={el => { fileInputRefs.current[client.id] = el; }} type="file" accept="image/*" className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageUpload(client.id, file);
+                      e.target.value = '';
+                    }} />
+
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={() => copyUrl(client.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all active:scale-95">
+                      <Copy className="w-3 h-3" /> URL 복사
+                    </button>
+                    <button onClick={() => fileInputRefs.current[client.id]?.click()}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all active:scale-95">
+                      {uploadedImages[client.id] ? <ImageIcon className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
+                      {uploadedImages[client.id] ? '이미지 교체' : 'QR 업로드'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <input ref={el => { fileInputRefs.current[client.id] = el; }} type="file" accept="image/*" className="hidden"
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleImageUpload(client.id, file);
-                  e.target.value = '';
-                }} />
-
-              <div className="mt-4 flex gap-2">
-                <button onClick={() => copyUrl(client.id)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all active:scale-95">
-                  <Copy className="w-3 h-3" /> URL 복사
-                </button>
-                <button onClick={() => fileInputRefs.current[client.id]?.click()}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all active:scale-95">
-                  {uploadedImages[client.id] ? <ImageIcon className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
-                  {uploadedImages[client.id] ? '이미지 교체' : 'QR 업로드'}
-                </button>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </main>
 
