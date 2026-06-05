@@ -3,6 +3,8 @@ import { motion } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Plus, Trash2, QrCode, Copy, Wifi, Upload, ImageIcon, X, GripVertical, Download } from 'lucide-react';
 import { CLIENTS, Client } from '../data/products';
+import { getClientQRsFromSupabase, saveClientQRToSupabase, deleteClientQRFromSupabase } from '../store/orderStore';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const QR_IMAGES_KEY = 'ngs_qr_images'; // localStorage key
 const NAV_ORDER_KEY = 'admin_nav_order'; // 하단 네비와 공유
@@ -29,6 +31,87 @@ function removeImage(clientId: string) {
 export default function QRManager() {
   useEffect(() => {
     document.title = "QR 코드 관리 | 뉴진사이언스";
+
+    // 1) Supabase에서 QR 코드 불러오기 및 로컬 병합 + 로컬 기존 이미지 업로드
+    const fetchQRs = async () => {
+      try {
+        const dbQRs = await getClientQRsFromSupabase();
+        const localQRs = loadSavedImages();
+        
+        let needsUpload = false;
+        
+        // 로컬에 있는데 Supabase에 없거나 다른 데이터가 있다면 Supabase 데이터셋에 통합하여 업로드
+        for (const [clientId, localImage] of Object.entries(localQRs)) {
+          if (dbQRs[clientId] !== localImage) {
+            dbQRs[clientId] = localImage;
+            needsUpload = true;
+          }
+        }
+
+        if (needsUpload && isSupabaseConfigured && supabase) {
+          const items = Object.entries(dbQRs).map(([clientId, qrImage]) => ({ clientId, qrImage }));
+          const systemRow = {
+            id: 'SYSTEM-QR-IMAGES',
+            order_date: '2000-01-01',
+            order_date_time: '2000-01-01T00:00:00.000Z',
+            client_id: 'system',
+            client_name: 'System QR Codes',
+            orderer_name: 'system',
+            orderer_phone: '000-0000-0000',
+            status: 'pending',
+            order_type: 'quote',
+            total_amount: 0,
+            items: items
+          };
+          await supabase.from('orders').upsert(systemRow);
+          console.log('✅ Local QR codes uploaded to Supabase.');
+        }
+
+        const finalMerged = { ...localQRs, ...dbQRs };
+        localStorage.setItem(QR_IMAGES_KEY, JSON.stringify(finalMerged));
+        setUploadedImages(finalMerged);
+      } catch (err) {
+        console.error('Failed to fetch/sync QRs with Supabase:', err);
+      }
+    };
+    fetchQRs();
+
+    // 2) 실시간 QR 코드 테이블 변경 구독
+    let unsubscribe: (() => void) | undefined;
+    if (isSupabaseConfigured && supabase) {
+      const channel = supabase
+        .channel('public:orders_qr')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders', filter: 'id=eq.SYSTEM-QR-IMAGES' },
+          (payload: any) => {
+            console.log('🔔 실시간 QR코드 변경 감지:', payload);
+            const items = payload.new?.items;
+            if (Array.isArray(items)) {
+              const dbQRs: Record<string, string> = {};
+              items.forEach((item: any) => {
+                if (item.clientId && item.qrImage) {
+                  dbQRs[item.clientId] = item.qrImage;
+                }
+              });
+              setUploadedImages(prev => {
+                const merged = { ...prev, ...dbQRs };
+                localStorage.setItem(QR_IMAGES_KEY, JSON.stringify(merged));
+                return merged;
+              });
+            }
+          }
+        )
+        .subscribe();
+      
+      unsubscribe = () => {
+        supabase.removeChannel(channel);
+      };
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   // ── 업체 순서 상태 (하단 네비바와 공유) ──
@@ -132,21 +215,33 @@ export default function QRManager() {
 
   const handleImageUpload = (clientId: string, file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const dataUrl = e.target?.result as string;
       saveImage(clientId, dataUrl);
       setUploadedImages(prev => ({ ...prev, [clientId]: dataUrl }));
+
+      try {
+        await saveClientQRToSupabase(clientId, dataUrl);
+      } catch (err) {
+        console.error('Failed to sync uploaded QR to Supabase:', err);
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleRemoveImage = (clientId: string) => {
+  const handleRemoveImage = async (clientId: string) => {
     removeImage(clientId);
     setUploadedImages(prev => {
       const next = { ...prev };
       delete next[clientId];
       return next;
     });
+
+    try {
+      await deleteClientQRFromSupabase(clientId);
+    } catch (err) {
+      console.error('Failed to delete QR from Supabase:', err);
+    }
   };
 
   // ── QR 이미지 다운로드 ──

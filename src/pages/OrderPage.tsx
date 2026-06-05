@@ -16,13 +16,21 @@ const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID  || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
 const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY  || '';
 // ─── 백업용 Google Apps Script 설정 ───────────────────────────
-// 주문번호 표시용: NGS-20260522-201005-201040 → 20260522-201040
+// 주문번호 표시용:
+// 1) 신규 형식: NGS-[clientId]-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
+// 2) 기존 형식: NGS-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
 const formatOrderId = (id: string): string => {
-  const parts = id.replace('NGS-', '').split('-');
-  if (parts.length >= 3) {
-    return `${parts[0]}-${parts[parts.length - 1]}`;
+  const clean = id.replace('NGS-', '');
+  const parts = clean.split('-');
+  if (parts.length >= 4) {
+    const datePart = parts[1];
+    const timePart = parts[parts.length - 1];
+    return `${datePart}-${timePart}`;
   }
-  return id.replace('NGS-', '');
+  if (parts.length === 3) {
+    return `${parts[0]}-${parts[2]}`;
+  }
+  return clean;
 };
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJULS6NUUGQIjlwXxhzld9LfwMo_22evJbjwrDtE697Oze5iV1rog/exec";
 // ─────────────────────────────────────────────────────────────────
@@ -85,6 +93,16 @@ export default function OrderPage() {
     if (clientId === 'immuno') {
       return [
         { name: '신효진', email: 'hjshin@immunodesigners.com', phone: '010-3580-1714' }
+      ];
+    }
+    if (clientId === 'ajou') {
+      return [
+        { name: '김석기', email: 'rlatjrrl9977@ajou.ac.kr', phone: '010-5694-9707' }
+      ];
+    }
+    if (clientId === 'vertis') {
+      return [
+        { name: '강예지', email: 'yeji.kang@bertis.com', phone: '010-6604-1997' }
       ];
     }
     return [
@@ -455,7 +473,17 @@ export default function OrderPage() {
     try {
       // 1. 서버(Supabase) 데이터와 로컬(localStorage) 데이터를 모두 가져옴
       const remoteOrders = await getOrdersFromSupabase();
-      const localOrders = getOrders();
+      let localOrders = getOrders();
+      
+      // [보안 정리] 타 업체 오귀속 로컬 캐시 청소
+      const cleanedLocal = localOrders.filter((o: any) => {
+        const isGhostOrder = (o.id === 'NGS-20260526-1-180109' || o.id === 'NGS-20260526-180109' || o.id.includes('180109')) && o.clientId !== 'immuno';
+        return !isGhostOrder;
+      });
+      if (cleanedLocal.length !== localOrders.length) {
+        localStorage.setItem('ngs_orders', JSON.stringify(cleanedLocal));
+        localOrders = cleanedLocal;
+      }
       
       let finalRemoteOrders: Order[] = [];
       if (remoteOrders !== null) {
@@ -494,6 +522,13 @@ export default function OrderPage() {
         if (!local) {
           mergedMap.set(remote.id, remote);
         } else {
+          // 보안 장치: ID가 같더라도 clientId가 다르면 병합하지 않고 서버 데이터를 우선하여 덮어씀
+          if (local.clientId !== remote.clientId) {
+            console.warn(`[보안 경고] ID 충돌 감지 (${remote.id}): 로컬 clientId(${local.clientId}) !== 서버 clientId(${remote.clientId}). 서버 데이터로 강제 대체합니다.`);
+            mergedMap.set(remote.id, remote);
+            return;
+          }
+
           const rRank = statusRank[remote.status] || 0;
           const lRank = statusRank[local.status] || 0;
           
@@ -690,7 +725,7 @@ export default function OrderPage() {
     const kstDateString = `${y}-${mo}-${d}`;
     const kstDateTimeString = `${y}-${mo}-${d}T${h}:${mi}:${s}`;
 
-    const newId = await generateOrderId();
+    const newId = await generateOrderId(clientId);
     const order: Order = {
       id: newId,
       orderDate: kstDateString,

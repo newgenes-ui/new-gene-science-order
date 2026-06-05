@@ -283,7 +283,7 @@ export function getOrdersByDateRange(from: string, to: string): Order[] {
   return orders.filter(o => o.orderDate >= from && o.orderDate <= to);
 }
 
-export async function generateOrderId(): Promise<string> {
+export async function generateOrderId(clientId: string): Promise<string> {
   const now = new Date();
   const formatter = new Intl.DateTimeFormat('ko-KR', {
     year: 'numeric',
@@ -296,7 +296,9 @@ export async function generateOrderId(): Promise<string> {
   const m = parts.find(p => p.type === 'month')?.value;
   const d = parts.find(p => p.type === 'day')?.value;
   const ymd = `${y}${m}${d}`;
-  const todayPrefix = `NGS-${ymd}-`;
+  
+  const safeClientId = (clientId || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const todayPrefix = `NGS-${safeClientId}-${ymd}-`;
 
   // 1순위: Supabase 서버에서 오늘 가장 높은 번호 가져오기
   let maxSuffix = 0;
@@ -476,8 +478,10 @@ export async function getOrdersFromSupabase(): Promise<Order[] | null> {
       return null;
     }
 
-    return (data || []).map((row: any) => ({
-      id: row.id,
+    return (data || [])
+      .filter((row: any) => row.id !== 'SYSTEM-QR-IMAGES')
+      .map((row: any) => ({
+        id: row.id,
       orderDate: row.order_date,
       orderDateTime: row.order_date_time,
       clientId: row.client_id,
@@ -521,7 +525,9 @@ export function subscribeToOrders(callback: (payload: any) => void) {
       { event: '*', schema: 'public', table: 'orders' },
       (payload) => {
         console.log('🔔 실시간 데이터 변경 감지:', payload);
-        callback(payload);
+        if (payload?.new?.id !== 'SYSTEM-QR-IMAGES') {
+          callback(payload);
+        }
       }
     )
     .subscribe();
@@ -600,4 +606,133 @@ export async function fixShippedDates(): Promise<string[]> {
     logs.push(`❌ 오류: ${e.message}`);
   }
   return logs;
+}
+
+/** Supabase에서 동기화된 클라이언트 캔바 QR 이미지 목록 가져오기 */
+export async function getClientQRsFromSupabase(): Promise<Record<string, string>> {
+  if (!isSupabaseConfigured || !supabase) return {};
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', 'SYSTEM-QR-IMAGES')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Failed to get client QRs from Supabase:', error.message);
+      return {};
+    }
+
+    if (data && Array.isArray(data.items)) {
+      const result: Record<string, string> = {};
+      data.items.forEach((item: any) => {
+        if (item.clientId && item.qrImage) {
+          result[item.clientId] = item.qrImage;
+        }
+      });
+      return result;
+    }
+  } catch (e) {
+    console.error('Failed to get client QRs from Supabase:', e);
+  }
+  return {};
+}
+
+/** Supabase에 클라이언트 캔바 QR 이미지 등록/수정 */
+export async function saveClientQRToSupabase(clientId: string, qrImage: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', 'SYSTEM-QR-IMAGES')
+      .maybeSingle();
+
+    let items: any[] = [];
+    if (!error && data && Array.isArray(data.items)) {
+      items = data.items;
+    }
+
+    const idx = items.findIndex((item: any) => item.clientId === clientId);
+    if (idx !== -1) {
+      items[idx].qrImage = qrImage;
+    } else {
+      items.push({ clientId, qrImage });
+    }
+
+    const systemRow = {
+      id: 'SYSTEM-QR-IMAGES',
+      order_date: '2000-01-01',
+      order_date_time: '2000-01-01T00:00:00.000Z',
+      client_id: 'system',
+      client_name: 'System QR Codes',
+      orderer_name: 'system',
+      orderer_phone: '000-0000-0000',
+      status: 'pending',
+      order_type: 'quote',
+      total_amount: 0,
+      items: items
+    };
+
+    const { error: upsertError } = await supabase
+      .from('orders')
+      .upsert(systemRow);
+
+    if (upsertError) {
+      console.error('Failed to upsert client QR to Supabase:', upsertError.message);
+      return false;
+    }
+    console.log('✅ Supabase QR코드 저장 완료:', clientId);
+    return true;
+  } catch (e) {
+    console.error('Failed to save client QR to Supabase:', e);
+    return false;
+  }
+}
+
+/** Supabase에서 클라이언트 캔바 QR 이미지 삭제 */
+export async function deleteClientQRFromSupabase(clientId: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('items')
+      .eq('id', 'SYSTEM-QR-IMAGES')
+      .maybeSingle();
+
+    let items: any[] = [];
+    if (!error && data && Array.isArray(data.items)) {
+      items = data.items;
+    }
+
+    const updatedItems = items.filter((item: any) => item.clientId !== clientId);
+
+    const systemRow = {
+      id: 'SYSTEM-QR-IMAGES',
+      order_date: '2000-01-01',
+      order_date_time: '2000-01-01T00:00:00.000Z',
+      client_id: 'system',
+      client_name: 'System QR Codes',
+      orderer_name: 'system',
+      orderer_phone: '000-0000-0000',
+      status: 'pending',
+      order_type: 'quote',
+      total_amount: 0,
+      items: updatedItems
+    };
+
+    const { error: upsertError } = await supabase
+      .from('orders')
+      .upsert(systemRow);
+
+    if (upsertError) {
+      console.error('Failed to delete client QR from Supabase:', upsertError.message);
+      return false;
+    }
+    console.log('✅ Supabase QR코드 삭제 완료:', clientId);
+    return true;
+  } catch (e) {
+    console.error('Failed to delete client QR from Supabase:', e);
+    return false;
+  }
 }

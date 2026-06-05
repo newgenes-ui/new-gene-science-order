@@ -200,7 +200,7 @@ export default function App() {
     fixHistoricalData();
 
     // [긴급 캐시 삭제] 배포 버전이 바뀌면 브라우저 캐시를 강제로 비우고 리로드
-    const CURRENT_VERSION = '1.0.6';
+    const CURRENT_VERSION = '1.0.9';
     const savedVersion = localStorage.getItem('APP_VERSION');
     if (savedVersion !== CURRENT_VERSION) {
       localStorage.setItem('APP_VERSION', CURRENT_VERSION);
@@ -210,6 +210,67 @@ export default function App() {
         });
       }
       window.location.reload();
+    }
+
+    // [데이터 긴급 복구/정리] 타 업체 오귀속 로컬 캐시 정리 및 이뮤노(immuno) 주문 복구
+    try {
+      const localOrdersRaw = localStorage.getItem('ngs_orders');
+      let localOrders = localOrdersRaw ? JSON.parse(localOrdersRaw) : [];
+      if (Array.isArray(localOrders)) {
+        let updated = false;
+
+        // 1. 타 업체(vertis, boryung 등)에 잘못 매핑된 20260526-180109 관련 로컬 캐시 제거
+        const filtered = localOrders.filter((o: any) => {
+          const isGhostOrder = (o.id === 'NGS-20260526-1-180109' || o.id === 'NGS-20260526-180109' || o.id.includes('180109')) && o.clientId !== 'immuno';
+          return !isGhostOrder;
+        });
+        if (filtered.length !== localOrders.length) {
+          localOrders = filtered;
+          updated = true;
+        }
+
+        // 2. 이뮤노디자이너스(immuno) 전용 주문 강제 복구/동기화 (로컬 캐시가 유실된 기기 대응)
+        const hasImmunoOrder = localOrders.some((o: any) => (o.id === 'NGS-20260526-1-180109' || o.id === 'NGS-20260526-180109') && o.clientId === 'immuno');
+        if (!hasImmunoOrder) {
+          localOrders.push({
+            id: "NGS-20260526-1-180109",
+            orderDate: "2026-05-26",
+            orderDateTime: "2026-05-26T18:01:09",
+            clientId: "immuno",
+            clientName: "(주)이뮤노디자이너스",
+            clientEmail: "",
+            ordererName: "신효진",
+            ordererPhone: "010-3580-1714",
+            ordererEmail: "hjshin@immunodesigners.com",
+            items: [
+              {
+                spec: "200 PCS/BOX, 6 BOXES/CASE",
+                quantity: 6,
+                subtotal: 240000,
+                productId: "p9",
+                unitPrice: 40000,
+                productCode: "NGS-SEP-10",
+                productName: "NuGens Serological pipette, Stretching, 10ml"
+              }
+            ],
+            otherRequest: "[납품완료:2026-05-26]",
+            totalAmount: 264000,
+            status: "shipped",
+            paymentMethod: "bank_transfer",
+            orderType: "order",
+            subtotalAmount: 240000,
+            vatAmount: 24000
+          });
+          updated = true;
+        }
+
+        if (updated) {
+          localStorage.setItem('ngs_orders', JSON.stringify(localOrders));
+          console.log('✅ 타 업체 오귀속 캐시 제거 및 이뮤노 주문 복구 완료');
+        }
+      }
+    } catch (e) {
+      console.error('로컬 주문 정리 중 오류:', e);
     }
 
     // [데이터 긴급 복구] 특정 주문 데이터 유실 방지

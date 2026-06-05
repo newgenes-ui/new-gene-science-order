@@ -10,6 +10,23 @@ import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 import AdminPinLock from '../components/AdminPinLock';
 
+// 주문번호 표시용:
+// 1) 신규 형식: NGS-[clientId]-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
+// 2) 기존 형식: NGS-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
+const formatOrderId = (id: string): string => {
+  const clean = id.replace('NGS-', '');
+  const parts = clean.split('-');
+  if (parts.length >= 4) {
+    const datePart = parts[1];
+    const timePart = parts[parts.length - 1];
+    return `${datePart}-${timePart}`;
+  }
+  if (parts.length === 3) {
+    return `${parts[0]}-${parts[2]}`;
+  }
+  return clean;
+};
+
 
 const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
@@ -102,7 +119,17 @@ export default function AdminDashboard() {
     setIsLoading(true);
     try {
       const supabaseOrders = await getOrdersFromSupabase();
-      const localOrders = getOrders();
+      let localOrders = getOrders();
+
+      // [보안 정리] 타 업체 오귀속 로컬 캐시 청소
+      const cleanedLocal = localOrders.filter((o: any) => {
+        const isGhostOrder = (o.id === 'NGS-20260526-1-180109' || o.id === 'NGS-20260526-180109' || o.id.includes('180109')) && o.clientId !== 'immuno';
+        return !isGhostOrder;
+      });
+      if (cleanedLocal.length !== localOrders.length) {
+        localStorage.setItem('ngs_orders', JSON.stringify(cleanedLocal));
+        localOrders = cleanedLocal;
+      }
 
       let finalSupabaseOrders: Order[] = [];
       if (supabaseOrders !== null) {
@@ -140,6 +167,13 @@ export default function AdminDashboard() {
         if (!local) {
           mergedMap.set(remote.id, remote);
         } else {
+          // 보안 장치: ID가 같더라도 clientId가 다르면 병합하지 않고 서버 데이터를 우선하여 덮어씀
+          if (local.clientId !== remote.clientId) {
+            console.warn(`[보안 경고] ID 충돌 감지 (${remote.id}): 로컬 clientId(${local.clientId}) !== 서버 clientId(${remote.clientId}). 서버 데이터로 강제 대체합니다.`);
+            mergedMap.set(remote.id, remote);
+            return;
+          }
+
           const rRank = statusRank[remote.status] || 0;
           const lRank = statusRank[local.status] || 0;
           
@@ -622,8 +656,8 @@ export default function AdminDashboard() {
   return (
     <AdminPinLock>
     <div className="min-h-screen bg-[#F0F4F1] pb-40">
-      <header className="bg-white/80 backdrop-blur-xl border-b border-[#E2E8E4] sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="bg-white/80 backdrop-blur-xl border-b border-[#E2E8E4] sticky top-0 z-40 py-3 md:py-0">
+        <div className="max-w-5xl mx-auto px-4 min-h-16 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center">
               <BarChart3 className="w-4 h-4 text-white" />
@@ -633,15 +667,15 @@ export default function AdminDashboard() {
               <p className="text-[10px] text-slate-400">실시간 주문 및 견적 현황</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold ${allOrders.length > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
               <div className={`w-1.5 h-1.5 rounded-full ${allOrders.length > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
               {allOrders.length > 0 ? 'DB 연결됨' : '로컬 모드'}
             </div>
-              v2.1.0 Official
+            <span className="hidden lg:inline text-[10px] text-slate-400">v2.1.0 Official</span>
             <button
               onClick={toggleWakeLock}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 ${
+              className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl font-bold text-xs transition-all active:scale-95 ${
                 isWakeLockActive 
                   ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 hover:bg-amber-600' 
                   : 'bg-amber-50 text-amber-600 hover:bg-amber-100'
@@ -649,22 +683,23 @@ export default function AdminDashboard() {
               title="실시간 소리 알림 수신을 위해 모바일이나 PC 화면이 꺼지지 않도록 유지합니다."
             >
               <Smartphone className={`w-3.5 h-3.5 ${isWakeLockActive ? 'animate-pulse' : ''}`} />
-              {isWakeLockActive ? '화면 켜짐 유지됨' : '실시간 알림 켜둠'}
+              <span>{isWakeLockActive ? '화면 켜짐' : '실시간 알림'}</span>
             </button>
             <button
               onClick={loadOrders}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all active:scale-95 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              새로고침
+              <span className="hidden md:inline">새로고침</span>
             </button>
             <button
               onClick={downloadCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-dark transition-all active:scale-95"
+              className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs hover:bg-primary-dark transition-all active:scale-95"
             >
               <Download className="w-3.5 h-3.5" />
-              CSV 다운로드
+              <span className="hidden md:inline">CSV 다운로드</span>
+              <span className="md:hidden">CSV</span>
             </button>
           </div>
         </div>
@@ -805,7 +840,7 @@ export default function AdminDashboard() {
                       <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
                         <div className="col-span-1">
                           <p className="text-[10px] font-bold text-slate-400 mb-0.5">
-                            {order.id.replace('NGS-', '')}
+                            {formatOrderId(order.id)}
                           </p>
                           <p className="text-xs font-mono font-bold text-slate-700 truncate">
                             {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
@@ -1004,7 +1039,7 @@ export default function AdminDashboard() {
                       <div className="flex-1 grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
                         <div className="col-span-1">
                           <p className="text-[10px] font-bold text-slate-400 mb-0.5">
-                            {order.id.replace('NGS-', '')}
+                            {formatOrderId(order.id)}
                           </p>
                           <p className="text-xs font-mono font-bold text-slate-700 truncate">
                             {order.items && order.items.length > 0 ? order.items[0].productCode : order.id}
