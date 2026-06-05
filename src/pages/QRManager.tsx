@@ -326,10 +326,6 @@ export default function QRManager() {
                       <p className="font-extrabold text-slate-800">{client.name}</p>
                       <p className="text-xs font-mono text-slate-400 mt-0.5">?client={client.id}</p>
                     </div>
-                    <button onClick={() => removeClient(client.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-200 hover:text-red-400 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
