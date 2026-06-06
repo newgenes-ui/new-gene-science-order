@@ -37,16 +37,18 @@ function StatCard({ icon, label, value, sub }: { icon: React.ReactNode; label: s
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl p-5 border border-[#E2E8E4] shadow-sm"
+      className="bg-white rounded-2xl p-3 md:p-5 border border-[#E2E8E4] shadow-sm flex flex-col justify-between"
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-9 h-9 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+      <div className="flex items-start justify-between mb-2 md:mb-3">
+        <div className="w-7 h-7 md:w-9 md:h-9 bg-primary/10 rounded-lg md:rounded-xl flex items-center justify-center text-primary shrink-0">
           {icon}
         </div>
       </div>
-      <p className="text-2xl font-black text-slate-800">{value}</p>
-      <p className="text-xs font-bold text-slate-400 mt-0.5">{label}</p>
-      {sub && <p className="text-[10px] text-primary font-bold mt-1">{sub}</p>}
+      <div>
+        <p className="text-[13px] sm:text-base md:text-2xl font-black text-slate-800 tracking-tight break-all">{value}</p>
+        <p className="text-[10px] md:text-xs font-bold text-slate-400 mt-0.5">{label}</p>
+      </div>
+      {sub && <p className="text-[9px] md:text-[10px] text-primary font-bold mt-1">{sub}</p>}
     </motion.div>
   );
 }
@@ -783,7 +785,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <StatCard icon={<ShoppingBag className="w-4 h-4" />} label="총 주문 건수" value={`${filteredOrders.length}건`} />
           <StatCard icon={<DollarSign className="w-4 h-4" />} label="총 매출" value={`₩${totalRevenue.toLocaleString()}`} />
           <StatCard icon={<Package className="w-4 h-4" />} label="총 판매 수량" value={`${totalItems.toLocaleString()}개`} />
@@ -794,16 +796,16 @@ export default function AdminDashboard() {
           <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-[#E2E8E4] shadow-sm w-full md:w-auto">
             <button
               onClick={() => setActiveListTab('order')}
-              className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 md:flex-initial justify-center px-4 md:px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${activeListTab === 'order' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
+              <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
               발주 내역 ({ordersList.length})
             </button>
             <button
               onClick={() => setActiveListTab('quote')}
-              className={`px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 md:flex-initial justify-center px-4 md:px-16 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${activeListTab === 'quote' ? 'bg-primary text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
               견적 문의 ({quotesList.length})
             </button>
           </div>
