@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  BarChart3, Calendar, Download, TrendingUp, Package,
+  BarChart3, Calendar, Download, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
   Smartphone, Share, X
 } from 'lucide-react';
@@ -783,11 +783,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard icon={<ShoppingBag className="w-4 h-4" />} label="총 주문 건수" value={`${filteredOrders.length}건`} />
           <StatCard icon={<DollarSign className="w-4 h-4" />} label="총 매출" value={`₩${totalRevenue.toLocaleString()}`} />
           <StatCard icon={<Package className="w-4 h-4" />} label="총 판매 수량" value={`${totalItems.toLocaleString()}개`} />
-          <StatCard icon={<TrendingUp className="w-4 h-4" />} label="건당 평균" value={filteredOrders.length > 0 ? `₩${Math.floor(totalRevenue / filteredOrders.length).toLocaleString()}` : '-'} />
         </div>
 
         {/* Tab Navigation for Lists */}
