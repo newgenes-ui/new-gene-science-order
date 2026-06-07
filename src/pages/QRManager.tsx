@@ -127,7 +127,7 @@ export default function QRManager() {
     const valid = CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
     const ordered = orderedIds.filter(id => valid.includes(id));
     const missing = valid.filter(id => !ordered.includes(id));
-    return [...ordered, ...missing]
+    return [...missing, ...ordered]
       .map(id => CLIENTS.find(c => c.id === id)!)
       .filter(Boolean);
   }, [orderedIds]);
@@ -325,7 +325,7 @@ export default function QRManager() {
                 </button>
               </div>
 
-              {orderedClients.map(c => (
+              {orderedClients.filter(c => c.id !== 'public').map(c => (
                 <div key={c.id} className="flex items-center gap-2 bg-white rounded-xl p-3 border border-blue-100">
                   <span className="text-xs font-bold text-slate-600 w-24 shrink-0">{c.name}</span>
                   <code className="text-xs text-primary font-mono flex-1 break-all">{getQRUrl(c.id)}</code>
@@ -473,7 +473,7 @@ export default function QRManager() {
             </div>
           </div>
 
-          {orderedClients.map(client => {
+          {orderedClients.filter(c => c.id !== 'public').map(client => {
             const isDragging = dragId === client.id;
             const isDropTarget = overId === client.id && dragId != null && dragId !== client.id;
 

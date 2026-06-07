@@ -18,7 +18,9 @@ function AdminNav() {
 
   const isAdminPath = location.pathname.startsWith('/admin') || location.pathname.startsWith('/qr');
   const isFromAdmin = searchParams.get('from') === 'admin';
-  const currentClientId = searchParams.get('client') || '';
+  const currentClientId = location.pathname.startsWith('/smart-order') || searchParams.get('client') === 'public'
+    ? 'public'
+    : (searchParams.get('client') || '');
 
   // ── 업체 순서 상태 (localStorage 영속) ──
   const [orderedIds, setOrderedIds] = useState<string[]>(() => {
@@ -33,7 +35,7 @@ function AdminNav() {
     const valid = CLIENTS.filter(c => c.id !== 'demo').map(c => c.id);
     const ordered = orderedIds.filter(id => valid.includes(id));
     const missing = valid.filter(id => !ordered.includes(id));
-    return [...ordered, ...missing]
+    return [...missing, ...ordered]
       .map(id => CLIENTS.find(c => c.id === id)!)
       .filter(Boolean);
   }, [orderedIds]);
@@ -159,7 +161,11 @@ function AdminNav() {
               /* ── 클릭 네비게이션 (드래그 중이면 무시) ── */
               onClick={() => {
                 if (!draggedRef.current && !touchRef.current.dragging) {
-                  navigate(`/?client=${client.id}&from=admin`);
+                  if (client.id === 'public') {
+                    navigate(`/smart-order?from=admin`);
+                  } else {
+                    navigate(`/?client=${client.id}&from=admin`);
+                  }
                 }
               }}
               className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl shrink-0 select-none
