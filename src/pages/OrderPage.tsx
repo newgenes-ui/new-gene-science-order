@@ -130,7 +130,127 @@ export default function OrderPage() {
   const [ordererPhone, setOrdererPhone] = useState('');
   const [ordererEmail, setOrdererEmail] = useState('');
 
+  const sendNotificationEmail = async (order: Order, type: 'quote' | 'order' | 'conversion') => {
+    try {
+      const itemsRowsHtml = order.items.map((item, idx) => `
+        <tr style="border-bottom: 1px solid #E2E8E4; text-align: center; height: 35px; font-size: 13px;">
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center;">${idx + 1}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center; font-family: monospace;">${item.productCode || '-'}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: left;">${item.productName} ${item.spec ? `(${item.spec})` : ''}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: center;">${item.quantity}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: right;">₩${(item.unitPrice || 0).toLocaleString()}</td>
+          <td style="padding: 6px; border: 1px solid #E2E8E4; text-align: right; font-weight: bold;">₩${(item.subtotal || 0).toLocaleString()}</td>
+        </tr>
+      `).join('');
 
+      let title = '';
+      let desc = '';
+      let subject = '';
+
+      if (type === 'quote') {
+        title = `(주)뉴진사이언스 견적문의 접수`;
+        desc = `견적 문의가 정상적으로 접수되었습니다.`;
+        subject = `[${order.clientName}] 견적문의 접수 완료 (${order.id})`;
+      } else if (type === 'order') {
+        title = `(주)뉴진사이언스 주문 접수`;
+        desc = `주문이 정상적으로 접수되었습니다.`;
+        subject = `[${order.clientName}] 주문 접수 완료 (${order.id})`;
+      } else {
+        title = `(주)뉴진사이언스 발주 접수 (견적전환)`;
+        desc = `기존 견적서가 발주(주문)로 성공적으로 전환 접수되었습니다.`;
+        subject = `[${order.clientName}] 발주 접수 완료 (견적전환) (${order.id})`;
+      }
+
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #2C3E50; line-height: 1.6;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
+            <h1 style="color: #27AE60; margin: 0; font-size: 26px;">${title}</h1>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #7F8C8D;">${desc}</p>
+          </div>
+          
+          <div style="margin-top: 25px; padding: 15px; background-color: #F8F9FA; border-radius: 10px; border: 1px solid #E2E8E4; font-size: 14px;">
+            <p style="margin: 5px 0;"><strong>신청 번호:</strong> ${order.id}</p>
+            <p style="margin: 5px 0;"><strong>업체명:</strong> ${order.clientName}</p>
+            <p style="margin: 5px 0;"><strong>담당자:</strong> ${order.ordererName}</p>
+            <p style="margin: 5px 0;"><strong>연락처:</strong> ${order.ordererPhone}</p>
+            <p style="margin: 5px 0;"><strong>이메일:</strong> ${order.ordererEmail || '(미입력)'}</p>
+            <p style="margin: 5px 0;"><strong>접수일자:</strong> ${order.orderDate}</p>
+          </div>
+
+          <h3 style="margin-top: 30px; margin-bottom: 10px; color: #2C3E50; border-left: 4px solid #2ECC71; padding-left: 8px;">신청 상세 내역</h3>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #E2E8E4; font-size: 13px;">
+            <thead>
+              <tr style="background-color: #ECF0F1; font-weight: bold; text-align: center; color: #2C3E50;">
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 40px;">No</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 100px;">품목코드</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4;">품명 (제품명 / 규격)</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 50px;">수량</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 90px;">단가</th>
+                <th style="padding: 10px; border: 1px solid #E2E8E4; width: 100px;">공급가액</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRowsHtml}
+              <tr style="background-color: #FAF9F6; font-weight: bold; font-size: 13px;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D;">
+                  <strong>기타 요청사항:</strong> ${order.otherRequest || '없음'}
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #EAEDED;">공급가액</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; color: #2C3E50;">₩${order.subtotalAmount ? order.subtotalAmount.toLocaleString() : (order.totalAmount / 1.1).toLocaleString()}</td>
+              </tr>
+              <tr style="background-color: #FAF9F6; font-weight: bold; font-size: 13px;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D;">
+                  <strong>결제계좌:</strong> 기업은행 699-037504-04-022 (주)뉴진사이언스
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #EAEDED;">부가세</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; color: #2C3E50;">₩${order.vatAmount ? order.vatAmount.toLocaleString() : (order.totalAmount - (order.totalAmount / 1.1)).toLocaleString()}</td>
+              </tr>
+              <tr style="background-color: #E8F8F5; font-weight: bold; font-size: 14px; color: #16A085;">
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #E74C3C;">
+                  ★ 수입발주 품목은 발주 완료 후 취소 불가합니다.
+                </td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #A3E4D7; color: #16A085;">합계금액</td>
+                <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; font-size: 16px; color: #27AE60;">₩${order.totalAmount.toLocaleString()}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top: 30px; border-top: 1px solid #E2E8E4; padding-top: 15px; font-size: 12px; color: #95A5A6; text-align: center;">
+            <p style="margin: 2px 0;">본 메일은 (주)뉴진사이언스 시스템에서 자동 발송되었습니다.</p>
+            <p style="margin: 2px 0;">문의사항이 있으시면 영업담당자(010-5882-4997)에게 연락해 주시기 바랍니다.</p>
+          </div>
+        </div>
+      `;
+
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
+      const targetEmail = (order.ordererEmail && order.ordererEmail.includes('@')) 
+        ? order.ordererEmail 
+        : NGS_EMAIL;
+      const bccEmail = (order.ordererEmail && order.ordererEmail.includes('@'))
+        ? NGS_EMAIL
+        : undefined;
+
+      console.log('📧 Edge Function 메일 발송 시작 (Type:', type, ')...');
+      await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to: targetEmail, 
+          bcc: bccEmail,
+          subject: subject,
+          html: htmlContent
+        })
+      });
+      console.log('✅ Edge Function 메일 발송 성공');
+    } catch (err) {
+      console.error('❌ Edge Function 메일 발송 실패:', err);
+    }
+  };
 
   const handlePlaceOrderFromQuote = async (order: Order) => {
     if (!window.confirm('해당 견적 내역으로 발주를 진행하시겠습니까?')) return;
@@ -171,28 +291,13 @@ export default function OrderPage() {
         client_email:   order.ordererEmail || order.clientEmail,
       };
 
-      if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        // 1. 본사 발송 (고객사명 제목)
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          ...emailParams,
-          order_title: `[${order.clientName} 발주접수 (견적전환)]`,
-          info_label: '발주자 정보',
-          greeting: '관리자님, 안녕하세요 (견적에서 발주로 전환되었습니다).',
-          to_email: NGS_EMAIL,
-          reply_to: order.ordererEmail || order.clientEmail || NGS_EMAIL,
-        }, EMAILJS_PUBLIC_KEY);
-
-        // EmailJS API 연속 호출 시 누락 방지를 위한 1초 대기
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 2. 고객 발송 (뉴진사이언스 제목)
-        const targetEmail = order.ordererEmail || order.clientEmail;
-        if (targetEmail && targetEmail.includes('@')) {
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            order_title: `[(주)뉴진사이언스 발주접수]`,
-            to_email: targetEmail,
-          }, EMAILJS_PUBLIC_KEY);
+      // EmailJS 메일 발송 (견적→발주 전환)
+      if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
+        try {
+          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+          console.log('✅ EmailJS 발주 전환 메일 발송 성공');
+        } catch (emailErr) {
+          console.error('❌ EmailJS 발주 전환 메일 발송 실패:', emailErr);
         }
       }
       
@@ -805,49 +910,13 @@ export default function OrderPage() {
     };
 
 
-    // ─── EmailJS 발송 (본사/고객 제목 차별화) ───
-    if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
+    // EmailJS 메일 발송
+    if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
       try {
-        console.log('📧 EmailJS 발송 시작...');
-        
-        // 1. 본사 알림 (고객사명 포함 제목)
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          ...emailParams,
-          order_title: `[${clientName} ${activeTab === 'quote' ? '견적' : '주문'} 접수]`,
-          to_email: NGS_EMAIL,
-        }, EMAILJS_PUBLIC_KEY);
-
-        // 1초 대기 (연속 호출 안정성)
-        await new Promise(r => setTimeout(r, 1000));
-
-        // 2. 고객 확인 (뉴진사이언스 이름 제목)
-        if (order.ordererEmail && order.ordererEmail.includes('@')) {
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-            ...emailParams,
-            order_title: `[(주)뉴진사이언스 ${activeTab === 'quote' ? '견적접수' : '주문접수'}]`,
-            to_email: order.ordererEmail,
-          }, EMAILJS_PUBLIC_KEY);
-        }
-
-        console.log('✅ EmailJS 모든 발송 완료');
-      } catch (err) {
-        console.error('❌ EmailJS 발송 실패:', err);
-      }
-    }
-    // ───────────────────────────────────────────────
-
-    // ─── Google Apps Script 백업 발송 ───
-    if (SCRIPT_URL) {
-      try {
-        fetch(SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(emailParams)
-        });
-        console.log('✅ GAS 백업 발송 요청 완료');
-      } catch (e) {
-        console.error('❌ GAS 백업 발송 실패:', e);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+        console.log('✅ EmailJS 메일 발송 성공');
+      } catch (emailErr) {
+        console.error('❌ EmailJS 메일 발송 실패:', emailErr);
       }
     }
     // ───────────────────────────────────────────────
