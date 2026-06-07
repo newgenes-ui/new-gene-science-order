@@ -100,6 +100,9 @@ export default function OrderPage() {
 
   // 빠른 선택을 위한 주문자 정보 리스트
   const quickSelectOrderers = useMemo(() => {
+    if (clientId === 'public') {
+      return [];
+    }
     if (clientId === 'immuno') {
       return [
         { name: '신효진', email: 'hjshin@immunodesigners.com', phone: '010-3580-1714' }
@@ -972,36 +975,38 @@ export default function OrderPage() {
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
                     <User className="w-4 h-4" /> {isPublicMode ? '주문자 정보' : `주문자 정보 (${clientData.name})`}
                   </h2>
-                  <div className="flex items-center gap-3 w-full md:w-auto">
-                    <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
-                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                      {quickSelectOrderers.map(person => (
+                  {quickSelectOrderers.length > 0 && (
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                      <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
+                      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                        {quickSelectOrderers.map(person => (
+                          <button
+                            key={person.name}
+                            type="button"
+                            onClick={() => {
+                              setOrdererName(person.name);
+                              setOrdererEmail(person.email);
+                              setOrdererPhone(person.phone);
+                            }}
+                            className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                          >
+                            {person.name}
+                          </button>
+                        ))}
                         <button
-                          key={person.name}
                           type="button"
                           onClick={() => {
-                            setOrdererName(person.name);
-                            setOrdererEmail(person.email);
-                            setOrdererPhone(person.phone);
+                            setOrdererName('');
+                            setOrdererEmail('');
+                            setOrdererPhone('');
                           }}
-                          className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                          className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
                         >
-                          {person.name}
+                          초기화
                         </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOrdererName('');
-                          setOrdererEmail('');
-                          setOrdererPhone('');
-                        }}
-                        className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
-                      >
-                        초기화
-                      </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-6">
                   <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
@@ -1071,36 +1076,38 @@ export default function OrderPage() {
                     <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
                       <User className="w-4 h-4" /> {isPublicMode ? '주문자 정보' : `주문자 정보 (${clientData.name})`}
                     </h2>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                      <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
-                      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                        {quickSelectOrderers.map(person => (
+                    {quickSelectOrderers.length > 0 && (
+                      <div className="flex items-center gap-3 w-full md:w-auto">
+                        <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
+                        <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                          {quickSelectOrderers.map(person => (
+                            <button
+                              key={person.name}
+                              type="button"
+                              onClick={() => {
+                                setOrdererName(person.name);
+                                setOrdererEmail(person.email);
+                                setOrdererPhone(person.phone);
+                              }}
+                              className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                            >
+                              {person.name}
+                            </button>
+                          ))}
                           <button
-                            key={person.name}
                             type="button"
                             onClick={() => {
-                              setOrdererName(person.name);
-                              setOrdererEmail(person.email);
-                              setOrdererPhone(person.phone);
+                              setOrdererName('');
+                              setOrdererEmail('');
+                              setOrdererPhone('');
                             }}
-                            className="px-2 py-1 bg-slate-100 hover:bg-primary/10 hover:text-primary rounded-lg text-[10px] font-black text-slate-500 transition-all border border-slate-200 active:scale-95 whitespace-nowrap"
+                            className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
                           >
-                            {person.name}
+                            초기화
                           </button>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOrdererName('');
-                            setOrdererEmail('');
-                            setOrdererPhone('');
-                          }}
-                          className="px-2 py-1 bg-white hover:bg-red-50 hover:text-red-500 rounded-lg text-[10px] font-black text-slate-400 transition-all border border-dashed border-slate-200 active:scale-95 whitespace-nowrap"
-                        >
-                          초기화
-                        </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPublicMode ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
                     {isPublicMode && (
