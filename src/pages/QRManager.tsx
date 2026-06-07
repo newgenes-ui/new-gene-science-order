@@ -373,46 +373,41 @@ export default function QRManager() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => setSelectedQR(`${baseUrl}/smart-order`)}>
-                    <QRCodeSVG 
-                      value={`${baseUrl}/smart-order`} 
-                      size={90} 
-                      level="H" 
-                      fgColor="#1E3D30"
-                      imageSettings={{
-                        src: "/logo.png",
-                        x: undefined,
-                        y: undefined,
-                        height: 20,
-                        width: 20,
-                        excavate: true,
-                      }}
-                    />
-                  </div>
-                  <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
-                </div>
+              {/* 다운로드 및 모달용 숨겨진 시스템 QR */}
+              <div className="hidden">
+                <QRCodeSVG 
+                  value={`${baseUrl}/smart-order`} 
+                  size={240} 
+                  level="H" 
+                  fgColor="#1E3D30"
+                  imageSettings={{
+                    src: "/logo.png",
+                    x: undefined,
+                    y: undefined,
+                    height: 54,
+                    width: 54,
+                    excavate: true,
+                  }}
+                />
+              </div>
 
-                <div className="flex flex-col items-center gap-2">
-                  {uploadedImages['public'] ? (
-                    <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages['public'])}>
-                      <img src={uploadedImages['public']} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
-                      <button onClick={e => { e.stopPropagation(); handleRemoveImage('public'); }}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => fileInputRefs.current['public']?.click()}
-                      className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
-                      <ImageIcon className="w-6 h-6" />
-                      <span className="text-[10px] font-bold">이미지 업로드</span>
+              <div className="flex flex-col items-center justify-center py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
+                {uploadedImages['public'] ? (
+                  <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages['public'])}>
+                    <img src={uploadedImages['public']} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
+                    <button onClick={e => { e.stopPropagation(); handleRemoveImage('public'); }}
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X className="w-3.5 h-3.5" />
                     </button>
-                  )}
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
-                </div>
+                  </div>
+                ) : (
+                  <button onClick={() => fileInputRefs.current['public']?.click()}
+                    className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
+                    <ImageIcon className="w-6 h-6" />
+                    <span className="text-[10px] font-bold">이미지 업로드</span>
+                  </button>
+                )}
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-2">캔바 업로드 QR</p>
               </div>
 
               <input ref={el => { fileInputRefs.current['public'] = el; }} type="file" accept="image/*" className="hidden"
@@ -561,46 +556,41 @@ export default function QRManager() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
-                        onClick={() => setSelectedQR(getQRUrl(client.id))}>
-                        <QRCodeSVG 
-                          value={getQRUrl(client.id)} 
-                          size={90} 
-                          level="H" 
-                          fgColor="#1E3D30"
-                          imageSettings={{
-                            src: "/logo.png",
-                            x: undefined,
-                            y: undefined,
-                            height: 20,
-                            width: 20,
-                            excavate: true,
-                          }}
-                        />
-                      </div>
-                      <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
-                    </div>
+                  {/* 다운로드 및 모달용 숨겨진 시스템 QR */}
+                  <div className="hidden">
+                    <QRCodeSVG 
+                      value={getQRUrl(client.id)} 
+                      size={240} 
+                      level="H" 
+                      fgColor="#1E3D30"
+                      imageSettings={{
+                        src: "/logo.png",
+                        x: undefined,
+                        y: undefined,
+                        height: 54,
+                        width: 54,
+                        excavate: true,
+                      }}
+                    />
+                  </div>
 
-                    <div className="flex flex-col items-center gap-2">
-                      {uploadedImages[client.id] ? (
-                        <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages[client.id])}>
-                          <img src={uploadedImages[client.id]} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
-                          <button onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button onClick={() => fileInputRefs.current[client.id]?.click()}
-                          className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
-                          <ImageIcon className="w-6 h-6" />
-                          <span className="text-[10px] font-bold">이미지 업로드</span>
+                  <div className="flex flex-col items-center justify-center py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
+                    {uploadedImages[client.id] ? (
+                      <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages[client.id])}>
+                        <img src={uploadedImages[client.id]} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
+                        <button onClick={e => { e.stopPropagation(); handleRemoveImage(client.id); }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                          <X className="w-3.5 h-3.5" />
                         </button>
-                      )}
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
-                    </div>
+                      </div>
+                    ) : (
+                      <button onClick={() => fileInputRefs.current[client.id]?.click()}
+                        className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
+                        <ImageIcon className="w-6 h-6" />
+                        <span className="text-[10px] font-bold">이미지 업로드</span>
+                      </button>
+                    )}
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-2">캔바 업로드 QR</p>
                   </div>
 
                   <input ref={el => { fileInputRefs.current[client.id] = el; }} type="file" accept="image/*" className="hidden"
