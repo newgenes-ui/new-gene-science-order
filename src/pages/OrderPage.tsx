@@ -88,7 +88,7 @@ export default function OrderPage() {
       return {
         ...boryungData,
         id: 'public',
-        name: '뉴진 스마트 오더'
+        name: '뉴진 스마트 오더 (공용)'
       };
     }
     return CLIENTS.find(c => c.id === clientId) || CLIENTS.find(c => c.id === 'boryung') || CLIENTS[0];
@@ -239,7 +239,7 @@ export default function OrderPage() {
       
       // 브라우저 탭 타이틀 동적 업데이트 (업체 구분용)
       document.title = isPublicMode 
-        ? '뉴진 스마트 오더'
+        ? '뉴진 스마트 오더 (공용)'
         : `${clientData.name} | 뉴진사이언스 전용 주문 시스템`;
     }
   }, [clientData, isPublicMode]);
@@ -882,7 +882,7 @@ export default function OrderPage() {
             <img src="/logo.png" alt="New Gene Science Logo" className="h-10 w-auto" />
             <div className="border-l border-slate-200 pl-3">
               <p className="text-[10px] font-medium text-slate-400 leading-none">
-                {isPublicMode ? '뉴진 스마트 오더' : `${clientData.name} 전용 주문 시스템`}
+                {isPublicMode ? '뉴진 스마트 오더 (공용)' : `${clientData.name} 전용 주문 시스템`}
               </p>
             </div>
           </div>
@@ -918,10 +918,10 @@ export default function OrderPage() {
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative z-10">
             <h1 className="text-xl font-black">
-              {isPublicMode ? '뉴진 스마트 오더' : `${clientData.name}님 반갑습니다! 👋`}
+              {isPublicMode ? '뉴진 스마트 오더 (공용)' : `${clientData.name}님 반갑습니다! 👋`}
             </h1>
             <p className="text-xs opacity-70 mt-1">
-              {isPublicMode ? '뉴진사이언스 제품을 편리하게 문의/주문하세요' : `뉴진사이언스 제품을 편리하게 ${activeTab === 'quote' ? '문의' : '주문'}하세요`}
+              {isPublicMode ? '우리 회사 맞춤형 QR 주문 앱을 요청하시고 편리하게 주문·문의하세요.' : `뉴진사이언스 제품을 편리하게 ${activeTab === 'quote' ? '문의' : '주문'}하세요`}
             </p>
             <div className="flex flex-wrap gap-x-6 gap-y-1.5 mt-2.5 pt-2.5 border-t border-white/10">
               <p className="text-xs font-bold opacity-60 flex items-center gap-1.5">

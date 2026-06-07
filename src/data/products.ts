@@ -46,7 +46,7 @@ export interface Client {
 export const isBertis = (clientId: string) => clientId && clientId !== '';
 
 export const CLIENTS: Client[] = [
-  { id: 'public', name: '뉴진 스마트 오더', email: 'ngs.202403@gmail.com', contactPerson: '담당자', phone: '' },
+  { id: 'public', name: '뉴진 스마트 오더 (공용)', email: 'ngs.202403@gmail.com', contactPerson: '담당자', phone: '' },
   { id: 'boryung', name: '(주)보령제약', email: 'ngs.202403@gmail.com', contactPerson: '이재명', phone: '000-0000-0000' }, // 기본 업체 유지
   { id: 'vertis', name: '(주)베르티스', email: 'yeji.kang@bertis.com', contactPerson: '강예지', phone: '010-6604-1997' },
   { id: 'samyang', name: '삼양사', email: '', contactPerson: '담당자', phone: '' },
