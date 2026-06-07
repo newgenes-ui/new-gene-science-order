@@ -228,7 +228,7 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (clientData) {
-      setClientName(clientData.name);
+      setClientName(isPublicMode ? '' : clientData.name);
       // 주문자 정보는 사용자가 직접 입력하거나 퀵 버튼을 누를 때까지 비워둡니다.
       setOrdererName('');
       setOrdererPhone('');
@@ -697,6 +697,10 @@ export default function OrderPage() {
       alert('제품을 선택하거나 기타 요청사항을 입력해주세요.');
       return;
     }
+    if (isPublicMode && !clientName.trim()) {
+      alert('업체명(회사명)을 입력해주세요.');
+      return;
+    }
     if (!ordererName || !ordererPhone) {
       alert('주문자 성함과 연락처를 입력해주세요.');
       return;
@@ -1001,6 +1005,12 @@ export default function OrderPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-6">
                   <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+                    {isPublicMode && (
+                      <div className="min-w-[150px]">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">업체명 (회사명) *</label>
+                        <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="회사명" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
                     <div className="min-w-[120px]">
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -1092,7 +1102,13 @@ export default function OrderPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPublicMode ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
+                    {isPublicMode && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">업체명 (회사명) *</label>
+                        <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="회사명" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
