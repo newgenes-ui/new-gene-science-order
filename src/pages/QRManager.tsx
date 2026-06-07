@@ -310,6 +310,21 @@ export default function QRManager() {
             <p className="text-sm font-bold text-blue-800">🔗 각 업체 QR 코드 URL 목록</p>
             <p className="text-xs text-blue-600">캔바에서 QR 만들 때 아래 URL을 사용하세요</p>
             <div className="space-y-2">
+              {/* 공용 뉴진 스마트 오더 추가 */}
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <span className="text-xs font-black text-amber-800 w-24 shrink-0">뉴진 스마트 오더 (공용)</span>
+                <code className="text-xs text-primary font-mono flex-1 break-all">{baseUrl}/smart-order</code>
+                <button onClick={() => {
+                  navigator.clipboard.writeText(`${baseUrl}/smart-order`).then(() => {
+                    setCopiedId('public-url');
+                    setTimeout(() => setCopiedId(null), 2000);
+                  });
+                }}
+                  className="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold hover:bg-amber-200 shrink-0">
+                  {copiedId === 'public-url' ? '복사됨!' : '복사'}
+                </button>
+              </div>
+
               {orderedClients.map(c => (
                 <div key={c.id} className="flex items-center gap-2 bg-white rounded-xl p-3 border border-blue-100">
                   <span className="text-xs font-bold text-slate-600 w-24 shrink-0">{c.name}</span>
@@ -340,6 +355,129 @@ export default function QRManager() {
         </motion.div>
 
         <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* 공용 뉴진 스마트 오더 카드 */}
+          <div
+            data-qid="public"
+            className="bg-gradient-to-br from-white to-[#F8FAF9] rounded-3xl p-5 border border-amber-200 shadow-sm relative overflow-hidden group select-none transition-all duration-200 md:col-span-2"
+          >
+            {/* 배지 */}
+            <div className="absolute top-4 right-4 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+              공용 추천용
+            </div>
+
+            <div>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="font-extrabold text-slate-800 text-base">뉴진 스마트 오더 (공용)</p>
+                  <p className="text-xs font-mono text-slate-400 mt-0.5">/smart-order</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 py-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-100">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                    onClick={() => setSelectedQR(`${baseUrl}/smart-order`)}>
+                    <QRCodeSVG 
+                      value={`${baseUrl}/smart-order`} 
+                      size={90} 
+                      level="H" 
+                      fgColor="#1E3D30"
+                      imageSettings={{
+                        src: "/logo.png",
+                        x: undefined,
+                        y: undefined,
+                        height: 20,
+                        width: 20,
+                        excavate: true,
+                      }}
+                    />
+                  </div>
+                  <p className="text-[9px] font-black text-primary uppercase tracking-tighter">시스템 생성 QR</p>
+                </div>
+
+                <div className="flex flex-col items-center gap-2">
+                  {uploadedImages['public'] ? (
+                    <div className="relative group cursor-pointer" onClick={() => setSelectedQR(uploadedImages['public'])}>
+                      <img src={uploadedImages['public']} alt="QR" className="w-[114px] h-[114px] object-contain rounded-2xl border border-slate-100 bg-white" />
+                      <button onClick={e => { e.stopPropagation(); handleRemoveImage('public'); }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => fileInputRefs.current['public']?.click()}
+                      className="w-[114px] h-[114px] rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-300 hover:border-primary hover:text-primary transition-all bg-white">
+                      <ImageIcon className="w-6 h-6" />
+                      <span className="text-[10px] font-bold">이미지 업로드</span>
+                    </button>
+                  )}
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">캔바 업로드 QR</p>
+                </div>
+              </div>
+
+              <input ref={el => { fileInputRefs.current['public'] = el; }} type="file" accept="image/*" className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload('public', file);
+                  e.target.value = '';
+                }} />
+
+              <div className="mt-4 flex gap-2">
+                <button onClick={() => {
+                  navigator.clipboard.writeText(`${baseUrl}/smart-order`).then(() => {
+                    setCopiedId('public');
+                    setTimeout(() => setCopiedId(null), 2000);
+                  });
+                }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-all active:scale-95">
+                  <Copy className="w-3 h-3" /> {copiedId === 'public' ? '복사됨!' : 'URL 복사'}
+                </button>
+                <button onClick={() => {
+                  if (uploadedImages['public']) {
+                    const link = document.createElement('a');
+                    link.download = `QR_뉴진_스마트_오더.png`;
+                    link.href = uploadedImages['public'];
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    return;
+                  }
+
+                  const svgEl = document.querySelector(`[data-qid="public"] svg`);
+                  if (!svgEl) return;
+                  const svgData = new XMLSerializer().serializeToString(svgEl);
+                  const canvas = document.createElement('canvas');
+                  const size = 512;
+                  canvas.width = size;
+                  canvas.height = size;
+                  const ctx = canvas.getContext('2d');
+                  if (!ctx) return;
+                  const img = new Image();
+                  img.onload = () => {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.drawImage(img, 0, 0, size, size);
+                    const link = document.createElement('a');
+                    link.download = `QR_뉴진_스마트_오더.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  };
+                  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all active:scale-95">
+                  <Download className="w-3 h-3" /> QR 다운로드
+                </button>
+                <button onClick={() => fileInputRefs.current['public']?.click()}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary-dark transition-all active:scale-95">
+                  {uploadedImages['public'] ? <ImageIcon className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
+                  {uploadedImages['public'] ? '이미지 교체' : 'QR 업로드'}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {orderedClients.map(client => {
             const isDragging = dragId === client.id;
             const isDropTarget = overId === client.id && dragId != null && dragId !== client.id;

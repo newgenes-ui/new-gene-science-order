@@ -287,6 +287,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<OrderPage />} />
+        <Route path="/smart-order" element={<OrderPage />} />
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/qr" element={<QRManager />} />

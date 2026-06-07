@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Package, Search, Plus, Minus, ShoppingCart, FileText,
@@ -36,6 +36,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby2VTQXY6niWG4_agJUL
 // ─────────────────────────────────────────────────────────────────
 export default function OrderPage() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [isBannerEnlarged, setIsBannerEnlarged] = useState(false);
 
@@ -45,7 +46,8 @@ export default function OrderPage() {
     }
   }, []);
 
-  const clientId = (searchParams.get('client') || 'boryung').toLowerCase();
+  const isPublicMode = location.pathname === '/smart-order' || searchParams.get('client') === 'public';
+  const clientId = isPublicMode ? 'public' : (searchParams.get('client') || 'boryung').toLowerCase();
   const shouldReset = searchParams.get('reset') === 'true';
 
   useEffect(() => {
@@ -81,8 +83,16 @@ export default function OrderPage() {
 
   // clientData를 찾되, 없을 경우 (주)보령제약을 기본으로 사용
   const clientData = useMemo(() => {
+    if (isPublicMode) {
+      const boryungData = CLIENTS.find(c => c.id === 'boryung') || CLIENTS[0];
+      return {
+        ...boryungData,
+        id: 'public',
+        name: '뉴진 스마트 오더'
+      };
+    }
     return CLIENTS.find(c => c.id === clientId) || CLIENTS.find(c => c.id === 'boryung') || CLIENTS[0];
-  }, [clientId]);
+  }, [clientId, isPublicMode]);
 
   // 모든 업체전용 페이지를 전문 모드(베르티스 스타일)로 통합 적용 (항상 활성화)
   const isSpecialClient = true;
@@ -218,16 +228,24 @@ export default function OrderPage() {
 
   useEffect(() => {
     if (clientData) {
-      setClientName(clientData.name);
+      setClientName(isPublicMode ? '' : clientData.name);
       // 주문자 정보는 사용자가 직접 입력하거나 퀵 버튼을 누를 때까지 비워둡니다.
       setOrdererName('');
       setOrdererPhone('');
       setOrdererEmail('');
       
       // 브라우저 탭 타이틀 동적 업데이트 (업체 구분용)
-      document.title = `${clientData.name} | 뉴진사이언스 전용 주문 시스템`;
+      document.title = isPublicMode 
+        ? '뉴진 스마트 오더'
+        : `${clientData.name} | 뉴진사이언스 전용 주문 시스템`;
     }
-  }, [clientData]);
+  }, [clientData, isPublicMode]);
+
+  useEffect(() => {
+    if (isPublicMode && activeTab === 'payment') {
+      setActiveTab('order');
+    }
+  }, [isPublicMode, activeTab]);
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [otherRequest, setOtherRequest] = useState('');
@@ -685,6 +703,10 @@ export default function OrderPage() {
       alert('제품을 선택하거나 기타 요청사항을 입력해주세요.');
       return;
     }
+    if (isPublicMode && !clientName.trim()) {
+      alert('업체명(회사명)을 입력해주세요.');
+      return;
+    }
     if (!ordererName || !ordererPhone) {
       alert('주문자 성함과 연락처를 입력해주세요.');
       return;
@@ -862,7 +884,9 @@ export default function OrderPage() {
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="New Gene Science Logo" className="h-10 w-auto" />
             <div className="border-l border-slate-200 pl-3">
-              <p className="text-[10px] font-medium text-slate-400 leading-none">{clientName} 전용 주문 시스템</p>
+              <p className="text-[10px] font-medium text-slate-400 leading-none">
+                {isPublicMode ? '뉴진 스마트 오더' : `${clientData.name} 전용 주문 시스템`}
+              </p>
             </div>
           </div>
           <button
@@ -896,8 +920,12 @@ export default function OrderPage() {
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -right-4 bottom-0 w-24 h-24 rounded-full bg-white/5" />
           <div className="relative z-10">
-            <h1 className="text-xl font-black">{clientData.name}님 반갑습니다! 👋</h1>
-            <p className="text-xs opacity-70 mt-1">뉴진사이언스 제품을 편리하게 {activeTab === 'quote' ? '문의' : '주문'}하세요</p>
+            <h1 className="text-xl font-black">
+              {isPublicMode ? '뉴진 스마트 오더' : `${clientData.name}님 반갑습니다! 👋`}
+            </h1>
+            <p className="text-xs opacity-70 mt-1">
+              {isPublicMode ? '뉴진사이언스 제품을 편리하게 문의/주문하세요' : `뉴진사이언스 제품을 편리하게 ${activeTab === 'quote' ? '문의' : '주문'}하세요`}
+            </p>
             <div className="flex flex-wrap gap-x-6 gap-y-1.5 mt-2.5 pt-2.5 border-t border-white/10">
               <p className="text-xs font-bold opacity-60 flex items-center gap-1.5">
                 <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px]">TEL</span> 02-898-8805
@@ -925,13 +953,15 @@ export default function OrderPage() {
             <Package className="w-4 h-4" />
             뉴진스제품
           </button>
-          <button
-            onClick={() => setActiveTab('payment')}
-            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
-          >
-            <CreditCard className="w-4 h-4" />
-            내역/결제
-          </button>
+          {!isPublicMode && (
+            <button
+              onClick={() => setActiveTab('payment')}
+              className={`flex-1 py-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'payment' ? 'bg-primary text-white shadow-lg shadow-green-900/20' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <CreditCard className="w-4 h-4" />
+              내역/결제
+            </button>
+          )}
         </div>
 
         {/* Main Content based on activeTab */}
@@ -948,7 +978,7 @@ export default function OrderPage() {
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
                   <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
-                    <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
+                    <User className="w-4 h-4" /> {isPublicMode ? '주문자 정보' : `주문자 정보 (${clientData.name})`}
                   </h2>
                   <div className="flex items-center gap-3 w-full md:w-auto">
                     <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
@@ -983,6 +1013,12 @@ export default function OrderPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-6">
                   <div className="flex flex-wrap items-end gap-x-8 gap-y-4">
+                    {isPublicMode && (
+                      <div className="min-w-[150px]">
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">업체명 (회사명) *</label>
+                        <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="회사명" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
                     <div className="min-w-[120px]">
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
@@ -1041,7 +1077,7 @@ export default function OrderPage() {
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-[#E2E8E4]">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-6">
                     <h2 className="flex items-center gap-2 text-sm font-extrabold text-primary whitespace-nowrap">
-                      <User className="w-4 h-4" /> 주문자 정보 ({clientData.name})
+                      <User className="w-4 h-4" /> {isPublicMode ? '주문자 정보' : `주문자 정보 (${clientData.name})`}
                     </h2>
                     <div className="flex items-center gap-3 w-full md:w-auto">
                       <span className="text-[10px] font-bold text-slate-400 whitespace-nowrap">빠른 입력:</span>
@@ -1074,7 +1110,13 @@ export default function OrderPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className={`grid grid-cols-1 sm:grid-cols-2 ${isPublicMode ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-5`}>
+                    {isPublicMode && (
+                      <div>
+                        <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">업체명 (회사명) *</label>
+                        <input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="회사명" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+                      </div>
+                    )}
                     <div>
                       <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">문의자 성함 *</label>
                       <input value={ordererName} onChange={e => setOrdererName(e.target.value)} placeholder="성함" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
