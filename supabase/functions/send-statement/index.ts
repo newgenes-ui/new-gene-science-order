@@ -19,7 +19,7 @@ serve(async (req) => {
 
     const { to, bcc, subject, html } = await req.json()
 
-    // 1. 주문자에게 메일 발송 (BCC 제외하고 발송 - 첨부파일 없이 본문 상세 내역으로만 전송)
+    // 1. 주문자에게 메일 발송
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -27,32 +27,47 @@ serve(async (req) => {
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        // 도메인 인증이 완료되었으므로 회사 메일 주소로 발송 (발신자 이름 추가)
         from: '뉴진사이언스 <order@newgenesci.com>', 
-        to: to, // 수신자
+        to: to,
         subject: subject,
         html: html
       })
     })
 
     const data = await res.json()
+    
+    if (!res.ok) {
+      console.error('❌ Resend API 주문자 메일 발송 실패:', JSON.stringify(data))
+    } else {
+      console.log('✅ Resend API 주문자 메일 발송 성공:', to)
+    }
 
-    // 2. 관리자 참조용(BCC) 주소가 있으면, 본사 메일함으로 '단독 메일(To)'로 1통 더 직접 발송하여 메일플러그 차단 우회
-    // 본사 보관용 메일은 첨부파일(PDF)을 제외하고 텍스트/HTML 상세 내역표만 전송하여 메일플러그 스팸 차단을 원천 우회합니다.
-    if (res.ok && bcc) {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${resendApiKey}`
-        },
-        body: JSON.stringify({
-          from: '뉴진사이언스 <order@newgenesci.com>', 
-          to: bcc, // 본사 메일을 직접 수신처(To)로 지정하여 내부 1:1 메일로 필터 통과
-          subject: `[본사 보관용] ${subject}`, // 본사 메일함 분류가 용이하도록 머리말 추가
-          html: html
+    // 2. 관리자 참조용(BCC) 주소가 있으면, 본사 메일함으로 '단독 메일(To)'로 직접 발송
+    // 주문자 메일 성공/실패와 무관하게 항상 시도
+    if (bcc) {
+      try {
+        const adminRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: '뉴진사이언스 <order@newgenesci.com>', 
+            to: bcc,
+            subject: `[본사 보관용] ${subject}`,
+            html: html
+          })
         })
-      })
+        const adminData = await adminRes.json()
+        if (!adminRes.ok) {
+          console.error('❌ Resend API 관리자 메일 발송 실패:', JSON.stringify(adminData))
+        } else {
+          console.log('✅ Resend API 관리자 메일 발송 성공:', bcc)
+        }
+      } catch (adminErr) {
+        console.error('❌ 관리자 메일 발송 중 예외:', adminErr)
+      }
     }
 
     return new Response(JSON.stringify(data), {
@@ -60,6 +75,7 @@ serve(async (req) => {
       status: res.ok ? 200 : 400,
     })
   } catch (error: any) {
+    console.error('❌ Edge Function 전체 오류:', error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

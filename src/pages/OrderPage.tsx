@@ -222,10 +222,6 @@ export default function OrderPage() {
         </div>
       `;
 
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
-
       const targetEmail = (order.ordererEmail && order.ordererEmail.includes('@')) 
         ? order.ordererEmail 
         : NGS_EMAIL;
@@ -233,22 +229,61 @@ export default function OrderPage() {
         ? NGS_EMAIL
         : undefined;
 
-      console.log('📧 Edge Function 메일 발송 시작 (Type:', type, ')...');
-      await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          to: targetEmail, 
-          bcc: bccEmail,
-          subject: subject,
-          html: htmlContent
-        })
-      });
-      console.log('✅ Edge Function 메일 발송 성공');
+      // ★ 1순위: Vercel API → Nodemailer → 메일플러그 SMTP 직접 전송 (차단 우회)
+      console.log('📧 [1순위] 메일플러그 SMTP 직접 발송 시작 (Type:', type, ')...');
+      let smtpSuccess = false;
+      try {
+        const smtpRes = await fetch('/api/send-statement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: targetEmail,
+            bcc: bccEmail,
+            subject: subject,
+            html: htmlContent
+          })
+        });
+        if (smtpRes.ok) {
+          console.log('✅ 메일플러그 SMTP 직접 발송 성공');
+          smtpSuccess = true;
+        } else {
+          const smtpError = await smtpRes.text();
+          console.warn('⚠️ 메일플러그 SMTP 발송 실패:', smtpRes.status, smtpError);
+        }
+      } catch (smtpErr) {
+        console.warn('⚠️ 메일플러그 SMTP 호출 실패:', smtpErr);
+      }
+
+      // ★ 2순위 백업: Supabase Edge Function → Resend API (SMTP 실패 시에만)
+      if (!smtpSuccess) {
+        const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+          ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+          : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
+        console.log('📧 [2순위 백업] Resend API(Edge Function) 메일 발송 시작...');
+        try {
+          const res = await fetch(functionUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: targetEmail, 
+              bcc: bccEmail,
+              subject: subject,
+              html: htmlContent
+            })
+          });
+          if (res.ok) {
+            console.log('✅ Resend API 백업 메일 발송 성공');
+          } else {
+            const errorData = await res.text();
+            console.error('❌ Resend API 백업 발송도 실패:', res.status, errorData);
+          }
+        } catch (edgeErr) {
+          console.error('❌ Resend API 백업 호출 실패:', edgeErr);
+        }
+      }
     } catch (err) {
-      console.error('❌ Edge Function 메일 발송 실패:', err);
+      console.error('❌ 알림 메일 발송 전체 실패:', err);
     }
   };
 
@@ -528,34 +563,56 @@ export default function OrderPage() {
         </div>
       `;
 
-      // Supabase Edge Function 엔드포인트
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+      // ★ 1순위: Vercel API → Nodemailer → 메일플러그 SMTP 직접 전송 (차단 우회)
+      const emailPayload = {
+        to: finalEmail, 
+        bcc: 'newgenes@newgenesci.com',
+        subject: subject,
+        html: htmlContent
+      };
 
-      const res = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-          // Authorization 헤더 생략 (서버에서 --no-verify-jwt 설정됨)
-        },
-        body: JSON.stringify({
-          to: finalEmail, 
-          bcc: 'newgenes@newgenesci.com', // 관리자 사본 수신
-          subject: subject,
-          html: htmlContent
-        })
-      });
-
-      if (!res.ok) {
-        let exactError = '알 수 없는 오류';
-        try {
-          const errorData = await res.json();
-          exactError = errorData.message || errorData.error || JSON.stringify(errorData);
-        } catch(e) {
-          exactError = await res.text();
+      let emailSent = false;
+      console.log('📧 [거래명세서] 메일플러그 SMTP 직접 발송 시작...');
+      try {
+        const smtpRes = await fetch('/api/send-statement', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailPayload)
+        });
+        if (smtpRes.ok) {
+          console.log('✅ 메일플러그 SMTP 직접 발송 성공');
+          emailSent = true;
+        } else {
+          const smtpError = await smtpRes.text();
+          console.warn('⚠️ 메일플러그 SMTP 발송 실패:', smtpRes.status, smtpError);
         }
-        throw new Error(`${exactError}`);
+      } catch (smtpErr) {
+        console.warn('⚠️ 메일플러그 SMTP 호출 실패:', smtpErr);
+      }
+
+      // ★ 2순위 백업: Supabase Edge Function → Resend API
+      if (!emailSent) {
+        console.log('📧 [거래명세서 백업] Resend API(Edge Function) 발송 시작...');
+        const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+          ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+          : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
+        const res = await fetch(functionUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(emailPayload)
+        });
+
+        if (!res.ok) {
+          let exactError = '알 수 없는 오류';
+          try {
+            const errorData = await res.json();
+            exactError = errorData.message || errorData.error || JSON.stringify(errorData);
+          } catch(e) {
+            exactError = await res.text();
+          }
+          throw new Error(`${exactError}`);
+        }
       }
 
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
@@ -925,6 +982,10 @@ export default function OrderPage() {
     setIsSubmitting(false);
 
     if (success) {
+      // Supabase Edge Function으로 주문/견적 접수 알림 메일 발송 (비동기)
+      sendNotificationEmail(order, activeTab === 'quote' ? 'quote' : 'order')
+        .catch(err => console.error('알림 메일 발송 실패 (무시):', err));
+
       // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
       setShowCelebration(true);
       // 폼 공통 초기화
