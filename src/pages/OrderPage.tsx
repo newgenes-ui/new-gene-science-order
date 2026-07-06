@@ -163,8 +163,8 @@ export default function OrderPage() {
 
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #2C3E50; line-height: 1.6;">
-          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
-            <h1 style="color: #27AE60; margin: 0; font-size: 26px;">${title}</h1>
+          <div style="text-align: left; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
+            <h1 style="color: #27AE60; margin: 0; font-size: 20px;">${title}</h1>
             <p style="margin: 5px 0 0 0; font-size: 14px; color: #7F8C8D;">${desc}</p>
           </div>
           
@@ -506,8 +506,8 @@ export default function OrderPage() {
 
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; max-width: 700px; margin: 0 auto; color: #2C3E50; line-height: 1.6;">
-          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
-            <h1 style="color: #27AE60; margin: 0; font-size: 26px;">(주)뉴진사이언스 거래명세서</h1>
+          <div style="text-align: left; padding-bottom: 20px; border-bottom: 2px solid #2ECC71;">
+            <h1 style="color: #27AE60; margin: 0; font-size: 20px;">(주)뉴진사이언스 거래명세서</h1>
             <p style="margin: 5px 0 0 0; font-size: 14px; color: #7F8C8D;">요청하신 거래명세서 상세 내역입니다.</p>
           </div>
           
@@ -967,7 +967,10 @@ export default function OrderPage() {
     };
 
 
-    // EmailJS 메일 발송
+    // [중복 발송 방지] EmailJS 발송 비활성화
+    // sendNotificationEmail(본사보관용)으로만 1건 발송하도록 변경 (2026-06-08)
+    // EmailJS로 보내던 '(주)뉴진사이언스 주문접수' 메일이 본사보관용과 중복되어 주문자에게 2건 전송되는 문제 해결
+    /*
     if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
       try {
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
@@ -976,6 +979,7 @@ export default function OrderPage() {
         console.error('❌ EmailJS 메일 발송 실패:', emailErr);
       }
     }
+    */
     // ───────────────────────────────────────────────
 
     const success = await saveOrder(order);

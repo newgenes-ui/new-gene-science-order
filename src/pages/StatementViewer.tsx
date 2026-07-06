@@ -5,7 +5,36 @@ import { Printer, Download, Loader2, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { LOGO_BASE64 } from '../assets/logoBase64';
-const STAMP_PATH = '/stamp.png';
+import { STAMP_BASE64 } from '../assets/stampBase64';
+
+const makeWhiteTransparent = (base64: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64);
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 220 && data[i + 1] > 220 && data[i + 2] > 220) {
+          data[i + 3] = 0; // alpha = 0
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+};
 
 export default function StatementViewer() {
   const [searchParams] = useSearchParams();
@@ -14,6 +43,7 @@ export default function StatementViewer() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [docScale, setDocScale] = useState(1);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [stampUrl, setStampUrl] = useState<string>(STAMP_BASE64);
   const statementRef = useRef<HTMLDivElement>(null);
   const scaleWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +64,12 @@ export default function StatementViewer() {
     };
     calcScale();
     window.addEventListener('resize', calcScale);
+
+    // 흰색 배경을 투명하게 전처리하여 PDF 변환 시 흰 박스 방지
+    makeWhiteTransparent(STAMP_BASE64).then((url) => {
+      setStampUrl(url);
+    });
+
     return () => window.removeEventListener('resize', calcScale);
   }, []);
 
@@ -444,10 +480,12 @@ export default function StatementViewer() {
                 <th className="border border-black p-1 tracking-widest">상 호</th>
                 <td className="border border-black p-1 font-bold">(주) 뉴진사이언스</td>
                 <th className="border border-black p-1 w-[18%] tracking-widest">대 표 자</th>
-                <td className="border border-black p-1 font-bold relative w-[25%]">
-                  김 기 환 <span className="text-[10px] ml-1">(인)</span>
-                  {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
-                  <img src={STAMP_PATH} crossOrigin="anonymous" style={{ mixBlendMode: 'multiply' }} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-95 pointer-events-none" alt="직인" />
+                <td className="border border-black p-1 font-bold w-[25%]">
+                  <div className="relative w-full h-full flex items-center justify-center">
+                    김 기 환 <span className="text-[10px] ml-1">(인)</span>
+                    {/* 직인 이미지 (multiply 혼합 모드로 자연스럽게 겹침) */}
+                    <img src={stampUrl} crossOrigin="anonymous" style={{ mixBlendMode: 'multiply' }} className="absolute top-1/2 left-[70%] transform -translate-x-1/2 -translate-y-[55%] h-16 w-auto opacity-95 pointer-events-none" alt="직인" />
+                  </div>
                 </td>
               </tr>
               <tr>
