@@ -784,7 +784,7 @@ export default function OrderPage() {
 
   const clientProducts = useMemo(() => {
     if (clientId === 'ajou' || clientId === 'immuno' || clientId === 'vertis') {
-      return PRODUCTS.map(p => {
+      const list = PRODUCTS.map(p => {
         let customPrice = p.price;
         if (clientId === 'ajou') {
           switch (p.code) {
@@ -830,6 +830,10 @@ export default function OrderPage() {
         }
         return { ...p, price: customPrice };
       });
+      if (clientId === 'vertis') {
+        return list.filter(p => p.category !== '랙');
+      }
+      return list;
     }
     return PRODUCTS;
   }, [clientId]);
