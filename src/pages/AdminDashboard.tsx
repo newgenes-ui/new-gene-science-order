@@ -415,6 +415,8 @@ export default function AdminDashboard() {
   const [supplierText, setSupplierText] = useState('');
   const [supplierImageBase64, setSupplierImageBase64] = useState<string | null>(null);
   const [supplierMarginPercent, setSupplierMarginPercent] = useState<number>(0);
+  const [supplierMarginInputStr, setSupplierMarginInputStr] = useState<string>('0');
+  const [customMarginInputs, setCustomMarginInputs] = useState<Record<string, string>>({});
   const [isAnalyzingSupplier, setIsAnalyzingSupplier] = useState(false);
   const [supplierParsedItems, setSupplierParsedItems] = useState<ParsedQuoteItem[]>([]);
 
@@ -1528,7 +1530,7 @@ export default function AdminDashboard() {
                               </div>
                               {!isQuoteInputCollapsed[order.id] && (
                                 <div className="flex items-center gap-2">
-                                  {/* 마진율 일괄 적용 단축 버튼 */}
+                                  {/* 마진율 일괄 적용 단축 버튼 및 직접입력 */}
                                   <div className="hidden sm:flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                                     <span className="text-[9px] font-extrabold text-slate-400 px-1">마진:</span>
                                     {[10, 15, 20].map((pct) => (
@@ -1555,6 +1557,43 @@ export default function AdminDashboard() {
                                         +{pct}%
                                       </button>
                                     ))}
+                                    <div className="flex items-center gap-0.5 ml-1 pl-1 border-l border-slate-200">
+                                      <input
+                                        type="text"
+                                        placeholder="직접"
+                                        value={customMarginInputs[order.id] || ''}
+                                        onChange={(e) => {
+                                          const val = e.target.value.replace(/[^0-9]/g, '');
+                                          setCustomMarginInputs(prev => ({ ...prev, [order.id]: val }));
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-10 px-1 py-0.5 text-[9px] font-bold text-center bg-white border border-slate-200 rounded outline-none"
+                                      />
+                                      <span className="text-[9px] font-bold text-slate-400">%</span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const pctVal = parseInt(customMarginInputs[order.id] || '0', 10);
+                                          if (isNaN(pctVal) || pctVal === 0) return;
+                                          const currentItems = [...(editingQuoteItems[order.id] || order.items || [])];
+                                          if (currentItems.length === 0) return;
+                                          const updated = currentItems.map(item => {
+                                            const newPrice = Math.round(item.unitPrice * (1 + pctVal / 100));
+                                            return {
+                                              ...item,
+                                              unitPrice: newPrice,
+                                              subtotal: newPrice * item.quantity
+                                            };
+                                          });
+                                          setEditingQuoteItems(prev => ({ ...prev, [order.id]: updated }));
+                                          setAiToast({ message: `모든 품목에 마진 +${pctVal}%가 적용되었습니다.`, type: 'info' });
+                                        }}
+                                        className="px-1.5 py-0.5 bg-emerald-600 text-white text-[9px] font-black rounded hover:bg-emerald-700 transition-all ml-0.5"
+                                      >
+                                        적용
+                                      </button>
+                                    </div>
                                   </div>
                                   <button 
                                     onClick={() => addQuoteItem(order.id)}
@@ -1891,16 +1930,34 @@ export default function AdminDashboard() {
                       <button
                         key={pct}
                         type="button"
-                        onClick={() => setSupplierMarginPercent(pct)}
+                        onClick={() => {
+                          setSupplierMarginPercent(pct);
+                          setSupplierMarginInputStr(String(pct));
+                        }}
                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all ${
                           supplierMarginPercent === pct
                             ? 'bg-emerald-600 text-white shadow-sm'
                             : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                         }`}
                       >
-                        {pct === 0 ? '원가그대로(0%)' : `+${pct}%`}
+                        {pct === 0 ? '원가(0%)' : `+${pct}%`}
                       </button>
                     ))}
+                    <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-slate-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 shadow-sm ml-1">
+                      <span className="text-[11px] font-bold text-slate-400">직접:</span>
+                      <input
+                        type="text"
+                        value={supplierMarginInputStr}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setSupplierMarginInputStr(val);
+                          setSupplierMarginPercent(val === '' ? 0 : parseInt(val, 10));
+                        }}
+                        placeholder="0"
+                        className="w-12 text-center text-xs font-black text-emerald-800 outline-none bg-transparent"
+                      />
+                      <span className="text-xs font-black text-slate-600">%</span>
+                    </div>
                   </div>
 
                   <button
