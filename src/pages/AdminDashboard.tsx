@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
-  Smartphone, Share, X, Loader2, ExternalLink, Sparkles, Upload, Image as ImageIcon, FileSpreadsheet, FileText, Check, Plus, Percent
+  Smartphone, Share, X, Loader2, ExternalLink, Sparkles, Upload, Image as ImageIcon, FileSpreadsheet, FileText, Check, Plus, Percent, Key, AlertCircle
 } from 'lucide-react';
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders, fixShippedDates } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 import AdminPinLock from '../components/AdminPinLock';
-import { parseQuoteRequest, parseSupplierQuoteImage, parseSupplierQuoteText, isAIParsingAvailable, ParsedQuoteItem } from '../lib/quoteParser';
+import { parseQuoteRequest, parseSupplierQuoteImage, parseSupplierQuoteText, isAIParsingAvailable, ParsedQuoteItem, getGeminiApiKey, setGeminiApiKey } from '../lib/quoteParser';
 
 // 주문번호 표시용:
 // 1) 신규 형식: NGS-[clientId]-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
@@ -419,6 +419,9 @@ export default function AdminDashboard() {
   const [customMarginInputs, setCustomMarginInputs] = useState<Record<string, string>>({});
   const [isAnalyzingSupplier, setIsAnalyzingSupplier] = useState(false);
   const [supplierParsedItems, setSupplierParsedItems] = useState<ParsedQuoteItem[]>([]);
+  const [supplierModalError, setSupplierModalError] = useState<string | null>(null);
+  const [apiKeyInput, setApiKeyInput] = useState<string>(() => getGeminiApiKey());
+  const [showApiKeySetting, setShowApiKeySetting] = useState(false);
 
   // AI 토스트 자동 숨김
   useEffect(() => {
@@ -464,20 +467,21 @@ export default function AdminDashboard() {
   const handleAnalyzeSupplierQuote = async () => {
     if (!supplierModalOrderId) return;
     setIsAnalyzingSupplier(true);
+    setSupplierModalError(null);
 
     try {
       let items: ParsedQuoteItem[] = [];
 
       if (supplierInputTab === 'image') {
         if (!supplierImageBase64) {
-          alert('구매처 견적서 이미지를 업로드하거나 Ctrl+V로 붙여넣어주세요.');
+          setSupplierModalError('구매처 견적서 이미지를 업로드하거나 Ctrl+V로 붙여넣어주세요.');
           setIsAnalyzingSupplier(false);
           return;
         }
         items = await parseSupplierQuoteImage(supplierImageBase64);
       } else if (supplierInputTab === 'text') {
         if (!supplierText.trim()) {
-          alert('구매처 견적 텍스트 또는 엑셀 표를 붙여넣어주세요.');
+          setSupplierModalError('구매처 견적 텍스트 또는 엑셀 표를 붙여넣어주세요.');
           setIsAnalyzingSupplier(false);
           return;
         }
@@ -487,7 +491,7 @@ export default function AdminDashboard() {
         const order = allOrders.find(o => o.id === supplierModalOrderId);
         const reqText = order?.otherRequest || '';
         if (!reqText.trim()) {
-          alert('고객의 견적 요청 내용이 없습니다.');
+          setSupplierModalError('고객의 견적 요청 내용이 없습니다.');
           setIsAnalyzingSupplier(false);
           return;
         }
@@ -495,14 +499,18 @@ export default function AdminDashboard() {
       }
 
       if (items.length === 0) {
+        setSupplierModalError('인식된 품목이 없습니다. 견적서 텍스트 탭을 이용해보시거나 형식을 확인해주세요.');
         setAiToast({ message: '인식된 품목이 없습니다. 형식을 확인해주세요.', type: 'error' });
       } else {
         setSupplierParsedItems(items);
+        setSupplierModalError(null);
         setAiToast({ message: `✅ ${items.length}개 품목이 추출되었습니다! 확인 후 견적서에 적용하세요.`, type: 'success' });
       }
     } catch (e: any) {
       console.error('구매처 견적 분석 오류:', e);
-      setAiToast({ message: e.message || '견적 분석 중 오류가 발생했습니다.', type: 'error' });
+      const msg = e.message || '견적 분석 중 오류가 발생했습니다.';
+      setSupplierModalError(msg);
+      setAiToast({ message: msg, type: 'error' });
     } finally {
       setIsAnalyzingSupplier(false);
     }
@@ -1750,7 +1758,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl shadow-2xl border backdrop-blur-lg max-w-[90vw] ${
+            className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] px-5 py-3 rounded-2xl shadow-2xl border backdrop-blur-lg max-w-[90vw] ${
               aiToast.type === 'success' 
                 ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800' 
                 : aiToast.type === 'error'
@@ -1793,21 +1801,113 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSupplierModalOrderId(null)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowApiKeySetting(prev => !prev)}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all"
+                    title="Gemini AI API 키 설정"
+                  >
+                    <Key className="w-3 h-3 text-amber-500" />
+                    <span>API 키 {getGeminiApiKey() ? '등록됨' : '설정'}</span>
+                  </button>
+                  <button
+                    onClick={() => setSupplierModalOrderId(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
+
+              {/* API 키 설정 드롭다운 */}
+              <AnimatePresence>
+                {showApiKeySetting && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="bg-amber-50/80 border-b border-amber-200 px-6 py-3 shrink-0"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="text-xs">
+                        <p className="font-black text-amber-900 flex items-center gap-1">
+                          <Key className="w-3.5 h-3.5 text-amber-600" /> Gemini API 키 등록 (사진 멀티모달 분석용)
+                        </p>
+                        <p className="text-[10px] text-amber-700">
+                          Google AI Studio(aistudio.google.com)에서 발급받은 무료 API 키를 입력하시면 브라우저에 안전하게 저장됩니다.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="password"
+                          value={apiKeyInput}
+                          onChange={(e) => setApiKeyInput(e.target.value)}
+                          placeholder="AIzaSy..."
+                          className="px-3 py-1.5 bg-white border border-amber-300 rounded-lg text-xs font-mono w-48 sm:w-64 outline-none focus:ring-2 focus:ring-amber-500/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGeminiApiKey(apiKeyInput);
+                            setShowApiKeySetting(false);
+                            setSupplierModalError(null);
+                            setAiToast({ message: '✅ Gemini API 키가 저장되었습니다!', type: 'success' });
+                          }}
+                          className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-black hover:bg-amber-700 transition-all shrink-0 shadow-sm"
+                        >
+                          저장
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* 모달 본문 */}
               <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                {/* 에러 안내 배너 */}
+                {supplierModalError && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-2xl text-xs space-y-2">
+                    <div className="flex items-start gap-2 text-red-700 font-bold">
+                      <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-black">{supplierModalError}</p>
+                        {supplierModalError.includes('API') && (
+                          <div className="mt-2 pt-2 border-t border-red-200/60 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowApiKeySetting(true)}
+                              className="px-3 py-1 bg-red-600 text-white text-[10px] font-black rounded-lg hover:bg-red-700 transition-all flex items-center gap-1 shadow-sm"
+                            >
+                              <Key className="w-3 h-3" /> 지금 API 키 입력하기
+                            </button>
+                            <span className="text-[10px] text-red-600 font-bold">또는</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSupplierInputTab('text');
+                                setSupplierModalError(null);
+                              }}
+                              className="px-3 py-1 bg-white text-emerald-700 border border-emerald-300 text-[10px] font-black rounded-lg hover:bg-emerald-50 transition-all flex items-center gap-1 shadow-sm"
+                            >
+                              <FileText className="w-3 h-3" /> [견적서 텍스트 / 엑셀 표] 탭으로 복사-붙여넣기 (API 키 불필요)
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 탭 네비게이션 */}
                 <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
                   <button
                     type="button"
-                    onClick={() => setSupplierInputTab('image')}
+                    onClick={() => {
+                      setSupplierInputTab('image');
+                      setSupplierModalError(null);
+                    }}
                     className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                       supplierInputTab === 'image' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
                     }`}
@@ -1817,7 +1917,10 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSupplierInputTab('text')}
+                    onClick={() => {
+                      setSupplierInputTab('text');
+                      setSupplierModalError(null);
+                    }}
                     className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                       supplierInputTab === 'text' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
                     }`}
@@ -1827,7 +1930,10 @@ export default function AdminDashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSupplierInputTab('inquiry')}
+                    onClick={() => {
+                      setSupplierInputTab('inquiry');
+                      setSupplierModalError(null);
+                    }}
                     className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
                       supplierInputTab === 'inquiry' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
                     }`}

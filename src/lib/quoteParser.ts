@@ -10,15 +10,32 @@ export interface ParsedQuoteItem {
   remarks?: string;         // 적요 / 비고
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+export function getGeminiApiKey(): string {
+  try {
+    const local = localStorage.getItem('ngs_gemini_api_key');
+    if (local && local.trim()) return local.trim();
+  } catch {}
+  return import.meta.env.VITE_GEMINI_API_KEY || '';
+}
+
+export function setGeminiApiKey(key: string): void {
+  try {
+    if (key.trim()) {
+      localStorage.setItem('ngs_gemini_api_key', key.trim());
+    } else {
+      localStorage.removeItem('ngs_gemini_api_key');
+    }
+  } catch {}
+}
 
 /**
  * Gemini AI 인스턴스 반환
  */
 function getAIClient() {
-  if (!GEMINI_API_KEY) return null;
+  const apiKey = getGeminiApiKey();
+  if (!apiKey) return null;
   try {
-    return new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    return new GoogleGenAI({ apiKey });
   } catch (e) {
     console.error('Failed to init GoogleGenAI:', e);
     return null;
