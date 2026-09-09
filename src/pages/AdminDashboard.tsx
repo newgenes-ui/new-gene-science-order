@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
-  Smartphone, Share, X, Loader2, ExternalLink, Sparkles, Upload, Image as ImageIcon, FileSpreadsheet, FileText, Check, Plus
+  Smartphone, Share, X, Loader2, ExternalLink, Sparkles, Upload, Image as ImageIcon, FileSpreadsheet, FileText, Check, Plus, Percent
 } from 'lucide-react';
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders, fixShippedDates } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
