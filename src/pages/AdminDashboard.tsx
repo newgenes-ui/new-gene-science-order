@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   BarChart3, Calendar, Download, Package,
   DollarSign, ShoppingBag, Search, ChevronDown, ChevronUp, Eye, RefreshCw, MessageSquare, Trash2,
-  Smartphone, Share, X
+  Smartphone, Share, X, Loader2, ExternalLink, Sparkles, Upload, Image as ImageIcon, FileSpreadsheet, FileText, Check, Plus
 } from 'lucide-react';
 import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, OrderItem, deleteOrder, updateOrderStatus, updateQuoteDetails, subscribeToOrders, fixShippedDates } from '../store/orderStore';
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 import AdminPinLock from '../components/AdminPinLock';
+import { parseQuoteRequest, parseSupplierQuoteImage, parseSupplierQuoteText, isAIParsingAvailable, ParsedQuoteItem } from '../lib/quoteParser';
 
 // 주문번호 표시용:
 // 1) 신규 형식: NGS-[clientId]-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
@@ -400,6 +401,212 @@ export default function AdminDashboard() {
 
   const [quoteAmounts, setQuoteAmounts] = useState<Record<string, string>>({});
   const [editingQuoteItems, setEditingQuoteItems] = useState<Record<string, OrderItem[]>>({});
+
+  // AI 견적 파싱 관련 상태
+  const [aiParsingId, setAiParsingId] = useState<string | null>(null); // 현재 AI 파싱 중인 주문 ID
+  const [aiToast, setAiToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  
+  // 견적서 미리보기 모달 상태
+  const [quotePreviewId, setQuotePreviewId] = useState<string | null>(null);
+
+  // 구매처 견적 가져오기 모달 상태
+  const [supplierModalOrderId, setSupplierModalOrderId] = useState<string | null>(null);
+  const [supplierInputTab, setSupplierInputTab] = useState<'image' | 'text' | 'inquiry'>('image');
+  const [supplierText, setSupplierText] = useState('');
+  const [supplierImageBase64, setSupplierImageBase64] = useState<string | null>(null);
+  const [supplierMarginPercent, setSupplierMarginPercent] = useState<number>(0);
+  const [isAnalyzingSupplier, setIsAnalyzingSupplier] = useState(false);
+  const [supplierParsedItems, setSupplierParsedItems] = useState<ParsedQuoteItem[]>([]);
+
+  // AI 토스트 자동 숨김
+  useEffect(() => {
+    if (aiToast) {
+      const timer = setTimeout(() => setAiToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [aiToast]);
+
+  // 클립보드 붙여넣기(Ctrl+V) 이벤트 리스너 (모달 열려있을 때 이미지/텍스트 자동 캡처)
+  useEffect(() => {
+    if (!supplierModalOrderId) return;
+
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result as string;
+              setSupplierImageBase64(base64);
+              setSupplierInputTab('image');
+              setAiToast({ message: '📋 클립보드 이미지가 첨부되었습니다. "AI 견적 분석"을 눌러주세요.', type: 'info' });
+            };
+            reader.readAsDataURL(file);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [supplierModalOrderId]);
+
+  // 구매처 견적 분석 실행
+  const handleAnalyzeSupplierQuote = async () => {
+    if (!supplierModalOrderId) return;
+    setIsAnalyzingSupplier(true);
+
+    try {
+      let items: ParsedQuoteItem[] = [];
+
+      if (supplierInputTab === 'image') {
+        if (!supplierImageBase64) {
+          alert('구매처 견적서 이미지를 업로드하거나 Ctrl+V로 붙여넣어주세요.');
+          setIsAnalyzingSupplier(false);
+          return;
+        }
+        items = await parseSupplierQuoteImage(supplierImageBase64);
+      } else if (supplierInputTab === 'text') {
+        if (!supplierText.trim()) {
+          alert('구매처 견적 텍스트 또는 엑셀 표를 붙여넣어주세요.');
+          setIsAnalyzingSupplier(false);
+          return;
+        }
+        items = await parseSupplierQuoteText(supplierText);
+      } else {
+        // 고객 요청문 AI 분석
+        const order = allOrders.find(o => o.id === supplierModalOrderId);
+        const reqText = order?.otherRequest || '';
+        if (!reqText.trim()) {
+          alert('고객의 견적 요청 내용이 없습니다.');
+          setIsAnalyzingSupplier(false);
+          return;
+        }
+        items = await parseQuoteRequest(reqText);
+      }
+
+      if (items.length === 0) {
+        setAiToast({ message: '인식된 품목이 없습니다. 형식을 확인해주세요.', type: 'error' });
+      } else {
+        setSupplierParsedItems(items);
+        setAiToast({ message: `✅ ${items.length}개 품목이 추출되었습니다! 확인 후 견적서에 적용하세요.`, type: 'success' });
+      }
+    } catch (e: any) {
+      console.error('구매처 견적 분석 오류:', e);
+      setAiToast({ message: e.message || '견적 분석 중 오류가 발생했습니다.', type: 'error' });
+    } finally {
+      setIsAnalyzingSupplier(false);
+    }
+  };
+
+  // 파싱된 품목을 뉴진 견적서 폼에 적용 (마진율 포함)
+  const applySupplierItemsToQuote = (orderId: string) => {
+    if (supplierParsedItems.length === 0) return;
+
+    const orderItems: OrderItem[] = supplierParsedItems.map((item, idx) => {
+      // 마진율 적용한 판매 단가
+      const rawPrice = item.estimatedPrice || 0;
+      const marginMultiplier = 1 + (supplierMarginPercent / 100);
+      const finalUnitPrice = Math.round(rawPrice * marginMultiplier);
+
+      return {
+        productId: `supplier-${Date.now()}-${idx}`,
+        productCode: item.catalogNumber 
+          ? (item.manufacturer ? `(${item.manufacturer}) ${item.catalogNumber}` : item.catalogNumber)
+          : (item.manufacturer ? `(${item.manufacturer})` : ''),
+        productName: item.productName,
+        spec: item.spec,
+        unitPrice: finalUnitPrice,
+        quantity: item.quantity || 1,
+        subtotal: finalUnitPrice * (item.quantity || 1),
+        remarks: item.remarks || '',
+      };
+    });
+
+    setEditingQuoteItems(prev => ({
+      ...prev,
+      [orderId]: orderItems,
+    }));
+
+    // 상세 입력 섹션 및 카드 자동 펼치기
+    setIsQuoteInputCollapsed(prev => ({ ...prev, [orderId]: false }));
+    setExpandedOrder(orderId);
+
+    // 모달 닫기 및 초기화
+    setSupplierModalOrderId(null);
+    setSupplierParsedItems([]);
+    setSupplierImageBase64(null);
+    setSupplierText('');
+    
+    setAiToast({ 
+      message: `✨ ${orderItems.length}건의 품목이 뉴진사이언스 견적서 폼에 자동으로 채워졌습니다! 금액을 자유롭게 편집하세요.`, 
+      type: 'success' 
+    });
+  };
+
+  // AI 자동 견적 파싱 핸들러 (고객 요청 텍스트 빠른 파싱)
+  const handleAIAutoFill = async (orderId: string) => {
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const requestText = order.otherRequest || '';
+    if (!requestText.trim()) {
+      setAiToast({ message: '파싱할 견적 요청 내용이 없습니다.', type: 'error' });
+      return;
+    }
+
+    setAiParsingId(orderId);
+    try {
+      const parsedItems = await parseQuoteRequest(requestText);
+      
+      if (parsedItems.length === 0) {
+        setAiToast({ message: '인식된 품목이 없습니다. 수동으로 입력해주세요.', type: 'error' });
+        setAiParsingId(null);
+        return;
+      }
+
+      // ParsedQuoteItem → OrderItem 변환
+      const orderItems: OrderItem[] = parsedItems.map((item, idx) => ({
+        productId: `parsed-${Date.now()}-${idx}`,
+        productCode: item.catalogNumber 
+          ? `(${item.manufacturer}) ${item.catalogNumber}` 
+          : item.manufacturer || '',
+        productName: item.productName,
+        spec: item.spec,
+        unitPrice: item.estimatedPrice,
+        quantity: item.quantity,
+        subtotal: item.estimatedPrice * item.quantity,
+        remarks: item.remarks || '',
+      }));
+
+      // 편집 상태에 자동 채움
+      setEditingQuoteItems(prev => ({
+        ...prev,
+        [orderId]: orderItems,
+      }));
+
+      // 상세 입력 섹션 자동 열기
+      setIsQuoteInputCollapsed(prev => ({ ...prev, [orderId]: false }));
+      setExpandedOrder(orderId);
+
+      setAiToast({ 
+        message: `✨ AI가 ${parsedItems.length}건의 품목을 인식했습니다. 금액을 확인/수정 후 저장해주세요.`, 
+        type: 'success' 
+      });
+    } catch (error) {
+      console.error('AI 파싱 오류:', error);
+      setAiToast({ message: 'AI 파싱 중 오류가 발생했습니다.', type: 'error' });
+    } finally {
+      setAiParsingId(null);
+    }
+  };
 
   const sendQuoteEmail = async (order: Order) => {
     if (!order.ordererEmail || !order.ordererEmail.includes('@')) return;
@@ -1135,6 +1342,19 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
+                      {order.totalAmount > 0 && order.items && order.items.length > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQuotePreviewId(order.id);
+                          }}
+                          title="견적서 미리보기"
+                          className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-[10px] font-black flex items-center gap-1 border border-blue-200 transition-all shrink-0"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">견적서</span>
+                        </button>
+                      )}
                       {order.status !== 'shipped' && order.status !== 'cancelled' && (
                         cancellingId === order.id ? (
                           <div className="flex items-center gap-1">
@@ -1233,6 +1453,61 @@ export default function AdminDashboard() {
                                 </motion.div>
                               )}
                             </AnimatePresence>
+
+                            {/* 구매처 견적 가져오기 + AI 자동 입력 + 견적서 보기 버튼 */}
+                            <div className="flex flex-wrap items-center gap-2 mt-3">
+                              {order.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      setSupplierModalOrderId(order.id);
+                                      setSupplierParsedItems([]);
+                                      setSupplierImageBase64(null);
+                                      setSupplierText('');
+                                    }}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-xl text-[11px] font-black hover:from-emerald-700 hover:to-teal-700 transition-all active:scale-[0.97] shadow-md shadow-emerald-900/20"
+                                    title="구매처 견적서 사진 캡처나 텍스트를 뉴진 견적서로 자동 변환"
+                                  >
+                                    <FileSpreadsheet className="w-3.5 h-3.5" /> 구매처 견적 자동입력 (사진/표)
+                                  </button>
+
+                                  {order.otherRequest && (
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleAIAutoFill(order.id); }}
+                                      disabled={aiParsingId === order.id}
+                                      className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl text-[11px] font-black hover:from-violet-600 hover:to-purple-700 transition-all active:scale-[0.97] disabled:opacity-60 shadow-md shadow-purple-900/20"
+                                      title="고객의 문의 텍스트를 분석하여 품목 자동 생성"
+                                    >
+                                      {aiParsingId === order.id ? (
+                                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> AI 분석 중...</>
+                                      ) : (
+                                        <><Sparkles className="w-3.5 h-3.5" /> 고객요청 AI 파싱</>
+                                      )}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {order.totalAmount > 0 && order.items && order.items.length > 0 && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setQuotePreviewId(order.id); }}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-[11px] font-black hover:bg-blue-100 transition-all active:scale-[0.97]"
+                                >
+                                  <Eye className="w-3.5 h-3.5" /> 견적서 보기
+                                </button>
+                              )}
+                              {order.totalAmount > 0 && order.items && order.items.length > 0 && (
+                                <button
+                                  onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    window.open(`/quote?ids=${order.id}`, '_blank'); 
+                                  }}
+                                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 text-slate-500 border border-slate-200 rounded-xl text-[11px] font-black hover:bg-slate-100 transition-all active:scale-[0.97]"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" /> 새 탭
+                                </button>
+                              )}
+                            </div>
                           </div>
                           
                           {/* 견적 품목 상세 입력 섹션 */}
@@ -1252,12 +1527,42 @@ export default function AdminDashboard() {
                                 </button>
                               </div>
                               {!isQuoteInputCollapsed[order.id] && (
-                                <button 
-                                  onClick={() => addQuoteItem(order.id)}
-                                  className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg hover:bg-primary/20 transition-all"
-                                >
-                                  + 품목 추가
-                                </button>
+                                <div className="flex items-center gap-2">
+                                  {/* 마진율 일괄 적용 단축 버튼 */}
+                                  <div className="hidden sm:flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                                    <span className="text-[9px] font-extrabold text-slate-400 px-1">마진:</span>
+                                    {[10, 15, 20].map((pct) => (
+                                      <button
+                                        key={pct}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const currentItems = [...(editingQuoteItems[order.id] || order.items || [])];
+                                          if (currentItems.length === 0) return;
+                                          const updated = currentItems.map(item => {
+                                            const newPrice = Math.round(item.unitPrice * (1 + pct / 100));
+                                            return {
+                                              ...item,
+                                              unitPrice: newPrice,
+                                              subtotal: newPrice * item.quantity
+                                            };
+                                          });
+                                          setEditingQuoteItems(prev => ({ ...prev, [order.id]: updated }));
+                                          setAiToast({ message: `모든 품목에 마진 +${pct}%가 적용되었습니다.`, type: 'info' });
+                                        }}
+                                        className="px-1.5 py-0.5 bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 text-[9px] font-bold rounded border border-slate-200 transition-all"
+                                      >
+                                        +{pct}%
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <button 
+                                    onClick={() => addQuoteItem(order.id)}
+                                    className="px-3 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-lg hover:bg-primary/20 transition-all"
+                                  >
+                                    + 품목 추가
+                                  </button>
+                                </div>
                               )}
                             </div>
 
@@ -1398,6 +1703,328 @@ export default function AdminDashboard() {
         )}
 
       </main>
+
+      {/* AI 토스트 알림 */}
+      <AnimatePresence>
+        {aiToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl shadow-2xl border backdrop-blur-lg max-w-[90vw] ${
+              aiToast.type === 'success' 
+                ? 'bg-emerald-50/95 border-emerald-200 text-emerald-800' 
+                : aiToast.type === 'error'
+                  ? 'bg-red-50/95 border-red-200 text-red-800'
+                  : 'bg-blue-50/95 border-blue-200 text-blue-800'
+            }`}
+          >
+            <p className="text-xs font-black whitespace-nowrap">{aiToast.message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 구매처 견적 자동 입력 모달 */}
+      <AnimatePresence>
+        {supplierModalOrderId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[190] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
+            onClick={() => setSupplierModalOrderId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 모달 헤더 */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-800 text-sm sm:text-base">구매처 견적 자동 입력</h3>
+                    <p className="text-[10px] text-slate-400 font-bold">
+                      구매처에서 받은 견적서 캡처 사진이나 엑셀 표를 넣으면 뉴진 견적서 폼으로 자동 변환됩니다.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSupplierModalOrderId(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* 모달 본문 */}
+              <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                {/* 탭 네비게이션 */}
+                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setSupplierInputTab('image')}
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      supplierInputTab === 'image' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    견적서 이미지 캡처 (Ctrl+V)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSupplierInputTab('text')}
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      supplierInputTab === 'text' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    견적서 텍스트 / 엑셀 표
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSupplierInputTab('inquiry')}
+                    className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                      supplierInputTab === 'inquiry' ? 'bg-white text-emerald-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    고객 문의내용 AI 분석
+                  </button>
+                </div>
+
+                {/* 탭 1: 이미지 업로드 / Ctrl+V */}
+                {supplierInputTab === 'image' && (
+                  <div className="space-y-3">
+                    <div
+                      className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-emerald-500 transition-colors bg-slate-50/50 cursor-pointer relative"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file && file.type.startsWith('image/')) {
+                          const reader = new FileReader();
+                          reader.onload = () => setSupplierImageBase64(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = () => setSupplierImageBase64(reader.result as string);
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                          <Upload className="w-6 h-6" />
+                        </div>
+                        <p className="text-xs font-extrabold text-slate-700">
+                          구매처 견적서 스크린샷 이미지를 클릭하여 선택하거나 드래그하세요
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-bold bg-white px-3 py-1 rounded-full border border-slate-200">
+                          💡 화면 캡처 후 이 창에서 바로 <span className="text-emerald-600 font-black">Ctrl + V (붙여넣기)</span>를 눌러도 첨부됩니다!
+                        </p>
+                      </div>
+                    </div>
+
+                    {supplierImageBase64 && (
+                      <div className="relative rounded-xl overflow-hidden border border-slate-200 max-h-48 bg-slate-100 flex items-center justify-center">
+                        <img src={supplierImageBase64} alt="구매처 견적서 미리보기" className="max-h-48 object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => setSupplierImageBase64(null)}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 탭 2: 텍스트 / 엑셀 표 */}
+                {supplierInputTab === 'text' && (
+                  <div className="space-y-2">
+                    <textarea
+                      value={supplierText}
+                      onChange={(e) => setSupplierText(e.target.value)}
+                      placeholder={`구매처 웹사이트의 견적서 표나 엑셀 시트 내용을 복사해서 그대로 붙여넣으세요.\n\n예시:\n1  (Invitrogen) D11347 - Dihydroethidium [10 x 1mg]  1  508,800  508,800\n2  SPL 20100(BX): RT: Cell Culture Dish  2  62,100  124,200`}
+                      rows={6}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono focus:ring-2 focus:ring-emerald-500/20 outline-none resize-none leading-relaxed"
+                    />
+                    <p className="text-[10px] text-slate-400 font-bold">
+                      * 탭, 공백, 쉼표로 구분된 엑셀 행을 자동으로 인식하여 품목명, 수량, 단가를 분리합니다.
+                    </p>
+                  </div>
+                )}
+
+                {/* 탭 3: 고객 문의 내용 */}
+                {supplierInputTab === 'inquiry' && (
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">고객이 입력한 견적 문의 내용</p>
+                    <p className="text-xs font-semibold text-slate-700 whitespace-pre-wrap leading-relaxed">
+                      {allOrders.find(o => o.id === supplierModalOrderId)?.otherRequest || '문의 내용 없음'}
+                    </p>
+                  </div>
+                )}
+
+                {/* 마진율 및 분석 버튼 영역 */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-emerald-50/60 rounded-2xl border border-emerald-100">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-black text-emerald-900 flex items-center gap-1">
+                      <Percent className="w-3.5 h-3.5 text-emerald-700" /> 판매 마진율:
+                    </span>
+                    {[0, 5, 10, 15, 20].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setSupplierMarginPercent(pct)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all ${
+                          supplierMarginPercent === pct
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {pct === 0 ? '원가그대로(0%)' : `+${pct}%`}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAnalyzeSupplierQuote}
+                    disabled={isAnalyzingSupplier}
+                    className="px-5 py-2.5 bg-emerald-600 text-white font-black text-xs rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-md disabled:opacity-60 shrink-0"
+                  >
+                    {isAnalyzingSupplier ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> 분석 중...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4" /> 견적 내용 추출 및 분석</>
+                    )}
+                  </button>
+                </div>
+
+                {/* 분석된 품목 미리보기 */}
+                {supplierParsedItems.length > 0 && (
+                  <div className="space-y-3 pt-2 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                        <Check className="w-4 h-4 text-emerald-600" /> 추출된 품목 목록 ({supplierParsedItems.length}건)
+                      </p>
+                      <span className="text-[10px] font-bold text-slate-400">
+                        * 마진율 {supplierMarginPercent}% 반영된 판매단가로 계산됨
+                      </span>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 text-xs">
+                      {supplierParsedItems.map((item, idx) => {
+                        const rawPrice = item.estimatedPrice || 0;
+                        const finalPrice = Math.round(rawPrice * (1 + supplierMarginPercent / 100));
+                        return (
+                          <div key={idx} className="p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-extrabold text-slate-800 truncate">
+                                {item.catalogNumber ? `[${item.catalogNumber}] ` : ''}{item.productName}
+                              </p>
+                              <p className="text-[11px] text-slate-400">
+                                {item.manufacturer ? `${item.manufacturer} | ` : ''}규격: {item.spec || '-'} | 수량: {item.quantity}개
+                              </p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="font-black text-emerald-600">
+                                ₩{finalPrice.toLocaleString()}원
+                              </p>
+                              {supplierMarginPercent > 0 && (
+                                <p className="text-[9px] text-slate-400 line-through">
+                                  원가: ₩{rawPrice.toLocaleString()}원
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* 적용 버튼 */}
+                    <button
+                      type="button"
+                      onClick={() => applySupplierItemsToQuote(supplierModalOrderId)}
+                      className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-900/20 hover:from-emerald-700 hover:to-teal-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      뉴진사이언스 견적서 폼에 적용하기 (금액 자유 편집 가능)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 견적서 미리보기 모달 */}
+      <AnimatePresence>
+        {quotePreviewId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setQuotePreviewId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 모달 헤더 */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+                <h3 className="font-extrabold text-slate-800 flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-primary" /> 견적서 미리보기
+                </h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.open(`/quote?ids=${quotePreviewId}`, '_blank')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-lg text-xs font-black hover:bg-primary/20 transition-all"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> 새 탭에서 열기
+                  </button>
+                  <button
+                    onClick={() => setQuotePreviewId(null)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+              {/* iframe으로 QuoteViewer 임베드 */}
+              <div className="flex-1 overflow-hidden">
+                <iframe
+                  src={`/quote?ids=${quotePreviewId}`}
+                  className="w-full h-full border-0"
+                  title="견적서 미리보기"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
     </AdminPinLock>
   );
