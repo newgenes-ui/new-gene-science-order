@@ -236,125 +236,125 @@ function cleanAndParseJson(text: string): ParsedQuoteItem[] {
  * 예: "SPL 20100(BX): RT: Cell Culture Dish	2	62,100	124,200"
  */
 export function fallbackSupplierTableParse(text: string): ParsedQuoteItem[] {
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const rawLines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const mergedLines: string[] = [];
+  let currentBuffer = '';
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    
+    // 줄이 순번 숫자 하나만 달랑 있는 경우 (예: "4")
+    if (/^\d{1,3}$/.test(line)) {
+      if (currentBuffer) {
+        mergedLines.push(currentBuffer);
+      }
+      currentBuffer = line;
+      continue;
+    }
+
+    // 새로운 품목의 시작인지 확인:
+    // 순번(숫자) + 제조사 괄호/단어 (예: "1 (Invitrogen)", "2 (Merck)", "1 SPL")
+    const isNewItemStart = /^\d{1,3}\s+[\(\[]?[A-Za-z가-힣]/.test(line);
+
+    if (isNewItemStart && currentBuffer && /[\d,]{4,}/.test(currentBuffer)) {
+      mergedLines.push(currentBuffer);
+      currentBuffer = line;
+    } else {
+      if (currentBuffer) {
+        currentBuffer += ' ' + line;
+      } else {
+        currentBuffer = line;
+      }
+    }
+  }
+  if (currentBuffer) mergedLines.push(currentBuffer);
+
   const items: ParsedQuoteItem[] = [];
 
-  for (const line of lines) {
-    // 탭 또는 복수 공백 분리
-    const parts = line.split(/\t+|\s{2,}/).map(p => p.trim()).filter(Boolean);
-    if (parts.length < 2) continue;
+  for (const line of mergedLines) {
+    if (line.includes('품목명') && line.includes('단가')) continue;
 
-    // 헤더 행 건너뛰기
-    if (line.includes('품목명') || line.includes('공급가') || line.includes('단가')) continue;
+    // 가격 패턴 찾기: [수량] [단가] [공급가] ...
+    // 예: ... 1 68,700 68,700 ...
+    const priceMatch = line.match(/(.*?)(?:^|\s+)(\d{1,4})\s+([\d,]{4,12})\s+([\d,]{4,12})(.*)$/);
+    
+    if (priceMatch) {
+      let productPart = priceMatch[1].trim();
+      const qty = parseInt(priceMatch[2], 10);
+      const unitPrice = parseInt(priceMatch[3].replace(/,/g, ''), 10);
+      const remarks = (priceMatch[5] || '').trim();
 
-    let fullItemName = '';
-    let quantity = 1;
-    let unitPrice = 0;
-    let remarks = '';
+      // 앞 순번 제거 (예: "4 (Sigma)..." -> "(Sigma)...")
+      productPart = productPart.replace(/^\d+\s+/, '').trim();
 
-    // 숫자와 가격 찾기
-    // 예: [1, "(Invitrogen) D11347...", 1, "508,800", "508,800", "적요..."]
-    const numbers: { val: number; raw: string; idx: number }[] = [];
-    parts.forEach((p, idx) => {
-      const cleanNum = p.replace(/[,\s₩원]/g, '');
-      if (/^\d+$/.test(cleanNum)) {
-        numbers.push({ val: parseInt(cleanNum, 10), raw: p, idx });
-      }
-    });
-
-    if (numbers.length >= 2) {
-      // 첫 번째 작은 숫자는 수량, 큰 숫자는 단가일 가능성이 높음
-      const firstNum = numbers[0];
-      const secondNum = numbers[1];
-
-      // 인덱스가 0인 첫 숫자가 1~99면 순번(No)일 수 있음
-      let itemTextIdx = 0;
-      let qtyIdx = -1;
-      let priceIdx = -1;
-
-      if (firstNum.idx === 0 && firstNum.val < 100) {
-        // 첫 번째는 순번
-        itemTextIdx = 1;
-        if (numbers.length >= 3) {
-          qtyIdx = numbers[1].idx;
-          priceIdx = numbers[2].idx;
-        } else if (numbers.length === 2) {
-          priceIdx = numbers[1].idx;
-        }
+      // 제조사 분리
+      let manufacturer = '';
+      const mMatch = productPart.match(/^\(([a-zA-Z가-힣\s]+)\)/);
+      if (mMatch) {
+        manufacturer = mMatch[1].trim();
+        productPart = productPart.replace(mMatch[0], '').trim();
       } else {
-        itemTextIdx = 0;
-        qtyIdx = firstNum.idx;
-        priceIdx = secondNum.idx;
+        const firstWord = productPart.split(/[\s:_-]/)[0];
+        if (['SPL', 'Sigma', 'Merck', 'Thermo', 'Gibco', 'Corning', 'Invitrogen'].includes(firstWord)) {
+          manufacturer = firstWord;
+          productPart = productPart.replace(new RegExp(`^${firstWord}[\\s:_-]*`), '').trim();
+        }
       }
 
-      fullItemName = parts[itemTextIdx] || '';
-      if (qtyIdx !== -1) quantity = numbers.find(n => n.idx === qtyIdx)?.val || 1;
-      if (priceIdx !== -1) unitPrice = numbers.find(n => n.idx === priceIdx)?.val || 0;
-
-      // remarks는 가격 컬럼 이후의 텍스트
-      const afterPrice = parts.slice(Math.max(priceIdx, qtyIdx) + 1);
-      if (afterPrice.length > 0) {
-        remarks = afterPrice.join(' ');
+      // 규격 대괄호 분리 [10 x 1mg] 등
+      let spec = '';
+      const sMatch = productPart.match(/\[(.*?)\]/);
+      if (sMatch) {
+        spec = sMatch[1].trim();
+        productPart = productPart.replace(sMatch[0], '').trim();
       }
-    } else if (numbers.length === 1) {
-      fullItemName = parts[0];
-      unitPrice = numbers[0].val;
+
+      // 카탈로그 번호 분리 (D11347, E3889-25G, P5379-100G, 345789-20MLCN, 20100)
+      let catalogNumber = '';
+      const catMatch = productPart.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)?)\b/i) || productPart.match(/\b([A-Z]?\d{4,8}(?:-[A-Z0-9]+)?)\b/i);
+      if (catMatch) {
+        catalogNumber = catMatch[1];
+        productPart = productPart.replace(catalogNumber, '').replace(/^[-:\s]+/, '').trim();
+      }
+
+      items.push({
+        manufacturer,
+        catalogNumber,
+        productName: productPart || catalogNumber,
+        spec,
+        quantity: qty,
+        estimatedPrice: unitPrice,
+        remarks
+      });
     } else {
-      fullItemName = parts.join(' ');
-    }
+      // 탭이나 다중 공백으로 분리되는 일반 테이블 fallback
+      const parts = line.split(/\t+|\s{2,}/).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const numbers: { val: number; raw: string; idx: number }[] = [];
+        parts.forEach((p, idx) => {
+          const cleanNum = p.replace(/[,\s₩원]/g, '');
+          if (/^\d+$/.test(cleanNum)) {
+            numbers.push({ val: parseInt(cleanNum, 10), raw: p, idx });
+          }
+        });
 
-    // fullItemName에서 제조사, 카탈로그번호, 제품명, 규격 분리
-    // 예: "(Invitrogen) D11347 - Dihydroethidium (Hydroethidine) [10 x 1mg]"
-    // 예: "SPL 20100(BX): RT: Cell Culture Dish"
-    let manufacturer = '';
-    let catalogNumber = '';
-    let spec = '';
-    let cleanName = fullItemName;
+        if (numbers.length >= 1) {
+          const unitPrice = numbers[numbers.length - 1].val;
+          const quantity = numbers.length >= 2 ? numbers[numbers.length - 2].val : 1;
+          const productPart = parts.slice(0, numbers.length >= 2 ? numbers[numbers.length - 2].idx : numbers[numbers.length - 1].idx).join(' ');
 
-    // 제조사 괄호 추출: (Invitrogen), (Merck), (Sigma)
-    const mMatch = cleanName.match(/^\(([a-zA-Z가-힣\s]+)\)/);
-    if (mMatch) {
-      manufacturer = mMatch[1].trim();
-      cleanName = cleanName.replace(mMatch[0], '').trim();
-    } else {
-      const firstWord = cleanName.split(/[\s:_-]/)[0];
-      if (['SPL', 'Sigma', 'Merck', 'Thermo', 'Gibco', 'Corning'].includes(firstWord)) {
-        manufacturer = firstWord;
-        cleanName = cleanName.replace(new RegExp(`^${firstWord}[\\s:_-]*`), '').trim();
+          items.push({
+            manufacturer: '',
+            catalogNumber: '',
+            productName: productPart || line,
+            spec: '',
+            quantity: quantity < 500 ? quantity : 1,
+            estimatedPrice: unitPrice,
+            remarks: ''
+          });
+        }
       }
     }
-
-    // 규격 대괄호 추출: [10 x 1mg], [20ML], [100g]
-    const sMatch = cleanName.match(/\[(.*?)\]/);
-    if (sMatch) {
-      spec = sMatch[1].trim();
-      cleanName = cleanName.replace(sMatch[0], '').trim();
-    }
-
-    // 카탈로그 번호 분리: D11347, 345789-20MLCN, P5379-100G, 20100
-    const catMatch = cleanName.match(/\b([A-Z]?\d{4,8}(?:-[A-Z0-9]+)?)\b/i);
-    if (catMatch) {
-      catalogNumber = catMatch[1];
-      cleanName = cleanName.replace(catalogNumber, '').replace(/^[-:\s]+/, '').trim();
-    }
-
-    // spec이 아직 안 잡혔다면 500ml, 100g 등 정규식
-    if (!spec) {
-      const specInline = cleanName.match(/(\d+(?:\.\d+)?\s*(?:ml|ul|μl|mg|g|kg|l|L|ML|UL|MG|G|box|case|pcs))\b/i);
-      if (specInline) {
-        spec = specInline[1];
-      }
-    }
-
-    items.push({
-      manufacturer,
-      catalogNumber,
-      productName: cleanName || fullItemName,
-      spec,
-      quantity,
-      estimatedPrice: unitPrice,
-      remarks,
-    });
   }
 
   return items;
