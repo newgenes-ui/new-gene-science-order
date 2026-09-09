@@ -100,7 +100,7 @@ ${requestText}
 export async function parseSupplierQuoteImage(base64Data: string, mimeType = 'image/png'): Promise<ParsedQuoteItem[]> {
   const ai = getAIClient();
   if (!ai) {
-    throw new Error('구매처 견적서 이미지 분석을 위해 .env.local에 VITE_GEMINI_API_KEY 설정이 필요합니다.');
+    throw new Error('구매처 견적서 캡처 사진 AI 분석을 위해 Gemini API 키 설정이 필요합니다.');
   }
 
   // base64 prefix 제거
@@ -147,12 +147,36 @@ CRITICAL INSTRUCTIONS:
     });
 
     const result = cleanAndParseJson(response.text?.trim() || '');
-    if (result.length > 0) return result;
-    throw new Error('이미지에서 품목 데이터를 인식하지 못했습니다.');
+    return result;
   } catch (error: any) {
     console.error('구매처 견적서 이미지 분석 실패:', error);
     throw error;
   }
+}
+
+/**
+ * 2-1. 복수(2장 이상)의 구매처 견적서 이미지 동시 분석
+ * 예: 1번 캡처는 Sigma/Merck, 2번 캡처는 SPL 견적서인 경우 등
+ */
+export async function parseSupplierQuoteImages(base64Array: string[]): Promise<ParsedQuoteItem[]> {
+  const ai = getAIClient();
+  if (!ai) {
+    throw new Error('구매처 견적서 캡처 사진 AI 분석을 위해 Gemini API 키 설정이 필요합니다.');
+  }
+
+  if (base64Array.length === 0) return [];
+
+  // 각 이미지 병렬 분석
+  const results = await Promise.all(
+    base64Array.map(b64 => parseSupplierQuoteImage(b64))
+  );
+
+  // 모든 이미지의 품목을 하나로 합침
+  const combined = results.flat();
+  if (combined.length === 0) {
+    throw new Error('첨부된 이미지들에서 품목 데이터를 인식하지 못했습니다. 이미지가 선명한지 확인해주세요.');
+  }
+  return combined;
 }
 
 /**

@@ -9,7 +9,7 @@ import { getOrders, getOrdersFromSupabase, STATUS_LABELS, STATUS_COLORS, Order, 
 import { NGS_EMAIL } from '../data/products';
 import emailjs from '@emailjs/browser';
 import AdminPinLock from '../components/AdminPinLock';
-import { parseQuoteRequest, parseSupplierQuoteImage, parseSupplierQuoteText, isAIParsingAvailable, ParsedQuoteItem, getGeminiApiKey, setGeminiApiKey } from '../lib/quoteParser';
+import { parseQuoteRequest, parseSupplierQuoteImage, parseSupplierQuoteImages, parseSupplierQuoteText, isAIParsingAvailable, ParsedQuoteItem, getGeminiApiKey, setGeminiApiKey } from '../lib/quoteParser';
 
 // 주문번호 표시용:
 // 1) 신규 형식: NGS-[clientId]-[YYYYMMDD]-[X]-[HHMMSS] -> YYYYMMDD-HHMMSS
@@ -413,7 +413,7 @@ export default function AdminDashboard() {
   const [supplierModalOrderId, setSupplierModalOrderId] = useState<string | null>(null);
   const [supplierInputTab, setSupplierInputTab] = useState<'image' | 'text' | 'inquiry'>('image');
   const [supplierText, setSupplierText] = useState('');
-  const [supplierImageBase64, setSupplierImageBase64] = useState<string | null>(null);
+  const [supplierImages, setSupplierImages] = useState<string[]>([]);
   const [supplierMarginPercent, setSupplierMarginPercent] = useState<number>(0);
   const [supplierMarginInputStr, setSupplierMarginInputStr] = useState<string>('0');
   const [customMarginInputs, setCustomMarginInputs] = useState<Record<string, string>>({});
@@ -431,7 +431,7 @@ export default function AdminDashboard() {
     }
   }, [aiToast]);
 
-  // 클립보드 붙여넣기(Ctrl+V) 이벤트 리스너 (모달 열려있을 때 이미지/텍스트 자동 캡처)
+  // 클립보드 붙여넣기(Ctrl+V) 이벤트 리스너 (모달 열려있을 때 캡처 이미지 연속 추가)
   useEffect(() => {
     if (!supplierModalOrderId) return;
 
@@ -448,9 +448,16 @@ export default function AdminDashboard() {
             const reader = new FileReader();
             reader.onload = () => {
               const base64 = reader.result as string;
-              setSupplierImageBase64(base64);
+              setSupplierImages(prev => {
+                const next = [...prev, base64];
+                setAiToast({ 
+                  message: `📋 캡처 사진이 추가되었습니다! (현재 총 ${next.length}장)`, 
+                  type: 'info' 
+                });
+                return next;
+              });
               setSupplierInputTab('image');
-              setAiToast({ message: '📋 클립보드 이미지가 첨부되었습니다. "AI 견적 분석"을 눌러주세요.', type: 'info' });
+              setSupplierModalError(null);
             };
             reader.readAsDataURL(file);
             return;
@@ -473,12 +480,12 @@ export default function AdminDashboard() {
       let items: ParsedQuoteItem[] = [];
 
       if (supplierInputTab === 'image') {
-        if (!supplierImageBase64) {
-          setSupplierModalError('구매처 견적서 이미지를 업로드하거나 Ctrl+V로 붙여넣어주세요.');
+        if (supplierImages.length === 0) {
+          setSupplierModalError('구매처 견적서 캡처 사진을 Ctrl+V로 붙여넣거나 파일을 선택해주세요.');
           setIsAnalyzingSupplier(false);
           return;
         }
-        items = await parseSupplierQuoteImage(supplierImageBase64);
+        items = await parseSupplierQuoteImages(supplierImages);
       } else if (supplierInputTab === 'text') {
         if (!supplierText.trim()) {
           setSupplierModalError('구매처 견적 텍스트 또는 엑셀 표를 붙여넣어주세요.');
@@ -552,7 +559,7 @@ export default function AdminDashboard() {
     // 모달 닫기 및 초기화
     setSupplierModalOrderId(null);
     setSupplierParsedItems([]);
-    setSupplierImageBase64(null);
+    setSupplierImages([]);
     setSupplierText('');
     
     setAiToast({ 
@@ -1473,7 +1480,8 @@ export default function AdminDashboard() {
                                       e.stopPropagation(); 
                                       setSupplierModalOrderId(order.id);
                                       setSupplierParsedItems([]);
-                                      setSupplierImageBase64(null);
+                                      setSupplierImages([]);
+                                      setSupplierModalError(null);
                                       setSupplierText('');
                                     }}
                                     className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-xl text-[11px] font-black hover:from-emerald-700 hover:to-teal-700 transition-all active:scale-[0.97] shadow-md shadow-emerald-900/20"
@@ -1943,58 +1951,154 @@ export default function AdminDashboard() {
                   </button>
                 </div>
 
-                {/* 탭 1: 이미지 업로드 / Ctrl+V */}
+                {/* 탭 1: 이미지 업로드 / Ctrl+V (다중 캡처 지원) */}
                 {supplierInputTab === 'image' && (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
+                    {/* API 키 안내 및 바로입력 상자 */}
+                    {!getGeminiApiKey() ? (
+                      <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs space-y-2">
+                        <div className="flex items-start gap-2">
+                          <Key className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="font-extrabold text-amber-900">
+                              사진 캡처 AI 분석을 위해 Gemini API 키가 필요합니다
+                            </p>
+                            <p className="text-[11px] text-amber-700 mt-0.5">
+                              Google AI Studio(aistudio.google.com)에서 1초 만에 무료 발급받으실 수 있습니다.
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <input
+                                type="password"
+                                value={apiKeyInput}
+                                onChange={(e) => setApiKeyInput(e.target.value)}
+                                placeholder="AIzaSy... API 키를 여기에 붙여넣으세요"
+                                className="px-3 py-1.5 bg-white border border-amber-300 rounded-xl text-xs font-mono flex-1 outline-none focus:ring-2 focus:ring-amber-500/20 shadow-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setGeminiApiKey(apiKeyInput);
+                                  setSupplierModalError(null);
+                                  setAiToast({ message: '✅ Gemini API 키가 저장되었습니다! 이제 사진 분석이 가능합니다.', type: 'success' });
+                                }}
+                                className="px-4 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-black hover:bg-amber-700 transition-all shrink-0 shadow-sm"
+                              >
+                                키 저장
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between px-4 py-2 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800">
+                        <span className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          Google AI 이미지 분석 엔진 연동 완료
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowApiKeySetting(true)}
+                          className="text-[10px] text-emerald-700 underline hover:text-emerald-900"
+                        >
+                          키 변경
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 업로드 / 캡처 드롭존 */}
                     <div
-                      className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-emerald-500 transition-colors bg-slate-50/50 cursor-pointer relative"
+                      className="border-2 border-dashed border-slate-300 rounded-2xl p-5 text-center hover:border-emerald-500 transition-colors bg-slate-50/50 cursor-pointer relative"
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
                         e.preventDefault();
-                        const file = e.dataTransfer.files?.[0];
-                        if (file && file.type.startsWith('image/')) {
-                          const reader = new FileReader();
-                          reader.onload = () => setSupplierImageBase64(reader.result as string);
-                          reader.readAsDataURL(file);
+                        const files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
+                        if (files.length > 0) {
+                          files.forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setSupplierImages(prev => [...prev, reader.result as string]);
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                          setSupplierModalError(null);
+                          setAiToast({ message: `${files.length}장의 사진이 추가되었습니다!`, type: 'info' });
                         }
                       }}
                     >
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         className="absolute inset-0 opacity-0 cursor-pointer"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => setSupplierImageBase64(reader.result as string);
-                            reader.readAsDataURL(file);
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            files.forEach(file => {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                setSupplierImages(prev => [...prev, reader.result as string]);
+                              };
+                              reader.readAsDataURL(file);
+                            });
+                            setSupplierModalError(null);
+                            setAiToast({ message: `${files.length}장의 사진이 추가되었습니다!`, type: 'info' });
                           }
                         }}
                       />
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
-                          <Upload className="w-6 h-6" />
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                          <Upload className="w-5 h-5" />
                         </div>
                         <p className="text-xs font-extrabold text-slate-700">
-                          구매처 견적서 스크린샷 이미지를 클릭하여 선택하거나 드래그하세요
+                          견적서 캡처 사진을 드래그하거나 클릭하여 추가하세요 (여러 장 선택 가능)
                         </p>
-                        <p className="text-[10px] text-slate-400 font-bold bg-white px-3 py-1 rounded-full border border-slate-200">
-                          💡 화면 캡처 후 이 창에서 바로 <span className="text-emerald-600 font-black">Ctrl + V (붙여넣기)</span>를 눌러도 첨부됩니다!
+                        <p className="text-[10px] text-emerald-800 font-black bg-emerald-100/60 px-3 py-1 rounded-full border border-emerald-200">
+                          💡 화면 캡처(Win+Shift+S) 후 이 창에서 바로 <span className="underline">Ctrl + V</span>를 누르면 사진이 계속 추가됩니다! (2개 이상 가능)
                         </p>
                       </div>
                     </div>
 
-                    {supplierImageBase64 && (
-                      <div className="relative rounded-xl overflow-hidden border border-slate-200 max-h-48 bg-slate-100 flex items-center justify-center">
-                        <img src={supplierImageBase64} alt="구매처 견적서 미리보기" className="max-h-48 object-contain" />
-                        <button
-                          type="button"
-                          onClick={() => setSupplierImageBase64(null)}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                    {/* 첨부된 다중 사진 목록 썸네일 그리드 */}
+                    {supplierImages.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-black text-slate-700 flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5 text-emerald-600" />
+                            첨부된 견적서 사진 ({supplierImages.length}장)
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setSupplierImages([])}
+                            className="text-[10px] text-rose-500 hover:text-rose-700 font-bold"
+                          >
+                            전체 사진 삭제
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          {supplierImages.map((imgBase64, idx) => (
+                            <div
+                              key={idx}
+                              className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-video flex items-center justify-center shadow-sm"
+                            >
+                              <img
+                                src={imgBase64}
+                                alt={`견적서 캡처 ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute top-1.5 left-1.5 bg-black/70 text-white text-[9px] font-black px-1.5 py-0.5 rounded">
+                                #{idx + 1}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSupplierImages(prev => prev.filter((_, i) => i !== idx))}
+                                className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-80 hover:opacity-100 shadow-md transition-all"
+                                title="이 사진 삭제"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2075,7 +2179,7 @@ export default function AdminDashboard() {
                     {isAnalyzingSupplier ? (
                       <><Loader2 className="w-4 h-4 animate-spin" /> 분석 중...</>
                     ) : (
-                      <><Sparkles className="w-4 h-4" /> 견적 내용 추출 및 분석</>
+                      <><Sparkles className="w-4 h-4" /> {supplierInputTab === 'image' && supplierImages.length > 1 ? `${supplierImages.length}장 캡처 한 번에 분석` : '견적 내용 추출 및 분석'}</>
                     )}
                   </button>
                 </div>
