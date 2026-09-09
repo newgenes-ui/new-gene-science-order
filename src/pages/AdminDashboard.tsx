@@ -492,7 +492,9 @@ export default function AdminDashboard() {
           setIsAnalyzingSupplier(false);
           return;
         }
-        items = await parseSupplierQuoteText(supplierText);
+        const order = allOrders.find(o => o.id === supplierModalOrderId);
+        const reqText = order?.otherRequest || '';
+        items = await parseSupplierQuoteText(supplierText, reqText);
       } else {
         // 고객 요청문 AI 분석
         const order = allOrders.find(o => o.id === supplierModalOrderId);
@@ -2196,29 +2198,89 @@ export default function AdminDashboard() {
                       </span>
                     </div>
 
-                    <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 text-xs">
+                    <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100 text-xs bg-white">
                       {supplierParsedItems.map((item, idx) => {
                         const rawPrice = item.estimatedPrice || 0;
                         const finalPrice = Math.round(rawPrice * (1 + supplierMarginPercent / 100));
                         return (
-                          <div key={idx} className="p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-extrabold text-slate-800 truncate">
-                                {item.catalogNumber ? `[${item.catalogNumber}] ` : ''}{item.productName}
-                              </p>
-                              <p className="text-[11px] text-slate-400">
-                                {item.manufacturer ? `${item.manufacturer} | ` : ''}규격: {item.spec || '-'} | 수량: {item.quantity}개
-                              </p>
+                          <div key={idx} className="p-3 bg-white hover:bg-slate-50/80 space-y-2 transition-colors relative group">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <input
+                                  type="text"
+                                  value={item.catalogNumber}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSupplierParsedItems(prev => prev.map((it, i) => i === idx ? { ...it, catalogNumber: val } : it));
+                                  }}
+                                  placeholder="품목코드 (예: 20100)"
+                                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white outline-none"
+                                />
+                                <input
+                                  type="text"
+                                  value={item.productName}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setSupplierParsedItems(prev => prev.map((it, i) => i === idx ? { ...it, productName: val } : it));
+                                  }}
+                                  placeholder="품목명 (예: Cell Culture Dish)"
+                                  className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white outline-none sm:col-span-2"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setSupplierParsedItems(prev => prev.filter((_, i) => i !== idx))}
+                                className="w-6 h-6 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shrink-0 transition-colors"
+                                title="이 품목 삭제"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="font-black text-emerald-600">
-                                ₩{finalPrice.toLocaleString()}원
-                              </p>
-                              {supplierMarginPercent > 0 && (
-                                <p className="text-[9px] text-slate-400 line-through">
-                                  원가: ₩{rawPrice.toLocaleString()}원
-                                </p>
-                              )}
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pl-7">
+                              <input
+                                type="text"
+                                value={item.spec}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setSupplierParsedItems(prev => prev.map((it, i) => i === idx ? { ...it, spec: val } : it));
+                                }}
+                                placeholder="규격 (예: BX, 90*20)"
+                                className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 focus:bg-white outline-none"
+                              />
+                              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
+                                <span className="text-[10px] text-slate-400 font-bold">수량:</span>
+                                <input
+                                  type="text"
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 1;
+                                    setSupplierParsedItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it));
+                                  }}
+                                  className="w-full text-xs font-bold text-slate-800 bg-transparent outline-none"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
+                                <span className="text-[10px] text-slate-400 font-bold">단가:</span>
+                                <input
+                                  type="text"
+                                  value={item.estimatedPrice ? item.estimatedPrice.toLocaleString() : ''}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0;
+                                    setSupplierParsedItems(prev => prev.map((it, i) => i === idx ? { ...it, estimatedPrice: val } : it));
+                                  }}
+                                  placeholder="0"
+                                  className="w-full text-xs font-bold text-slate-800 bg-transparent outline-none"
+                                />
+                              </div>
+                              <div className="flex items-center justify-end px-1">
+                                <span className="text-xs font-black text-emerald-600">
+                                  판매가: ₩{finalPrice.toLocaleString()}원
+                                </span>
+                              </div>
                             </div>
                           </div>
                         );

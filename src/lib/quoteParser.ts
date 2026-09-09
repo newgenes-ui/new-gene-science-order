@@ -108,18 +108,22 @@ export async function parseSupplierQuoteImage(base64Data: string, mimeType = 'im
 
   const prompt = `You are an expert procurement clerk at NuGene Science (뉴진사이언스).
 Analyze this supplier/vendor quotation or invoice table image and extract all quoted product line items.
+Suppliers may be SPL, Sigma-Aldrich, Merck, Invitrogen, Thermo Fisher, Corning, Falcon, etc.
 
 For each item row in the quotation table:
-1. Extract 순번/No
-2. Extract 품목명/규격 (Separate manufacturer like Invitrogen, Merck, Sigma, SPL, catalog number like D11347, 345789, P5379, 20100, product name, and spec like 10 x 1mg, 20ML, 100g, 25g)
-3. Extract 수량 (Quantity)
-4. Extract 단가 (Unit Price, strictly the number before VAT, without commas/currency symbols)
+1. Extract 순번/No: Remove row numbers (e.g. 1, 2, 8) from product name and do NOT confuse row number with quantity!
+2. Extract 품목명/규격:
+   - Separate manufacturer (e.g. SPL, Invitrogen, Merck, Sigma, Corning, Gibco).
+   - Separate catalog number / code (e.g. 20100, D11347, 345789-20MLCN, P5379-100G).
+   - Clean product name: (e.g. "Cell Culture Dish", "Dihydroethidium", "Formaldehyde, 37%"). Remove prefixes like "RT;", storage condition "RT", or leading row numbers.
+   - Separate spec: (e.g. "BX", "10 x 1mg", "20ML", "100MG", "25G").
+3. Extract 수량 (Quantity): Exact integer quantity (e.g. 2, 1). Note: Do NOT confuse table row number (e.g. 8) with quantity!
+4. Extract 단가 (Unit Price):
+   - CRITICAL: Tables often have columns like [수량] [단가] [공급가액] [세액].
+   - unitPrice MUST BE the single unit price BEFORE VAT (e.g. 62100, 508800, 139600), NOT the total supply price, and NOT the VAT (10%).
 5. Extract 적요/비고 (Remarks, 납기 등)
 
-CRITICAL INSTRUCTIONS:
-- unitPrice (단가) must be exact integer from the table (e.g. 508800, 139600, 68700, 62100).
-- If table shows catalog number inside product name like "(Invitrogen) D11347 - Dihydroethidium", catalogNumber is "D11347", manufacturer is "Invitrogen", and productName is "Dihydroethidium (Hydroethidine)".
-- Return STRICT JSON array format only:
+Return STRICT JSON array format only:
 [
   {
     "manufacturer": "string",
@@ -182,14 +186,22 @@ export async function parseSupplierQuoteImages(base64Array: string[]): Promise<P
 /**
  * 3. 구매처 견적서 텍스트 또는 엑셀 복사-붙여넣기 파싱
  */
-export async function parseSupplierQuoteText(rawText: string): Promise<ParsedQuoteItem[]> {
+export async function parseSupplierQuoteText(rawText: string, customerRequestText?: string): Promise<ParsedQuoteItem[]> {
   const ai = getAIClient();
   if (ai) {
     try {
       const prompt = `You are an expert procurement clerk at NuGene Science.
 Extract structured quotation line items from this supplier quote text (which was copied from an Excel sheet or supplier web table).
+Different suppliers have different formats (e.g. [Qty, UnitPrice, SupplyPrice, VAT] or [Qty, UnitPrice, SupplyPrice, Remarks]).
 
-Extract manufacturer, catalog number, product name, spec, quantity, unit price (단가 as integer), and remarks.
+Extract:
+- manufacturer (e.g. SPL, Sigma, Merck, Invitrogen, Thermo)
+- catalogNumber (e.g. 20100, D11347, P5379)
+- productName (clean name without row number or leading RT; or code)
+- spec (e.g. BX, 10 x 1mg, 20ML)
+- quantity (integer quantity)
+- estimatedPrice (unit price before VAT as integer, e.g. 62100)
+- remarks
 
 Return ONLY a strict JSON array:
 [
@@ -215,14 +227,16 @@ ${rawText}
       });
 
       const parsed = cleanAndParseJson(response.text?.trim() || '');
-      if (parsed.length > 0) return parsed;
+      if (parsed.length > 0) {
+        return customerRequestText ? enrichItemsWithCustomerInquiry(parsed, customerRequestText) : parsed;
+      }
     } catch (e) {
       console.warn('AI supplier text parse failed, falling back to regex:', e);
     }
   }
 
   // Fallback: 표 형식 / 탭 / 쉼표 / 공백 정규식 분석
-  return fallbackSupplierTableParse(rawText);
+  return fallbackSupplierTableParse(rawText, customerRequestText);
 }
 
 /**
@@ -259,7 +273,7 @@ function cleanAndParseJson(text: string): ParsedQuoteItem[] {
  * 예: "1	(Invitrogen) D11347 - Dihydroethidium [10 x 1mg]	1	508,800	508,800	1주일내"
  * 예: "SPL 20100(BX): RT: Cell Culture Dish	2	62,100	124,200"
  */
-export function fallbackSupplierTableParse(text: string): ParsedQuoteItem[] {
+export function fallbackSupplierTableParse(text: string, customerRequestText?: string): ParsedQuoteItem[] {
   const rawLines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const mergedLines: string[] = [];
   let currentBuffer = '';
@@ -267,7 +281,7 @@ export function fallbackSupplierTableParse(text: string): ParsedQuoteItem[] {
   for (let i = 0; i < rawLines.length; i++) {
     const line = rawLines[i];
     
-    // 줄이 순번 숫자 하나만 달랑 있는 경우 (예: "4")
+    // 줄이 순번 숫자 하나만 달랑 있는 경우 (예: "4", "8", "1")
     if (/^\d{1,3}$/.test(line)) {
       if (currentBuffer) {
         mergedLines.push(currentBuffer);
@@ -277,8 +291,8 @@ export function fallbackSupplierTableParse(text: string): ParsedQuoteItem[] {
     }
 
     // 새로운 품목의 시작인지 확인:
-    // 순번(숫자) + 제조사 괄호/단어 (예: "1 (Invitrogen)", "2 (Merck)", "1 SPL")
-    const isNewItemStart = /^\d{1,3}\s+[\(\[]?[A-Za-z가-힣]/.test(line);
+    // 순번(숫자) + 제조사 괄호/단어 (예: "1 (Invitrogen)", "2 (Merck)", "1 SPL", "8 spl")
+    const isNewItemStart = /^\d{1,3}[\.\)\s]+[\(\[]?[A-Za-z가-힣0-9]/.test(line);
 
     if (isNewItemStart && currentBuffer && /[\d,]{4,}/.test(currentBuffer)) {
       mergedLines.push(currentBuffer);
@@ -295,93 +309,236 @@ export function fallbackSupplierTableParse(text: string): ParsedQuoteItem[] {
 
   const items: ParsedQuoteItem[] = [];
 
-  for (const line of mergedLines) {
-    if (line.includes('품목명') && line.includes('단가')) continue;
+  for (let rawLine of mergedLines) {
+    if (rawLine.includes('품목명') && rawLine.includes('단가')) continue;
 
-    // 가격 패턴 찾기: [수량] [단가] [공급가] ...
-    // 예: ... 1 68,700 68,700 ...
-    const priceMatch = line.match(/(.*?)(?:^|\s+)(\d{1,4})\s+([\d,]{4,12})\s+([\d,]{4,12})(.*)$/);
+    // 탭을 3개 공백으로 치환
+    const line = rawLine.replace(/\t+/g, '   ').trim();
+
+    let productPart = '';
+    let qty = 1;
+    let unitPrice = 0;
+    let remarks = '';
+
+    // 가격 패턴 분기 (한국 견적서 / 세금계산서 양식):
+    // 1) 4연속 숫자 패턴: [수량] [단가] [공급가액] [세액] ([적요])
+    //    예: "2 62,100 124,200 12,420"
+    const match4 = line.match(/^(.*?)(?:^|\s+)(\d{1,4})\s+([\d,]{4,12})\s+([\d,]{4,12})\s+([\d,]{3,12})(.*)$/);
     
-    if (priceMatch) {
-      let productPart = priceMatch[1].trim();
-      const qty = parseInt(priceMatch[2], 10);
-      const unitPrice = parseInt(priceMatch[3].replace(/,/g, ''), 10);
-      const remarks = (priceMatch[5] || '').trim();
+    // 2) 3연속 숫자 패턴: [수량] [단가] [공급가액] ([적요])
+    //    예: "1 508,800 508,800 1주일내"
+    const match3 = line.match(/^(.*?)(?:^|\s+)(\d{1,4})\s+([\d,]{4,12})\s+([\d,]{4,12})(.*)$/);
 
-      // 앞 순번 제거 (예: "4 (Sigma)..." -> "(Sigma)...")
-      productPart = productPart.replace(/^\d+\s+/, '').trim();
+    // 3) 2연속 숫자 패턴: [단가] [공급가액]
+    const match2 = line.match(/^(.*?)(?:^|\s+)([\d,]{4,12})\s+([\d,]{4,12})(.*)$/);
 
-      // 제조사 분리
-      let manufacturer = '';
-      const mMatch = productPart.match(/^\(([a-zA-Z가-힣\s]+)\)/);
-      if (mMatch) {
-        manufacturer = mMatch[1].trim();
-        productPart = productPart.replace(mMatch[0], '').trim();
-      } else {
-        const firstWord = productPart.split(/[\s:_-]/)[0];
-        if (['SPL', 'Sigma', 'Merck', 'Thermo', 'Gibco', 'Corning', 'Invitrogen'].includes(firstWord)) {
-          manufacturer = firstWord;
-          productPart = productPart.replace(new RegExp(`^${firstWord}[\\s:_-]*`), '').trim();
+    if (match4) {
+      const q = parseInt(match4[2], 10);
+      const p1 = parseInt(match4[3].replace(/,/g, ''), 10);
+      const p2 = parseInt(match4[4].replace(/,/g, ''), 10);
+      const p3 = parseInt(match4[5].replace(/,/g, ''), 10);
+
+      // p2(공급가) = q(수량) * p1(단가) 또는 p3(세액)이 p2의 약 10%인지 확인
+      if (Math.abs(p2 - q * p1) <= 100 || Math.abs(p2 * 0.1 - p3) <= 100) {
+        productPart = match4[1];
+        qty = q;
+        unitPrice = p1; // 단가는 첫 번째 금액!
+        remarks = (match4[6] || '').trim();
+      }
+    }
+
+    if (!productPart && match3) {
+      productPart = match3[1];
+      qty = parseInt(match3[2], 10);
+      unitPrice = parseInt(match3[3].replace(/,/g, ''), 10);
+      remarks = (match3[5] || '').trim();
+    }
+
+    if (!productPart && match2) {
+      productPart = match2[1];
+      qty = 1;
+      unitPrice = parseInt(match2[2].replace(/,/g, ''), 10);
+      remarks = (match2[4] || '').trim();
+    }
+
+    // fallback: 다중 공백/탭 분리 테이블
+    if (!productPart || unitPrice === 0) {
+      const parts = line.split(/\s{2,}|\t+/).map(p => p.trim()).filter(Boolean);
+      const numbers: { val: number; raw: string; idx: number }[] = [];
+      parts.forEach((p, idx) => {
+        const cleanNum = p.replace(/[,\s₩원]/g, '');
+        if (/^\d+$/.test(cleanNum)) {
+          numbers.push({ val: parseInt(cleanNum, 10), raw: p, idx });
         }
-      }
-
-      // 규격 대괄호 분리 [10 x 1mg] 등
-      let spec = '';
-      const sMatch = productPart.match(/\[(.*?)\]/);
-      if (sMatch) {
-        spec = sMatch[1].trim();
-        productPart = productPart.replace(sMatch[0], '').trim();
-      }
-
-      // 카탈로그 번호 분리 (D11347, E3889-25G, P5379-100G, 345789-20MLCN, 20100)
-      let catalogNumber = '';
-      const catMatch = productPart.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)?)\b/i) || productPart.match(/\b([A-Z]?\d{4,8}(?:-[A-Z0-9]+)?)\b/i);
-      if (catMatch) {
-        catalogNumber = catMatch[1];
-        productPart = productPart.replace(catalogNumber, '').replace(/^[-:\s]+/, '').trim();
-      }
-
-      items.push({
-        manufacturer,
-        catalogNumber,
-        productName: productPart || catalogNumber,
-        spec,
-        quantity: qty,
-        estimatedPrice: unitPrice,
-        remarks
       });
+
+      if (numbers.length >= 2) {
+        // 뒤에서부터 공급가, 단가, 수량 순
+        const last1 = numbers[numbers.length - 1];
+        const last2 = numbers[numbers.length - 2];
+        const last3 = numbers.length >= 3 ? numbers[numbers.length - 3] : null;
+
+        // 만약 세액이 맨 뒤에 붙은 경우
+        if (last3 && Math.abs(last2.val * 0.1 - last1.val) <= 100) {
+          // last2가 공급가, last3가 단가
+          unitPrice = last3.val;
+          const last4 = numbers.length >= 4 ? numbers[numbers.length - 4] : null;
+          qty = last4 && last4.val < 1000 ? last4.val : 1;
+          const cutIdx = last4 ? last4.idx : last3.idx;
+          productPart = parts.slice(0, cutIdx).join(' ');
+        } else {
+          unitPrice = last2.val;
+          qty = last3 && last3.val < 1000 ? last3.val : 1;
+          const cutIdx = last3 ? last3.idx : last2.idx;
+          productPart = parts.slice(0, cutIdx).join(' ');
+        }
+      } else if (numbers.length === 1) {
+        unitPrice = numbers[0].val;
+        productPart = parts.slice(0, numbers[0].idx).join(' ');
+      }
+    }
+
+    if (!productPart) productPart = line;
+
+    // --- 정제 로직 ---
+
+    // 1. 맨 앞 순번 제거 (예: "8 ", "8. ", "8) ", "No.1 ", "1  ")
+    productPart = productPart.replace(/^(?:No\.?\s*)?\d+[\.\)\s\t]+/, '').trim();
+
+    // 2. 제조사 분리 (대소문자 무관)
+    let manufacturer = '';
+    const mBracketMatch = productPart.match(/^\(([a-zA-Z가-힣\s]+)\)/);
+    if (mBracketMatch) {
+      manufacturer = mBracketMatch[1].trim();
+      productPart = productPart.replace(mBracketMatch[0], '').trim();
     } else {
-      // 탭이나 다중 공백으로 분리되는 일반 테이블 fallback
-      const parts = line.split(/\t+|\s{2,}/).map(p => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        const numbers: { val: number; raw: string; idx: number }[] = [];
-        parts.forEach((p, idx) => {
-          const cleanNum = p.replace(/[,\s₩원]/g, '');
-          if (/^\d+$/.test(cleanNum)) {
-            numbers.push({ val: parseInt(cleanNum, 10), raw: p, idx });
-          }
-        });
-
-        if (numbers.length >= 1) {
-          const unitPrice = numbers[numbers.length - 1].val;
-          const quantity = numbers.length >= 2 ? numbers[numbers.length - 2].val : 1;
-          const productPart = parts.slice(0, numbers.length >= 2 ? numbers[numbers.length - 2].idx : numbers[numbers.length - 1].idx).join(' ');
-
-          items.push({
-            manufacturer: '',
-            catalogNumber: '',
-            productName: productPart || line,
-            spec: '',
-            quantity: quantity < 500 ? quantity : 1,
-            estimatedPrice: unitPrice,
-            remarks: ''
-          });
+      const knownMfs = [
+        { key: 'spl', name: 'SPL' },
+        { key: 'sigma', name: 'Sigma' },
+        { key: 'merck', name: 'Merck' },
+        { key: 'thermo', name: 'Thermo Fisher' },
+        { key: 'invitrogen', name: 'Invitrogen' },
+        { key: 'gibco', name: 'Gibco' },
+        { key: 'corning', name: 'Corning' },
+        { key: 'falcon', name: 'Falcon' },
+        { key: 'axygen', name: 'Axygen' },
+        { key: 'bio-rad', name: 'Bio-Rad' },
+        { key: 'biorad', name: 'Bio-Rad' },
+        { key: 'qiagen', name: 'Qiagen' },
+        { key: 'cytiva', name: 'Cytiva' }
+      ];
+      for (const m of knownMfs) {
+        const reg = new RegExp('^' + m.key + '\\b[\\s:;_-]*', 'i');
+        if (reg.test(productPart)) {
+          manufacturer = m.name;
+          productPart = productPart.replace(reg, '').trim();
+          break;
         }
       }
     }
+
+    // 3. 규격 분리 [10 x 1mg], (BX), (20ML) 등
+    let spec = '';
+    const sBracketMatch = productPart.match(/\[(.*?)\]/);
+    if (sBracketMatch) {
+      spec = sBracketMatch[1].trim();
+      productPart = productPart.replace(sBracketMatch[0], '').trim();
+    } else {
+      const sParenMatch = productPart.match(/\((bx|box|pk|pack|ea|개|병|bottle|\d+[a-zA-Z]+|\d+\s*[xX×]\s*\d+[a-zA-Z]+)\)/i);
+      if (sParenMatch) {
+        spec = sParenMatch[1].trim();
+        productPart = productPart.replace(sParenMatch[0], '').trim();
+      }
+    }
+
+    // 4. 카탈로그 번호 (품목코드) 분리
+    let catalogNumber = '';
+    // 예: D11347, 20100, 345789-20MLCN, P5379-100G, INC-2000
+    const catMatch = productPart.match(/^([A-Z0-9]+(?:-[A-Z0-9]+)?)\b/i) || productPart.match(/\b([A-Z]?\d{4,8}(?:-[A-Z0-9]+)?)\b/i);
+    if (catMatch) {
+      const candidate = catMatch[1];
+      // 너무 흔한 단어 제외
+      if (!/^(RT|Cell|Dish|Plate|Tube|Box|Pack|Kit|Solution|Buffer|Flask)$/i.test(candidate)) {
+        catalogNumber = candidate;
+        productPart = productPart.replace(catalogNumber, '').trim();
+      }
+    }
+
+    // 5. 품목명에서 불필요한 보관조건("RT;", "Room Temperature;") 및 특수문자 제거
+    let productName = productPart
+      .replace(/^(?:RT|Room\s*Temperature)[\s;:_-]+/i, '')
+      .replace(/^[-:;,\s]+/, '')
+      .replace(/[-:;,\s]+$/, '')
+      .trim();
+
+    if (!productName) productName = catalogNumber || '견적 품목';
+
+    items.push({
+      manufacturer,
+      catalogNumber,
+      productName,
+      spec,
+      quantity: qty > 0 ? qty : 1,
+      estimatedPrice: unitPrice,
+      remarks
+    });
+  }
+
+  // 고객 문의 텍스트가 있으면 교차 검증 및 보정 적용
+  if (customerRequestText) {
+    return enrichItemsWithCustomerInquiry(items, customerRequestText);
   }
 
   return items;
+}
+
+/**
+ * 4. 고객 견적요청 내용과 구매처 견적 품목 교차 보정
+ * (예: 고객이 요청한 '90*20', 'Cell culture dish' 규격/품목명을 구매처 코드와 매칭)
+ */
+export function enrichItemsWithCustomerInquiry(items: ParsedQuoteItem[], customerRequest: string): ParsedQuoteItem[] {
+  if (!customerRequest || !customerRequest.trim()) return items;
+  const lines = customerRequest.split('\n').map(l => l.trim()).filter(Boolean);
+
+  return items.map(item => {
+    let matchedLine = '';
+    for (const line of lines) {
+      if (item.catalogNumber && line.toLowerCase().includes(item.catalogNumber.toLowerCase())) {
+        matchedLine = line;
+        break;
+      }
+      if (item.manufacturer && line.toLowerCase().includes(item.manufacturer.toLowerCase())) {
+        const words = item.productName.split(/[\s;:_-]+/).filter(w => w.length >= 3);
+        if (words.some(w => line.toLowerCase().includes(w.toLowerCase()))) {
+          matchedLine = line;
+          break;
+        }
+      }
+    }
+
+    if (matchedLine) {
+      // 1. 규격(크기, 치수 등) 보정: 예 "90*20", "100mm"
+      const dimMatch = matchedLine.match(/\b(\d+(?:\.\d+)?\s*[*xX×]\s*\d+(?:\.\d+)?(?:\s*mm)?)\b/) || matchedLine.match(/\b(\d+mm)\b/i);
+      let updatedSpec = item.spec;
+      if (dimMatch && (!updatedSpec || !updatedSpec.includes(dimMatch[1]))) {
+        updatedSpec = updatedSpec ? `${dimMatch[1]}, ${updatedSpec}` : dimMatch[1];
+      }
+
+      // 2. 잘린 품목명 보정 (예: "Cell Culture Di" -> "Cell Culture Dish")
+      let updatedName = item.productName;
+      if (/cell\s*culture\s*di$/i.test(updatedName) && /dish/i.test(matchedLine)) {
+        updatedName = updatedName.replace(/cell\s*culture\s*di$/i, 'Cell Culture Dish');
+      }
+
+      return {
+        ...item,
+        productName: updatedName,
+        spec: updatedSpec,
+      };
+    }
+
+    return item;
+  });
 }
 
 /**
