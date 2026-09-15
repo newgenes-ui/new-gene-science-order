@@ -46,8 +46,8 @@ export default function OrderPage() {
     }
   }, []);
 
-  const isPublicMode = location.pathname === '/smart-order' || searchParams.get('client') === 'public';
-  const clientId = isPublicMode ? 'public' : (searchParams.get('client') || 'boryung').toLowerCase();
+  const rawClientId = isPublicMode ? 'public' : (searchParams.get('client') || 'boryung').toLowerCase();
+  const clientId = rawClientId === 'vertis' ? 'bertis' : rawClientId;
   const shouldReset = searchParams.get('reset') === 'true';
 
   useEffect(() => {
@@ -113,7 +113,7 @@ export default function OrderPage() {
         { name: '김석기', email: 'rlatjrrl9977@ajou.ac.kr', phone: '010-5694-9707' }
       ];
     }
-    if (clientId === 'vertis') {
+    if (clientId === 'bertis' || clientId === 'vertis') {
       return [
         { name: '강예지', email: 'yeji.kang@bertis.com', phone: '010-6604-1997' }
       ];
@@ -147,18 +147,20 @@ export default function OrderPage() {
       let desc = '';
       let subject = '';
 
+      const displayOrderId = (order.id || '').replace(/NGS-vertis-/gi, 'NGS-bertis-');
+
       if (type === 'quote') {
         title = `(주)뉴진사이언스 견적문의 접수`;
         desc = `견적 문의가 정상적으로 접수되었습니다.`;
-        subject = `[${order.clientName}] 견적문의 접수 완료 (${order.id})`;
+        subject = `[${order.clientName}] 견적문의 접수 완료 (${displayOrderId})`;
       } else if (type === 'order') {
         title = `(주)뉴진사이언스 주문 접수`;
         desc = `주문이 정상적으로 접수되었습니다.`;
-        subject = `[${order.clientName}] 주문 접수 완료 (${order.id})`;
+        subject = `[${order.clientName}] 주문 접수 완료 (${displayOrderId})`;
       } else {
         title = `(주)뉴진사이언스 발주 접수 (견적전환)`;
         desc = `기존 견적서가 발주(주문)로 성공적으로 전환 접수되었습니다.`;
-        subject = `[${order.clientName}] 발주 접수 완료 (견적전환) (${order.id})`;
+        subject = `[${order.clientName}] 발주 접수 완료 (견적전환) (${displayOrderId})`;
       }
 
       const htmlContent = `
@@ -169,7 +171,7 @@ export default function OrderPage() {
           </div>
           
           <div style="margin-top: 25px; padding: 15px; background-color: #F8F9FA; border-radius: 10px; border: 1px solid #E2E8E4; font-size: 14px;">
-            <p style="margin: 5px 0;"><strong>신청 번호:</strong> ${order.id}</p>
+            <p style="margin: 5px 0;"><strong>신청 번호:</strong> ${displayOrderId}</p>
             <p style="margin: 5px 0;"><strong>업체명:</strong> ${order.clientName}</p>
             <p style="margin: 5px 0;"><strong>담당자:</strong> ${order.ordererName}</p>
             <p style="margin: 5px 0;"><strong>연락처:</strong> ${order.ordererPhone}</p>
@@ -741,7 +743,8 @@ export default function OrderPage() {
       // 3. 업체별 필터링 (본인 업체 내역만 보이도록 수정)
       const visibleOrders = all.filter(o => 
         clientId === 'demo' || 
-        o.clientId === clientId
+        o.clientId === clientId ||
+        ((clientId === 'bertis' || clientId === 'vertis') && (o.clientId === 'bertis' || o.clientId === 'vertis'))
       );
       
       // 4. 최신순 정렬 (ID 기준 내림차순)
@@ -794,7 +797,7 @@ export default function OrderPage() {
 
 
   const clientProducts = useMemo(() => {
-    if (clientId === 'ajou' || clientId === 'immuno' || clientId === 'vertis') {
+    if (clientId === 'ajou' || clientId === 'immuno' || clientId === 'vertis' || clientId === 'bertis') {
       const list = PRODUCTS.map(p => {
         let customPrice = p.price;
         if (clientId === 'ajou') {
@@ -831,7 +834,7 @@ export default function OrderPage() {
             case 'NGS-CT-3015-S': customPrice = 70400; break;
             case 'NGS-CT-3050-S': customPrice = 94600; break;
           }
-        } else if (clientId === 'vertis') {
+        } else if (clientId === 'vertis' || clientId === 'bertis') {
           switch (p.code) {
             case 'NGS-STAG-10-RS': customPrice = 40000; break;
             case 'NGS-STAG-10L-RS': customPrice = 40000; break;
@@ -841,7 +844,7 @@ export default function OrderPage() {
         }
         return { ...p, price: customPrice };
       });
-      if (clientId === 'vertis') {
+      if (clientId === 'vertis' || clientId === 'bertis') {
         return list.filter(p => p.category !== '랙');
       }
       return list;
