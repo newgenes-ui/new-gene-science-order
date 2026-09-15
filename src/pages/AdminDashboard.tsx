@@ -637,35 +637,71 @@ export default function AdminDashboard() {
     const phone = order.ordererPhone || "-";
     const email = order.ordererEmail || "-";
 
-    // 템플릿이 어떤 변수명을 쓰더라도 대응할 수 있도록 모든 이름으로 송신
-    const emailContent = "기관명: " + client + "\n주문자: " + name + "\n연락처: " + phone + "\n이메일: " + email + "\n\n▶ [공식 견적서 확인 및 인쇄]\n" + quoteUrl + "\n\n--------------------------\n[안내]\n위 링크를 클릭하시면 공식 견적서를 확인하실 수 있습니다.";
+    const emailSubject = `[(주)뉴진사이언스] 견적서 도착 - ${client}`;
+    const htmlContent = `
+      <div style="font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; padding: 25px; max-width: 600px; margin: 0 auto; color: #2C3E50; line-height: 1.6;">
+        <div style="border-bottom: 2px solid #2ECC71; padding-bottom: 15px; margin-bottom: 20px;">
+          <h2 style="color: #27AE60; margin: 0; font-size: 20px;">[(주)뉴진사이언스] 견적서 도착</h2>
+          <p style="margin: 5px 0 0 0; font-size: 13px; color: #7F8C8D;">요청하신 견적서가 준비되었습니다.</p>
+        </div>
+        <p style="font-size: 14px;">안녕하세요, <strong>${client}</strong> ${name} 님.</p>
+        <p style="font-size: 14px;">(주)뉴진사이언스에 요청해주신 견적서 작성이 완료되었습니다.<br/>아래 버튼 또는 링크를 클릭하시면 견적서를 확인 및 인쇄하실 수 있습니다.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${quoteUrl}" target="_blank" rel="noopener noreferrer" style="background-color: #27AE60; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; display: inline-block;">
+            📄 공식 견적서 확인 및 인쇄하기
+          </a>
+        </div>
 
-    const emailParams = {
-      order_title: "[(주)뉴진사이언스] 견적서 도착 - " + client,
-      detail_label: "견적서 확인",
-      items_text: emailContent,    // 기본 변수
-      message: emailContent,       // 대체 변수 1
-      content: emailContent,       // 대체 변수 2
-      order_details: emailContent, // 대체 변수 3
-      
-      // 개별 필드 대응
-      client_name: client,
-      orderer_name: name,
-      orderer_phone: phone,
-      orderer_email: email,
-      customer_name: name,
-      from_name: name,
-      contact_number: phone,
-      to_email: email,
-      reply_to: email
-    };
+        <div style="background-color: #F8F9FA; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #555; word-break: break-all;">
+          <strong>견적서 직접 링크:</strong><br/>
+          <a href="${quoteUrl}" target="_blank" rel="noopener noreferrer" style="color: #27AE60;">${quoteUrl}</a>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #E2E8E4; margin: 25px 0;" />
+        <p style="font-size: 12px; color: #95A5A6; text-align: center; margin: 0;">(주)뉴진사이언스 | 영업 문의: 010-5882-4997 | newgenes@newgenesci.com</p>
+      </div>
+    `;
 
+    // 1순위: Supabase Edge Function → Resend API
+    try {
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
+      console.log('📧 견적서 이메일 발송 시도 (Resend API)...', email);
+      const res = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          bcc: NGS_EMAIL,
+          subject: emailSubject,
+          html: htmlContent
+        })
+      });
+      if (res.ok) {
+        console.log('✅ 견적서 이메일 발송 성공:', email);
+        return;
+      }
+    } catch (edgeErr) {
+      console.warn('⚠️ 견적서 Edge Function 발송 실패, 백업 시도:', edgeErr);
+    }
+
+    // 2순위 백업: EmailJS (설정되어 있는 경우)
     if (EMAILJS_PUBLIC_KEY && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
       try {
-        console.log('📧 견적서 이메일 발송 시도 (V5)...', email);
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          order_title: emailSubject,
+          detail_label: "견적서 확인",
+          items_text: emailContent,
+          client_name: client,
+          orderer_name: name,
+          orderer_phone: phone,
+          orderer_email: email,
+          to_email: email
+        }, EMAILJS_PUBLIC_KEY);
       } catch (err) {
-        console.error('❌ 발송 오류:', err);
+        console.error('❌ EmailJS 백업 발송 오류:', err);
       }
     }
   };

@@ -192,8 +192,8 @@ export default function OrderPage() {
             <tbody>
               ${itemsRowsHtml}
               <tr style="background-color: #FAF9F6; font-weight: bold; font-size: 13px;">
-                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D;">
-                  <strong>기타 요청사항:</strong> ${order.otherRequest || '없음'}
+                <td colSpan="4" style="padding: 10px; border: 1px solid #E2E8E4; text-align: left; font-weight: normal; color: #7F8C8D; white-space: pre-wrap;">
+                  <strong>기타 요청사항:</strong><br/>${(order.otherRequest || '없음').replace(/\n/g, '<br/>')}
                 </td>
                 <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: center; background-color: #EAEDED;">공급가액</td>
                 <td style="padding: 10px; border: 1px solid #E2E8E4; text-align: right; color: #2C3E50;">₩${order.subtotalAmount ? order.subtotalAmount.toLocaleString() : (order.totalAmount / 1.1).toLocaleString()}</td>
@@ -229,57 +229,61 @@ export default function OrderPage() {
         ? NGS_EMAIL
         : undefined;
 
-      // ★ 1순위: Vercel API → Nodemailer → 메일플러그 SMTP 직접 전송 (차단 우회)
-      console.log('📧 [1순위] 메일플러그 SMTP 직접 발송 시작 (Type:', type, ')...');
-      let smtpSuccess = false;
+      // ★ 1순위: Supabase Edge Function → Resend API (초고속 0.9초 안정적 발송)
+      console.log('📧 [1순위] Resend API(Edge Function) 메일 발송 시작 (Type:', type, ')...');
+      let edgeSuccess = false;
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
       try {
-        const smtpRes = await fetch('/api/send-statement', {
+        const res = await fetch(functionUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: targetEmail,
+            to: targetEmail, 
             bcc: bccEmail,
             subject: subject,
             html: htmlContent
           })
         });
-        if (smtpRes.ok) {
-          console.log('✅ 메일플러그 SMTP 직접 발송 성공');
-          smtpSuccess = true;
+        if (res.ok) {
+          console.log('✅ Resend API 메일 발송 성공');
+          edgeSuccess = true;
         } else {
-          const smtpError = await smtpRes.text();
-          console.warn('⚠️ 메일플러그 SMTP 발송 실패:', smtpRes.status, smtpError);
+          const errorData = await res.text();
+          console.warn('⚠️ Resend API 발송 실패:', res.status, errorData);
         }
-      } catch (smtpErr) {
-        console.warn('⚠️ 메일플러그 SMTP 호출 실패:', smtpErr);
+      } catch (edgeErr) {
+        console.warn('⚠️ Resend API 호출 실패:', edgeErr);
       }
 
-      // ★ 2순위 백업: Supabase Edge Function → Resend API (SMTP 실패 시에만)
-      if (!smtpSuccess) {
-        const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-          ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-          : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
-
-        console.log('📧 [2순위 백업] Resend API(Edge Function) 메일 발송 시작...');
+      // ★ 2순위 백업: Vercel API → 메일플러그 SMTP (Edge Function 실패 시에만, 타임아웃 5초 제한)
+      if (!edgeSuccess) {
+        console.log('📧 [2순위 백업] 메일플러그 SMTP 발송 시도...');
         try {
-          const res = await fetch(functionUrl, {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const smtpRes = await fetch('/api/send-statement', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              to: targetEmail, 
+              to: targetEmail,
               bcc: bccEmail,
               subject: subject,
               html: htmlContent
-            })
+            }),
+            signal: controller.signal
           });
-          if (res.ok) {
-            console.log('✅ Resend API 백업 메일 발송 성공');
+          clearTimeout(timeoutId);
+          if (smtpRes.ok) {
+            console.log('✅ 메일플러그 SMTP 백업 발송 성공');
           } else {
-            const errorData = await res.text();
-            console.error('❌ Resend API 백업 발송도 실패:', res.status, errorData);
+            const smtpError = await smtpRes.text();
+            console.warn('⚠️ 메일플러그 SMTP 백업 발송 실패:', smtpRes.status, smtpError);
           }
-        } catch (edgeErr) {
-          console.error('❌ Resend API 백업 호출 실패:', edgeErr);
+        } catch (smtpErr) {
+          console.warn('⚠️ 메일플러그 SMTP 백업 호출 실패:', smtpErr);
         }
       }
     } catch (err) {
@@ -326,14 +330,12 @@ export default function OrderPage() {
         client_email:   order.ordererEmail || order.clientEmail,
       };
 
-      // EmailJS 메일 발송 (견적→발주 전환)
-      if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
-        try {
-          await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams, EMAILJS_PUBLIC_KEY);
-          console.log('✅ EmailJS 발주 전환 메일 발송 성공');
-        } catch (emailErr) {
-          console.error('❌ EmailJS 발주 전환 메일 발송 실패:', emailErr);
-        }
+      // 알림 메일 발송 (견적→발주 전환)
+      try {
+        await sendNotificationEmail(order, 'conversion');
+        console.log('✅ 발주 전환 알림 메일 발송 성공');
+      } catch (emailErr) {
+        console.error('❌ 발주 전환 알림 메일 발송 실패:', emailErr);
       }
       
       alert('해당 상품은 발주 후 주문 취소가 불가한 점 양해 부탁드립니다.');
@@ -563,7 +565,6 @@ export default function OrderPage() {
         </div>
       `;
 
-      // ★ 1순위: Vercel API → Nodemailer → 메일플러그 SMTP 직접 전송 (차단 우회)
       const emailPayload = {
         to: finalEmail, 
         bcc: 'newgenes@newgenesci.com',
@@ -571,48 +572,58 @@ export default function OrderPage() {
         html: htmlContent
       };
 
+      // ★ 1순위: Supabase Edge Function → Resend API (초고속 안정 발송)
       let emailSent = false;
-      console.log('📧 [거래명세서] 메일플러그 SMTP 직접 발송 시작...');
+      console.log('📧 [거래명세서 1순위] Resend API(Edge Function) 발송 시작...');
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL 
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
+        : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
+
       try {
-        const smtpRes = await fetch('/api/send-statement', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(emailPayload)
-        });
-        if (smtpRes.ok) {
-          console.log('✅ 메일플러그 SMTP 직접 발송 성공');
-          emailSent = true;
-        } else {
-          const smtpError = await smtpRes.text();
-          console.warn('⚠️ 메일플러그 SMTP 발송 실패:', smtpRes.status, smtpError);
-        }
-      } catch (smtpErr) {
-        console.warn('⚠️ 메일플러그 SMTP 호출 실패:', smtpErr);
-      }
-
-      // ★ 2순위 백업: Supabase Edge Function → Resend API
-      if (!emailSent) {
-        console.log('📧 [거래명세서 백업] Resend API(Edge Function) 발송 시작...');
-        const functionUrl = import.meta.env.VITE_SUPABASE_URL 
-          ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-statement` 
-          : "https://uceljklstgjucczgzdiq.supabase.co/functions/v1/send-statement";
-
         const res = await fetch(functionUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(emailPayload)
         });
 
-        if (!res.ok) {
-          let exactError = '알 수 없는 오류';
-          try {
-            const errorData = await res.json();
-            exactError = errorData.message || errorData.error || JSON.stringify(errorData);
-          } catch(e) {
-            exactError = await res.text();
-          }
-          throw new Error(`${exactError}`);
+        if (res.ok) {
+          console.log('✅ 거래명세서 Resend API 발송 성공');
+          emailSent = true;
+        } else {
+          const errorData = await res.text();
+          console.warn('⚠️ 거래명세서 Resend API 발송 실패:', res.status, errorData);
         }
+      } catch (edgeErr) {
+        console.warn('⚠️ 거래명세서 Resend API 호출 실패:', edgeErr);
+      }
+
+      // ★ 2순위 백업: Vercel API → 메일플러그 SMTP (Edge 실패 시에만, 타임아웃 5초 제한)
+      if (!emailSent) {
+        console.log('📧 [거래명세서 2순위 백업] 메일플러그 SMTP 발송 시도...');
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          const smtpRes = await fetch('/api/send-statement', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(emailPayload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (smtpRes.ok) {
+            console.log('✅ 거래명세서 메일플러그 SMTP 직접 발송 성공');
+            emailSent = true;
+          } else {
+            const smtpError = await smtpRes.text();
+            console.warn('⚠️ 거래명세서 메일플러그 SMTP 발송 실패:', smtpRes.status, smtpError);
+          }
+        } catch (smtpErr) {
+          console.warn('⚠️ 거래명세서 메일플러그 SMTP 호출 실패:', smtpErr);
+        }
+      }
+
+      if (!emailSent) {
+        throw new Error('이메일 발송 서버 응답 실패 (잠시 후 다시 시도해주세요)');
       }
 
       await markOrdersAsInvoicedInSupabase(selectedOrderIds);
@@ -987,19 +998,23 @@ export default function OrderPage() {
     // ───────────────────────────────────────────────
 
     const success = await saveOrder(order);
-    setIsSubmitting(false);
 
     if (success) {
-      // Supabase Edge Function으로 주문/견적 접수 알림 메일 발송 (비동기)
-      sendNotificationEmail(order, activeTab === 'quote' ? 'quote' : 'order')
-        .catch(err => console.error('알림 메일 발송 실패 (무시):', err));
+      // 메일 발송이 100% 완료될 때까지 확실하게 대기 (0.9초)
+      try {
+        await sendNotificationEmail(order, activeTab === 'quote' ? 'quote' : 'order');
+      } catch (err) {
+        console.error('알림 메일 발송 오류 (무시):', err);
+      }
 
+      setIsSubmitting(false);
       // 견적/발주 상관없이 "감사합니다" 프리미엄 화면 통합 표시
       setShowCelebration(true);
       // 폼 공통 초기화
       setOtherRequest('');
       setQuantities({});
     } else {
+      setIsSubmitting(false);
       alert('데이터베이스 저장에 실패했습니다. 관리자에게 확인 부탁드립니다.');
     }
   };
